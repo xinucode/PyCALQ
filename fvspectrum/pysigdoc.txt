@@ -1,0 +1,1697 @@
+Help on module sigmond:
+
+NAME
+    sigmond - pybind11 wrapper for sigmond
+
+CLASSES
+    pybind11_builtins.pybind11_object(builtins.object)
+        BLCorrelatorDataHandler
+        BLCorrelatorRecordKey
+        BLVEVDataHandler
+        BasicLapHOperatorInfo
+        BinsGetHandler
+        BinsPutHandler
+        Bootstrapper
+        ComplexArg
+        CorrelatorAtTimeInfo
+        CorrelatorInfo
+        CorrelatorMatrixInfo
+        FileListInfo
+        FileType
+        GenIrrepOperatorInfo
+        MCBinsInfo
+        MCEnsembleInfo
+        MCEstimate
+        MCObsGetHandler
+        MCObsHandler
+        MCObsInfo
+        MCSamplingInfo
+        MinimizerInfo
+        Momentum
+        OpKind
+        OperatorInfo
+        RVector
+        SamplingMode
+        SamplingsGetHandler
+        WriteMode
+        XMLHandler
+    
+    class BLCorrelatorDataHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      BLCorrelatorDataHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.BLCorrelatorDataHandler, arg0: List[sigmond.FileListInfo], arg1: Set[sigmond.CorrelatorInfo], arg2: Set[sigmond.CorrelatorInfo], arg3: sigmond.MCEnsembleInfo, arg4: bool) -> None
+     |      
+     |      2. __init__(self: sigmond.BLCorrelatorDataHandler, arg0: List[sigmond.FileListInfo], arg1: Set[sigmond.CorrelatorInfo], arg2: Set[sigmond.CorrelatorInfo], arg3: sigmond.MCEnsembleInfo) -> None
+     |  
+     |  getCorrelatorSet(...)
+     |      getCorrelatorSet(self: sigmond.BLCorrelatorDataHandler) -> Set[sigmond.CorrelatorInfo]
+     |  
+     |  getFileName(...)
+     |      getFileName(self: sigmond.BLCorrelatorDataHandler, arg0: sigmond.CorrelatorInfo) -> str
+     |  
+     |  getKeys(...)
+     |      getKeys(self: sigmond.BLCorrelatorDataHandler, arg0: sigmond.CorrelatorInfo) -> Set[LaphEnv::BLCorrelatorDataHandler::RecordKey]
+     |  
+     |  getOrderedKeys(...)
+     |      getOrderedKeys(self: sigmond.BLCorrelatorDataHandler, arg0: sigmond.CorrelatorInfo) -> List[LaphEnv::BLCorrelatorDataHandler::RecordKey]
+     |  
+     |  getTimeSepRange(...)
+     |      getTimeSepRange(self: sigmond.BLCorrelatorDataHandler, arg0: sigmond.CorrelatorInfo) -> Tuple[int, int]
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class BLCorrelatorRecordKey(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      BLCorrelatorRecordKey
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.BLCorrelatorRecordKey, arg0: int, arg1: int) -> None
+     |  
+     |  getConfigSerialIndex(...)
+     |      getConfigSerialIndex(self: sigmond.BLCorrelatorRecordKey) -> int
+     |  
+     |  getTimeIndex(...)
+     |      getTimeIndex(self: sigmond.BLCorrelatorRecordKey) -> int
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class BLVEVDataHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      BLVEVDataHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.BLVEVDataHandler, arg0: List[sigmond.FileListInfo], arg1: Set[sigmond.OperatorInfo], arg2: sigmond.MCEnsembleInfo, arg3: bool) -> None
+     |      
+     |      2. __init__(self: sigmond.BLVEVDataHandler, arg0: List[sigmond.FileListInfo], arg1: Set[sigmond.OperatorInfo], arg2: sigmond.MCEnsembleInfo) -> None
+     |  
+     |  getFileName(...)
+     |      getFileName(self: sigmond.BLVEVDataHandler, arg0: sigmond.OperatorInfo) -> str
+     |  
+     |  getKeys(...)
+     |      getKeys(self: sigmond.BLVEVDataHandler, arg0: sigmond.OperatorInfo) -> Set[LaphEnv::BLVEVDataHandler::RecordKey]
+     |  
+     |  getOperatorSet(...)
+     |      getOperatorSet(self: sigmond.BLVEVDataHandler) -> Set[sigmond.OperatorInfo]
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class BasicLapHOperatorInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      BasicLapHOperatorInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.BasicLapHOperatorInfo, arg0: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.BasicLapHOperatorInfo, arg0: str) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.BasicLapHOperatorInfo, arg0: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.BasicLapHOperatorInfo, arg0: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  getFlavor(...)
+     |      getFlavor(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  getFlavorCode(...)
+     |      getFlavorCode(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  getHadronDisplacementLength(...)
+     |      getHadronDisplacementLength(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> int
+     |  
+     |  getHadronFlavor(...)
+     |      getHadronFlavor(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> str
+     |  
+     |  getHadronLGIrrep(...)
+     |      getHadronLGIrrep(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> str
+     |  
+     |  getHadronMomentum(...)
+     |      getHadronMomentum(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> Momentum
+     |  
+     |  getHadronSpatialIdNumber(...)
+     |      getHadronSpatialIdNumber(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> int
+     |  
+     |  getHadronSpatialType(...)
+     |      getHadronSpatialType(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> str
+     |  
+     |  getHadronStrangeness(...)
+     |      getHadronStrangeness(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> int
+     |  
+     |  getHadronXMomentum(...)
+     |      getHadronXMomentum(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> int
+     |  
+     |  getHadronYMomentum(...)
+     |      getHadronYMomentum(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> int
+     |  
+     |  getHadronZMomentum(...)
+     |      getHadronZMomentum(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> int
+     |  
+     |  getIsospin(...)
+     |      getIsospin(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  getIsospinClebschGordonIdNum(...)
+     |      getIsospinClebschGordonIdNum(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getLGClebschGordonIdNum(...)
+     |      getLGClebschGordonIdNum(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getLGIrrep(...)
+     |      getLGIrrep(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  getLGIrrepRow(...)
+     |      getLGIrrepRow(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getMomentum(...)
+     |      getMomentum(self: sigmond.BasicLapHOperatorInfo) -> Momentum
+     |  
+     |  getNumberOfHadrons(...)
+     |      getNumberOfHadrons(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getStrangeness(...)
+     |      getStrangeness(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getTetraquarkColorType(...)
+     |      getTetraquarkColorType(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getXMomentum(...)
+     |      getXMomentum(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getYMomentum(...)
+     |      getYMomentum(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  getZMomentum(...)
+     |      getZMomentum(self: sigmond.BasicLapHOperatorInfo) -> int
+     |  
+     |  isBackwards(...)
+     |      isBackwards(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. isBackwards(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |      
+     |      2. isBackwards(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  isBaryon(...)
+     |      isBaryon(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  isGlueball(...)
+     |      isGlueball(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  isHadronBaryon(...)
+     |      isHadronBaryon(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> bool
+     |  
+     |  isHadronBoson(...)
+     |      isHadronBoson(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> bool
+     |  
+     |  isHadronFermion(...)
+     |      isHadronFermion(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> bool
+     |  
+     |  isHadronGlueball(...)
+     |      isHadronGlueball(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> bool
+     |  
+     |  isHadronMeson(...)
+     |      isHadronMeson(self: sigmond.BasicLapHOperatorInfo, arg0: int) -> bool
+     |  
+     |  isMeson(...)
+     |      isMeson(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  isMesonBaryon(...)
+     |      isMesonBaryon(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  isMesonMeson(...)
+     |      isMesonMeson(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  isTetraquark(...)
+     |      isTetraquark(self: sigmond.BasicLapHOperatorInfo) -> bool
+     |  
+     |  long_xml(...)
+     |      long_xml(self: sigmond.BasicLapHOperatorInfo) -> object
+     |  
+     |  op_str(...)
+     |      op_str(self: sigmond.BasicLapHOperatorInfo) -> str
+     |  
+     |  setBackwards(...)
+     |      setBackwards(self: sigmond.BasicLapHOperatorInfo) -> None
+     |  
+     |  setForwards(...)
+     |      setForwards(self: sigmond.BasicLapHOperatorInfo) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.BasicLapHOperatorInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class BinsGetHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      BinsGetHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.BinsGetHandler, arg0: sigmond.MCBinsInfo, arg1: Set[str], arg2: bool) -> None
+     |      
+     |      2. __init__(self: sigmond.BinsGetHandler, arg0: sigmond.MCBinsInfo, arg1: Set[str]) -> None
+     |  
+     |  getData(...)
+     |      getData(self: sigmond.BinsGetHandler, arg0: sigmond.MCObsInfo, arg1: sigmond.RVector) -> None
+     |  
+     |  getFileNames(...)
+     |      getFileNames(self: sigmond.BinsGetHandler) -> Set[str]
+     |  
+     |  getKeys(...)
+     |      getKeys(self: sigmond.BinsGetHandler) -> Set[sigmond.MCObsInfo]
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class BinsPutHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      BinsPutHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.BinsPutHandler, arg0: sigmond.MCBinsInfo, arg1: str, arg2: sigmond.WriteMode, arg3: bool) -> None
+     |      
+     |      2. __init__(self: sigmond.BinsPutHandler, arg0: sigmond.MCBinsInfo, arg1: str, arg2: sigmond.WriteMode) -> None
+     |      
+     |      3. __init__(self: sigmond.BinsPutHandler, arg0: sigmond.MCBinsInfo, arg1: str) -> None
+     |  
+     |  close(...)
+     |      close(self: sigmond.BinsPutHandler) -> None
+     |  
+     |  putData(...)
+     |      putData(self: sigmond.BinsPutHandler, arg0: sigmond.MCObsInfo, arg1: sigmond.RVector) -> None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class Bootstrapper(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      Bootstrapper
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.Bootstrapper, arg0: int, arg1: int, arg2: int, arg3: int, arg4: bool) -> None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class ComplexArg(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      ComplexArg
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: object, other: object) -> bool
+     |  
+     |  __getstate__(...)
+     |      __getstate__(self: object) -> int
+     |  
+     |  __hash__(...)
+     |      __hash__(self: object) -> int
+     |  
+     |  __index__(...)
+     |      __index__(self: sigmond.ComplexArg) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.ComplexArg, value: int) -> None
+     |  
+     |  __int__(...)
+     |      __int__(self: sigmond.ComplexArg) -> int
+     |  
+     |  __ne__(...)
+     |      __ne__(self: object, other: object) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: object) -> str
+     |  
+     |  __setstate__(...)
+     |      __setstate__(self: sigmond.ComplexArg, state: int) -> None
+     |  
+     |  __str__ = name(...)
+     |      __str__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __str__(self: sigmond.ComplexArg) -> str
+     |      
+     |      2. __str__(self: handle) -> str
+     |  
+     |  name(...)
+     |      __str__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __str__(self: sigmond.ComplexArg) -> str
+     |      
+     |      2. __str__(self: handle) -> str
+     |  
+     |  ----------------------------------------------------------------------
+     |  Readonly properties defined here:
+     |  
+     |  __members__
+     |  
+     |  value
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  ImaginaryPart = <ComplexArg.ImaginaryPart: 1>
+     |  
+     |  RealPart = <ComplexArg.RealPart: 0>
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class CorrelatorAtTimeInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      CorrelatorAtTimeInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.CorrelatorAtTimeInfo, arg0: sigmond.CorrelatorAtTimeInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.CorrelatorAtTimeInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.CorrelatorAtTimeInfo, arg0: sigmond.OperatorInfo, arg1: sigmond.OperatorInfo, arg2: int, arg3: bool, arg4: bool) -> None
+     |      
+     |      2. __init__(self: sigmond.CorrelatorAtTimeInfo, arg0: sigmond.CorrelatorInfo, arg1: int, arg2: bool, arg3: bool) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.CorrelatorAtTimeInfo, arg0: sigmond.CorrelatorAtTimeInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.CorrelatorAtTimeInfo, arg0: sigmond.CorrelatorAtTimeInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.CorrelatorAtTimeInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.CorrelatorAtTimeInfo) -> str
+     |  
+     |  isBackwards(...)
+     |      isBackwards(self: sigmond.CorrelatorAtTimeInfo) -> bool
+     |  
+     |  resetTimeSeparation(...)
+     |      resetTimeSeparation(self: sigmond.CorrelatorAtTimeInfo, arg0: int) -> sigmond.CorrelatorAtTimeInfo
+     |  
+     |  setBackwards(...)
+     |      setBackwards(self: sigmond.CorrelatorAtTimeInfo) -> None
+     |  
+     |  setForwards(...)
+     |      setForwards(self: sigmond.CorrelatorAtTimeInfo) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.CorrelatorAtTimeInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class CorrelatorInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      CorrelatorInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.CorrelatorInfo, arg0: sigmond.CorrelatorInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.CorrelatorInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.CorrelatorInfo, arg0: sigmond.CorrelatorInfo) -> None
+     |      
+     |      2. __init__(self: sigmond.CorrelatorInfo, arg0: sigmond.OperatorInfo, arg1: sigmond.OperatorInfo) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.CorrelatorInfo, arg0: sigmond.CorrelatorInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.CorrelatorInfo, arg0: sigmond.CorrelatorInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.CorrelatorInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.CorrelatorInfo) -> str
+     |  
+     |  corr_str(...)
+     |      corr_str(self: sigmond.CorrelatorInfo) -> str
+     |  
+     |  getSink(...)
+     |      getSink(self: sigmond.CorrelatorInfo) -> sigmond.OperatorInfo
+     |  
+     |  getSource(...)
+     |      getSource(self: sigmond.CorrelatorInfo) -> sigmond.OperatorInfo
+     |  
+     |  isBackwards(...)
+     |      isBackwards(self: sigmond.CorrelatorInfo) -> bool
+     |  
+     |  isSinkSourceSame(...)
+     |      isSinkSourceSame(self: sigmond.CorrelatorInfo) -> bool
+     |  
+     |  setBackwards(...)
+     |      setBackwards(self: sigmond.CorrelatorInfo) -> None
+     |  
+     |  setForwards(...)
+     |      setForwards(self: sigmond.CorrelatorInfo) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.CorrelatorInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class CorrelatorMatrixInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      CorrelatorMatrixInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.CorrelatorMatrixInfo, arg0: sigmond.CorrelatorMatrixInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.CorrelatorMatrixInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.CorrelatorMatrixInfo, arg0: Set[sigmond.OperatorInfo], arg1: bool, arg2: bool) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.CorrelatorMatrixInfo, arg0: sigmond.CorrelatorMatrixInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.CorrelatorMatrixInfo, arg0: sigmond.CorrelatorMatrixInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.CorrelatorMatrixInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.CorrelatorMatrixInfo) -> str
+     |  
+     |  long_xml(...)
+     |      long_xml(self: sigmond.CorrelatorMatrixInfo) -> object
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.CorrelatorMatrixInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class FileListInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      FileListInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.FileListInfo, arg0: sigmond.FileListInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.FileListInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.FileListInfo, arg0: str, arg1: int, arg2: int, arg3: bool) -> None
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.FileListInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.FileListInfo) -> str
+     |  
+     |  getFileStub(...)
+     |      getFileStub(self: sigmond.FileListInfo) -> str
+     |  
+     |  getMaxFileNumber(...)
+     |      getMaxFileNumber(self: sigmond.FileListInfo) -> int
+     |  
+     |  getMinFileNumber(...)
+     |      getMinFileNumber(self: sigmond.FileListInfo) -> int
+     |  
+     |  isModeOverwrite(...)
+     |      isModeOverwrite(self: sigmond.FileListInfo) -> bool
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.FileListInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class FileType(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      FileType
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: object, other: object) -> bool
+     |  
+     |  __getstate__(...)
+     |      __getstate__(self: object) -> int
+     |  
+     |  __hash__(...)
+     |      __hash__(self: object) -> int
+     |  
+     |  __index__(...)
+     |      __index__(self: sigmond.FileType) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.FileType, value: int) -> None
+     |  
+     |  __int__(...)
+     |      __int__(self: sigmond.FileType) -> int
+     |  
+     |  __ne__(...)
+     |      __ne__(self: object, other: object) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: object) -> str
+     |  
+     |  __setstate__(...)
+     |      __setstate__(self: sigmond.FileType, state: int) -> None
+     |  
+     |  __str__ = name(...)
+     |      name(self: handle) -> str
+     |  
+     |  ----------------------------------------------------------------------
+     |  Readonly properties defined here:
+     |  
+     |  __members__
+     |  
+     |  name
+     |      name(self: handle) -> str
+     |  
+     |  value
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  Bins = <FileType.Bins: 2>
+     |  
+     |  Correlator = <FileType.Correlator: 0>
+     |  
+     |  RollingPivot = <FileType.RollingPivot: 6>
+     |  
+     |  Samplings = <FileType.Samplings: 3>
+     |  
+     |  SinglePivot_CN = <FileType.SinglePivot_CN: 4>
+     |  
+     |  SinglePivot_RN = <FileType.SinglePivot_RN: 5>
+     |  
+     |  VEV = <FileType.VEV: 1>
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class GenIrrepOperatorInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      GenIrrepOperatorInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.GenIrrepOperatorInfo, arg0: sigmond.GenIrrepOperatorInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.GenIrrepOperatorInfo, arg0: str) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.GenIrrepOperatorInfo, arg0: sigmond.GenIrrepOperatorInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.GenIrrepOperatorInfo, arg0: sigmond.GenIrrepOperatorInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.GenIrrepOperatorInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.GenIrrepOperatorInfo) -> str
+     |  
+     |  getIDIndex(...)
+     |      getIDIndex(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  getIDName(...)
+     |      getIDName(self: sigmond.GenIrrepOperatorInfo) -> str
+     |  
+     |  getIsospin(...)
+     |      getIsospin(self: sigmond.GenIrrepOperatorInfo) -> str
+     |  
+     |  getLGIrrep(...)
+     |      getLGIrrep(self: sigmond.GenIrrepOperatorInfo) -> str
+     |  
+     |  getLGIrrepRow(...)
+     |      getLGIrrepRow(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  getMomentum(...)
+     |      getMomentum(self: sigmond.GenIrrepOperatorInfo) -> Momentum
+     |  
+     |  getMomentumSquared(...)
+     |      getMomentumSquared(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  getStrangeness(...)
+     |      getStrangeness(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  getXMomentum(...)
+     |      getXMomentum(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  getYMomentum(...)
+     |      getYMomentum(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  getZMomentum(...)
+     |      getZMomentum(self: sigmond.GenIrrepOperatorInfo) -> int
+     |  
+     |  hasDefiniteMomentum(...)
+     |      hasDefiniteMomentum(self: sigmond.GenIrrepOperatorInfo) -> bool
+     |  
+     |  long_xml(...)
+     |      long_xml(self: sigmond.GenIrrepOperatorInfo) -> object
+     |  
+     |  op_str(...)
+     |      op_str(self: sigmond.GenIrrepOperatorInfo) -> str
+     |  
+     |  resetIDIndex(...)
+     |      resetIDIndex(self: sigmond.GenIrrepOperatorInfo, arg0: int) -> sigmond.GenIrrepOperatorInfo
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.GenIrrepOperatorInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCBinsInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCBinsInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.MCBinsInfo, arg0: sigmond.MCBinsInfo) -> bool
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.MCBinsInfo, arg0: sigmond.MCEnsembleInfo) -> None
+     |      
+     |      2. __init__(self: sigmond.MCBinsInfo, arg0: XMLHandler) -> None
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.MCBinsInfo, arg0: sigmond.MCBinsInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.MCBinsInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.MCBinsInfo) -> str
+     |  
+     |  addOmission(...)
+     |      addOmission(self: sigmond.MCBinsInfo, arg0: int) -> None
+     |  
+     |  addOmissions(...)
+     |      addOmissions(self: sigmond.MCBinsInfo, arg0: Set[int]) -> None
+     |  
+     |  clearOmissions(...)
+     |      clearOmissions(self: sigmond.MCBinsInfo) -> None
+     |  
+     |  getLatticeTimeExtent(...)
+     |      getLatticeTimeExtent(self: sigmond.MCBinsInfo) -> int
+     |  
+     |  getLatticeXExtent(...)
+     |      getLatticeXExtent(self: sigmond.MCBinsInfo) -> int
+     |  
+     |  getLatticeYExtent(...)
+     |      getLatticeYExtent(self: sigmond.MCBinsInfo) -> int
+     |  
+     |  getLatticeZExtent(...)
+     |      getLatticeZExtent(self: sigmond.MCBinsInfo) -> int
+     |  
+     |  getMCEnsembleInfo(...)
+     |      getMCEnsembleInfo(self: sigmond.MCBinsInfo) -> sigmond.MCEnsembleInfo
+     |  
+     |  getNumberOfBins(...)
+     |      getNumberOfBins(self: sigmond.MCBinsInfo) -> int
+     |  
+     |  getOmissions(...)
+     |      getOmissions(self: sigmond.MCBinsInfo) -> Set[int]
+     |  
+     |  getRebinFactor(...)
+     |      getRebinFactor(self: sigmond.MCBinsInfo) -> int
+     |  
+     |  setRebin(...)
+     |      setRebin(self: sigmond.MCBinsInfo, arg0: int) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.MCBinsInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __hash__ = None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCEnsembleInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCEnsembleInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.MCEnsembleInfo, arg0: sigmond.MCEnsembleInfo) -> bool
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.MCEnsembleInfo, arg0: str) -> None
+     |      
+     |      2. __init__(self: sigmond.MCEnsembleInfo, arg0: str, arg1: str) -> None
+     |      
+     |      3. __init__(self: sigmond.MCEnsembleInfo, arg0: str, arg1: int, arg2: int, arg3: int, arg4: int, arg5: int, arg6: int) -> None
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.MCEnsembleInfo, arg0: sigmond.MCEnsembleInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.MCEnsembleInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.MCEnsembleInfo) -> str
+     |  
+     |  getId(...)
+     |      getId(self: sigmond.MCEnsembleInfo) -> str
+     |  
+     |  getLatticeTimeExtent(...)
+     |      getLatticeTimeExtent(self: sigmond.MCEnsembleInfo) -> int
+     |  
+     |  getLatticeXExtent(...)
+     |      getLatticeXExtent(self: sigmond.MCEnsembleInfo) -> int
+     |  
+     |  getLatticeYExtent(...)
+     |      getLatticeYExtent(self: sigmond.MCEnsembleInfo) -> int
+     |  
+     |  getLatticeZExtent(...)
+     |      getLatticeZExtent(self: sigmond.MCEnsembleInfo) -> int
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.MCEnsembleInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __hash__ = None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCEstimate(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCEstimate
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.MCEstimate) -> None
+     |  
+     |  getAverageEstimate(...)
+     |      getAverageEstimate(self: sigmond.MCEstimate) -> float
+     |  
+     |  getFullEstimate(...)
+     |      getFullEstimate(self: sigmond.MCEstimate) -> float
+     |  
+     |  getRelativeError(...)
+     |      getRelativeError(self: sigmond.MCEstimate) -> float
+     |  
+     |  getSymmetricError(...)
+     |      getSymmetricError(self: sigmond.MCEstimate) -> float
+     |  
+     |  isStatisticallyZero(...)
+     |      isStatisticallyZero(self: sigmond.MCEstimate) -> bool
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCObsGetHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCObsGetHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.MCObsGetHandler, arg0: sigmond.XMLHandler, arg1: sigmond.MCBinsInfo, arg2: sigmond.MCSamplingInfo) -> None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCObsHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCObsHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.MCObsHandler, arg0: sigmond.MCObsGetHandler, arg1: bool) -> None
+     |  
+     |  clearData(...)
+     |      clearData(self: sigmond.MCObsHandler) -> None
+     |  
+     |  clearSamplings(...)
+     |      clearSamplings(self: sigmond.MCObsHandler) -> None
+     |  
+     |  eraseData(...)
+     |      eraseData(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> None
+     |  
+     |  eraseSamplings(...)
+     |      eraseSamplings(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> None
+     |  
+     |  getBin(...)
+     |      getBin(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo, arg1: int) -> float
+     |  
+     |  getBins(...)
+     |      getBins(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> sigmond.RVector
+     |  
+     |  getCurrentSamplingValue(...)
+     |      getCurrentSamplingValue(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> float
+     |  
+     |  getEstimate(...)
+     |      getEstimate(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> sigmond.MCEstimate
+     |  
+     |  getFullAndSamplingValues(...)
+     |      getFullAndSamplingValues(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo, arg1: sigmond.SamplingMode) -> sigmond.RVector
+     |  
+     |  isSamplingEnd(...)
+     |      isSamplingEnd(self: sigmond.MCObsHandler) -> bool
+     |  
+     |  putBins(...)
+     |      putBins(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo, arg1: sigmond.RVector) -> sigmond.RVector
+     |  
+     |  putCurrentSamplingValue(...)
+     |      putCurrentSamplingValue(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo, arg1: float, arg2: bool) -> None
+     |  
+     |  queryBins(...)
+     |      queryBins(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> bool
+     |  
+     |  queryFullAndSamplings(...)
+     |      queryFullAndSamplings(self: sigmond.MCObsHandler, arg0: sigmond.MCObsInfo) -> bool
+     |  
+     |  setSamplingBegin(...)
+     |      setSamplingBegin(self: sigmond.MCObsHandler) -> sigmond.MCObsHandler
+     |  
+     |  setSamplingNext(...)
+     |      setSamplingNext(self: sigmond.MCObsHandler) -> sigmond.MCObsHandler
+     |  
+     |  writeBinsToFile(...)
+     |      writeBinsToFile(self: sigmond.MCObsHandler, arg0: Set[sigmond.MCObsInfo], arg1: str, arg2: sigmond.XMLHandler, arg3: WriteMode, arg4: str) -> None
+     |  
+     |  writeSamplingValuesToFile(...)
+     |      writeSamplingValuesToFile(self: sigmond.MCObsHandler, arg0: Set[sigmond.MCObsInfo], arg1: str, arg2: sigmond.XMLHandler, arg3: WriteMode, arg4: str) -> None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCObsInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCObsInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.MCObsInfo, arg0: sigmond.MCObsInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.MCObsInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.MCObsInfo, arg0: OperatorInfo, arg1: sigmond.ComplexArg) -> None
+     |      
+     |      2. __init__(self: sigmond.MCObsInfo, arg0: OperatorInfo, arg1: OperatorInfo, arg2: int, arg3: bool, arg4: sigmond.ComplexArg, arg5: bool) -> None
+     |      
+     |      3. __init__(self: sigmond.MCObsInfo, arg0: CorrelatorAtTimeInfo, arg1: sigmond.ComplexArg) -> None
+     |      
+     |      4. __init__(self: sigmond.MCObsInfo, arg0: CorrelatorInfo, arg1: int, arg2: bool, arg3: sigmond.ComplexArg, arg4: bool) -> None
+     |      
+     |      5. __init__(self: sigmond.MCObsInfo, arg0: str, arg1: int, arg2: bool, arg3: sigmond.ComplexArg) -> None
+     |      
+     |      6. __init__(self: sigmond.MCObsInfo, arg0: str, arg1: int) -> None
+     |      
+     |      7. __init__(self: sigmond.MCObsInfo, arg0: XMLHandler) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.MCObsInfo, arg0: sigmond.MCObsInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.MCObsInfo, arg0: sigmond.MCObsInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.MCObsInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.MCObsInfo) -> str
+     |  
+     |  getCorrelatorAtTimeInfo(...)
+     |      getCorrelatorAtTimeInfo(self: sigmond.MCObsInfo) -> CorrelatorAtTimeInfo
+     |  
+     |  getCorrelatorInfo(...)
+     |      getCorrelatorInfo(self: sigmond.MCObsInfo) -> CorrelatorInfo
+     |  
+     |  getCorrelatorSinkInfo(...)
+     |      getCorrelatorSinkInfo(self: sigmond.MCObsInfo) -> OperatorInfo
+     |  
+     |  getCorrelatorSourceInfo(...)
+     |      getCorrelatorSourceInfo(self: sigmond.MCObsInfo) -> OperatorInfo
+     |  
+     |  getCorrelatorTimeIndex(...)
+     |      getCorrelatorTimeIndex(self: sigmond.MCObsInfo) -> int
+     |  
+     |  getObsIndex(...)
+     |      getObsIndex(self: sigmond.MCObsInfo) -> int
+     |  
+     |  getObsName(...)
+     |      getObsName(self: sigmond.MCObsInfo) -> str
+     |  
+     |  getVEVInfo(...)
+     |      getVEVInfo(self: sigmond.MCObsInfo) -> OperatorInfo
+     |  
+     |  isBasicLapH(...)
+     |      isBasicLapH(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isCorrelatorAtTime(...)
+     |      isCorrelatorAtTime(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isGenIrrep(...)
+     |      isGenIrrep(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isHermitianCorrelatorAtTime(...)
+     |      isHermitianCorrelatorAtTime(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isImaginaryPart(...)
+     |      isImaginaryPart(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isNonSimple(...)
+     |      isNonSimple(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isPrimary(...)
+     |      isPrimary(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isRealPart(...)
+     |      isRealPart(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isSecondary(...)
+     |      isSecondary(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isSimple(...)
+     |      isSimple(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isVEV(...)
+     |      isVEV(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  isVacuum(...)
+     |      isVacuum(self: sigmond.MCObsInfo) -> bool
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.MCObsInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MCSamplingInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MCSamplingInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.MCSamplingInfo, arg0: sigmond.MCSamplingInfo) -> bool
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.MCSamplingInfo) -> None
+     |      
+     |      2. __init__(self: sigmond.MCSamplingInfo, arg0: int, arg1: int, arg2: int) -> None
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.MCSamplingInfo, arg0: sigmond.MCSamplingInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.MCSamplingInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.MCSamplingInfo) -> str
+     |  
+     |  getNumberOfReSamplings(...)
+     |      getNumberOfReSamplings(self: sigmond.MCSamplingInfo, arg0: sigmond.MCBinsInfo) -> int
+     |  
+     |  getRNGSeed(...)
+     |      getRNGSeed(self: sigmond.MCSamplingInfo) -> int
+     |  
+     |  getSamplingMode(...)
+     |      getSamplingMode(self: sigmond.MCSamplingInfo) -> sigmond.SamplingMode
+     |  
+     |  getSkipValue(...)
+     |      getSkipValue(self: sigmond.MCSamplingInfo) -> int
+     |  
+     |  isBootstrapMode(...)
+     |      isBootstrapMode(self: sigmond.MCSamplingInfo) -> bool
+     |  
+     |  isJackknifeMode(...)
+     |      isJackknifeMode(self: sigmond.MCSamplingInfo) -> bool
+     |  
+     |  setToBootstrapMode(...)
+     |      setToBootstrapMode(self: sigmond.MCSamplingInfo, arg0: sigmond.Bootstrapper) -> None
+     |  
+     |  setToJackknifeMode(...)
+     |      setToJackknifeMode(self: sigmond.MCSamplingInfo) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.MCSamplingInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  __hash__ = None
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class MinimizerInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      MinimizerInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.MinimizerInfo) -> None
+     |      
+     |      2. __init__(self: sigmond.MinimizerInfo, arg0: str, arg1: float, arg2: float, arg3: int, arg4: str) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.MinimizerInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class Momentum(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      Momentum
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.Momentum, arg0: sigmond.Momentum) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.Momentum) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.Momentum, arg0: int, arg1: int, arg2: int) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.Momentum, arg0: sigmond.Momentum) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.Momentum, arg0: sigmond.Momentum) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.Momentum) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.Momentum) -> str
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |  
+     |  x
+     |  
+     |  y
+     |  
+     |  z
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class OpKind(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      OpKind
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: object, other: object) -> bool
+     |  
+     |  __getstate__(...)
+     |      __getstate__(self: object) -> int
+     |  
+     |  __hash__(...)
+     |      __hash__(self: object) -> int
+     |  
+     |  __index__(...)
+     |      __index__(self: sigmond.OpKind) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.OpKind, value: int) -> None
+     |  
+     |  __int__(...)
+     |      __int__(self: sigmond.OpKind) -> int
+     |  
+     |  __ne__(...)
+     |      __ne__(self: object, other: object) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: object) -> str
+     |  
+     |  __setstate__(...)
+     |      __setstate__(self: sigmond.OpKind, state: int) -> None
+     |  
+     |  __str__ = name(...)
+     |      name(self: handle) -> str
+     |  
+     |  ----------------------------------------------------------------------
+     |  Readonly properties defined here:
+     |  
+     |  __members__
+     |  
+     |  name
+     |      name(self: handle) -> str
+     |  
+     |  value
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  BasicLapH = <OpKind.BasicLapH: 0>
+     |  
+     |  GenIrrep = <OpKind.GenIrrep: 1>
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class OperatorInfo(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      OperatorInfo
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: sigmond.OperatorInfo, arg0: sigmond.OperatorInfo) -> bool
+     |  
+     |  __hash__(...)
+     |      __hash__(self: sigmond.OperatorInfo) -> int
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.OperatorInfo, arg0: str, arg1: sigmond.OpKind) -> None
+     |      
+     |      2. __init__(self: sigmond.OperatorInfo, arg0: BasicLapHOperatorInfo) -> None
+     |      
+     |      3. __init__(self: sigmond.OperatorInfo, arg0: GenIrrepOperatorInfo) -> None
+     |  
+     |  __lt__(...)
+     |      __lt__(self: sigmond.OperatorInfo, arg0: sigmond.OperatorInfo) -> bool
+     |  
+     |  __ne__(...)
+     |      __ne__(self: sigmond.OperatorInfo, arg0: sigmond.OperatorInfo) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: sigmond.OperatorInfo) -> str
+     |  
+     |  __str__(...)
+     |      __str__(self: sigmond.OperatorInfo) -> str
+     |  
+     |  getBasicLapH(...)
+     |      getBasicLapH(self: sigmond.OperatorInfo) -> BasicLapHOperatorInfo
+     |  
+     |  getGenIrrep(...)
+     |      getGenIrrep(self: sigmond.OperatorInfo) -> GenIrrepOperatorInfo
+     |  
+     |  isBackwards(...)
+     |      isBackwards(self: sigmond.OperatorInfo) -> bool
+     |  
+     |  isBasicLapH(...)
+     |      isBasicLapH(self: sigmond.OperatorInfo) -> bool
+     |  
+     |  isGenIrrep(...)
+     |      isGenIrrep(self: sigmond.OperatorInfo) -> bool
+     |  
+     |  long_xml(...)
+     |      long_xml(self: sigmond.OperatorInfo) -> object
+     |  
+     |  op_str(...)
+     |      op_str(self: sigmond.OperatorInfo) -> str
+     |  
+     |  setBackwards(...)
+     |      setBackwards(self: sigmond.OperatorInfo) -> None
+     |  
+     |  setForwards(...)
+     |      setForwards(self: sigmond.OperatorInfo) -> None
+     |  
+     |  xml(...)
+     |      xml(self: sigmond.OperatorInfo) -> object
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class RVector(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      RVector
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.RVector) -> None
+     |      
+     |      2. __init__(self: sigmond.RVector, arg0: List[float]) -> None
+     |  
+     |  array(...)
+     |      array(self: sigmond.RVector) -> List[float]
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class SamplingMode(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      SamplingMode
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: object, other: object) -> bool
+     |  
+     |  __getstate__(...)
+     |      __getstate__(self: object) -> int
+     |  
+     |  __hash__(...)
+     |      __hash__(self: object) -> int
+     |  
+     |  __index__(...)
+     |      __index__(self: sigmond.SamplingMode) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.SamplingMode, value: int) -> None
+     |  
+     |  __int__(...)
+     |      __int__(self: sigmond.SamplingMode) -> int
+     |  
+     |  __ne__(...)
+     |      __ne__(self: object, other: object) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: object) -> str
+     |  
+     |  __setstate__(...)
+     |      __setstate__(self: sigmond.SamplingMode, state: int) -> None
+     |  
+     |  __str__ = name(...)
+     |      __str__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __str__(self: sigmond.SamplingMode) -> str
+     |      
+     |      2. __str__(self: handle) -> str
+     |  
+     |  name(...)
+     |      __str__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __str__(self: sigmond.SamplingMode) -> str
+     |      
+     |      2. __str__(self: handle) -> str
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods defined here:
+     |  
+     |  create(...) from builtins.PyCapsule
+     |      create(arg0: str) -> sigmond.SamplingMode
+     |  
+     |  ----------------------------------------------------------------------
+     |  Readonly properties defined here:
+     |  
+     |  __members__
+     |  
+     |  value
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  Bootstrap = <SamplingMode.Bootstrap: 1>
+     |  
+     |  Jackknife = <SamplingMode.Jackknife: 0>
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class SamplingsGetHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      SamplingsGetHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.SamplingsGetHandler, arg0: sigmond.MCBinsInfo, arg1: sigmond.MCSamplingInfo, arg2: Set[str], arg3: bool) -> None
+     |      
+     |      2. __init__(self: sigmond.SamplingsGetHandler, arg0: sigmond.MCBinsInfo, arg1: sigmond.MCSamplingInfo, arg2: Set[str]) -> None
+     |  
+     |  getFileNames(...)
+     |      getFileNames(self: sigmond.SamplingsGetHandler) -> Set[str]
+     |  
+     |  getKeys(...)
+     |      getKeys(self: sigmond.SamplingsGetHandler) -> Set[sigmond.MCObsInfo]
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class WriteMode(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      WriteMode
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __eq__(...)
+     |      __eq__(self: object, other: object) -> bool
+     |  
+     |  __getstate__(...)
+     |      __getstate__(self: object) -> int
+     |  
+     |  __hash__(...)
+     |      __hash__(self: object) -> int
+     |  
+     |  __index__(...)
+     |      __index__(self: sigmond.WriteMode) -> int
+     |  
+     |  __init__(...)
+     |      __init__(self: sigmond.WriteMode, value: int) -> None
+     |  
+     |  __int__(...)
+     |      __int__(self: sigmond.WriteMode) -> int
+     |  
+     |  __ne__(...)
+     |      __ne__(self: object, other: object) -> bool
+     |  
+     |  __repr__(...)
+     |      __repr__(self: object) -> str
+     |  
+     |  __setstate__(...)
+     |      __setstate__(self: sigmond.WriteMode, state: int) -> None
+     |  
+     |  __str__ = name(...)
+     |      __str__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __str__(self: sigmond.WriteMode) -> str
+     |      
+     |      2. __str__(self: handle) -> str
+     |  
+     |  name(...)
+     |      __str__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __str__(self: sigmond.WriteMode) -> str
+     |      
+     |      2. __str__(self: handle) -> str
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods defined here:
+     |  
+     |  create(...) from builtins.PyCapsule
+     |      create(arg0: str) -> sigmond.WriteMode
+     |  
+     |  ----------------------------------------------------------------------
+     |  Readonly properties defined here:
+     |  
+     |  __members__
+     |  
+     |  value
+     |  
+     |  ----------------------------------------------------------------------
+     |  Data and other attributes defined here:
+     |  
+     |  Overwrite = <WriteMode.Overwrite: 2>
+     |  
+     |  Protect = <WriteMode.Protect: 0>
+     |  
+     |  Update = <WriteMode.Update: 1>
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+    
+    class XMLHandler(pybind11_builtins.pybind11_object)
+     |  Method resolution order:
+     |      XMLHandler
+     |      pybind11_builtins.pybind11_object
+     |      builtins.object
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(...)
+     |      __init__(*args, **kwargs)
+     |      Overloaded function.
+     |      
+     |      1. __init__(self: sigmond.XMLHandler) -> None
+     |      
+     |      2. __init__(self: sigmond.XMLHandler, arg0: str, arg1: str) -> None
+     |  
+     |  set_from_string(...)
+     |      set_from_string(self: sigmond.XMLHandler, arg0: str) -> sigmond.XMLHandler
+     |  
+     |  ----------------------------------------------------------------------
+     |  Static methods inherited from pybind11_builtins.pybind11_object:
+     |  
+     |  __new__(*args, **kwargs) from pybind11_builtins.pybind11_type
+     |      Create and return a new object.  See help(type) for accurate signature.
+
+FUNCTIONS
+    doBoostBySamplings(...) method of builtins.PyCapsule instance
+        doBoostBySamplings(arg0: MCObsHandler, arg1: MCObsInfo, arg2: float, arg3: MCObsInfo) -> None
+    
+    doLinearSuperpositionBySamplings(...) method of builtins.PyCapsule instance
+        doLinearSuperpositionBySamplings(arg0: MCObsHandler, arg1: List[MCObsInfo], arg2: List[float], arg3: MCObsInfo) -> None
+    
+    doRatioBySamplings(...) method of builtins.PyCapsule instance
+        doRatioBySamplings(arg0: MCObsHandler, arg1: MCObsInfo, arg2: MCObsInfo, arg3: MCObsInfo) -> None
+    
+    getCorrelatorEstimates(...) method of builtins.PyCapsule instance
+        getCorrelatorEstimates(arg0: MCObsHandler, arg1: CorrelatorInfo, arg2: bool, arg3: bool, arg4: ComplexArg, arg5: SamplingMode) -> Dict[float, MCEstimate]
+    
+    getEffectiveEnergy(...) method of builtins.PyCapsule instance
+        getEffectiveEnergy(arg0: MCObsHandler, arg1: CorrelatorInfo, arg2: bool, arg3: bool, arg4: ComplexArg, arg5: SamplingMode, arg6: int, arg7: int, arg8: float) -> Dict[float, MCEstimate]
+    
+    getFileID(...) method of builtins.PyCapsule instance
+        getFileID(arg0: str) -> FileType
+    
+    getOperatorBasis(...) method of builtins.PyCapsule instance
+        getOperatorBasis(arg0: str) -> Set[OperatorInfo]
+
+FILE
+    /home/sarahski/.local/lib/python3.10/site-packages/sigmond.cpython-310-x86_64-linux-gnu.so
+
+
