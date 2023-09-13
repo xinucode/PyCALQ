@@ -7,4 +7,6 @@
 - Stability plots, pivot classes, and Data handling?
 - Jo: start analyzing data for NN partial waves analysis, reproduce phase shift and spectrum plot.
 - Andre has provided data, so lets recreate the plots.  
-  -> S-wave analysis start to reproduce. Andre has stability plots produced. 
+  -> S-wave analysis start to reproduce. Andre has stability plots produced.
+
+  
