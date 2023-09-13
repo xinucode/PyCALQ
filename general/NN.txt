@@ -1,0 +1,7 @@
+Previous work on NN Partial-wave scattering was done in Berkowitz et al. arXiv:1508.00886v2
+Use Luscher formalism to relate energy levels in a finite periodic volume to the infinite volume scattering phase shifts. 
+- NN have recently limited to S-wave interactions and bound-states.
+- Berkowitz et al presented calculation for higher partial wave scattering in NN. They computed S,P,D, and F partial waves in both isosinglet and isotripley channels using NN generalization [Briceno 2013] of Luschers formalism. 
+Done at SU(3) mpi~ 800 symmetric point.
+They ignored higher partial waves contributing to given cubic irrep, we want to include these. They noted that partial wave mixing needs to be investigated at these energies. They gave evidence that assumption is valid tho.
+- Main work was improved two-nucleon interpolating fields and calculating scattering shifts coupling to l=0, l=4, l=6.
