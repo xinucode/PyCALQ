@@ -1,4 +1,4 @@
-# Meeting 09/13{#Meetings}
+# Meeting 09/13
 - Amy prefers that their is no .YML files, reading in hdf5 files is preffered. 
 - Arjun: Understand how h5py files work.
 - Look at Andre's files to get a general idea of how it works, and how to adapt to methods for Jupyter notebook.
