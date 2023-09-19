@@ -5,7 +5,17 @@
 - 2. Hdf5 files, look at constructing them and especially careful about closing them when using them, can lead to corruption. 
 - Sarah is generally working on Sigmond_py_bindings. Emphasized these are not necessarily for our code, since we want to make it all on Python and fast, but might come in handy.
 - Handler class, still a TODO. 
-- How do we best save results fo reach file? Include a directory where ensembles are kept, then save an analysis run in a parent directory. Use pickle files to save in this parent directory, including a common structure for all analysis. TODO 
+- How do we best save results fo reach file? Include a directory where ensembles are kept, then save an analysis run in a parent directory. Use pickle files to save in this parent directory, including a common structure for all analysis. TODO
+
+## Sarah's todo list
+- Understand Pickle
+- Make simple python classes that I’ll think be useful for everyone and I will definitly use:
+  - Config handler
+  - Data Get Handler
+  - Project Directory Handler
+- Investigate how to install sigmond with pip
+- Begin setting up sigmond tasks with pybindings
+
 
 # Meeting 09/13 - Amy, Arjun, Jo
 - 1. Amy prefers that their is no .YML files, reading in hdf5 files is preffered. 
