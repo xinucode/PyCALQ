@@ -7,6 +7,12 @@
 - Handler class, still a TODO. 
 - How do we best save results fo reach file? Include a directory where ensembles are kept, then save an analysis run in a parent directory. Use pickle files to save in this parent directory, including a common structure for all analysis. TODO
 
+## Joseph's todo list
+- Understand Andre's code to reproduce NN scattering analysis
+- Upload Luscher code for single-channel scattering analysis, and change it for more general methods.
+- Checkout Data HANDLER Operations
+- FAIR data metakeys
+
 ## Sarah's todo list
 - Understand Pickle
 - Make simple python classes that I’ll think be useful for everyone and I will definitly use:
