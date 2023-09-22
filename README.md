@@ -15,3 +15,33 @@ Questions
 - Is h5py as output to get LQCD data the best way? (down the road)
 
 Ideas
+
+
+Sample usage of proposed run setup:
+
+```
+(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py -h
+usage: run.py [-h] general_configs task_configs [task_configs ...]
+
+positional arguments:
+  general_configs  general configuration file
+  task_configs     task(s) configuration file(s)
+
+options:
+  -h, --help       show this help message and exit
+(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py test test
+Hello World
+general_configs: test
+task_configs: ['test']
+(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> ipython
+Python 3.8.5 (default, Sep  3 2020, 21:29:08) [MSC v.1916 64 bit (AMD64)]
+Type 'copyright', 'credits' or 'license' for more information
+IPython 8.12.0 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: import run
+
+In [2]: run.LuscherSchmuscher( "test", "test").run()
+Hello World
+general_configs: test
+task_configs: test
+```
