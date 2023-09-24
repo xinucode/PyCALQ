@@ -2,6 +2,9 @@
 ##                 Date: 08/01/2023
 ##              D250 LQCD Data Analysis: Sigma-Pi Scattering in m+pi = 200 MeV
 ##          Purpose: Resonance analysis for L(1405), this is single-scattering channel 
+#           Note: Bootstrapping is done using minimizing, so takes a while.
+#                I use the function to save the data, only 100 of the 800.
+#                    Next, need parallelization or faster minimization.
 ############################################################################################
 ##      Required packages
 import cmath                    #math library (complex)
