@@ -10,7 +10,14 @@
 -  Pickle files are useful for saving class objects to memory.
 -  Comends on luscher
 
-
+## Sarah's todo list
+- review joseph's code and make comments maybe
+- Begin setting up sigmond tasks with pybindings -> view_data
+- Make simple python classes that I’ll think be useful for everyone and I will definitly use:
+  - test config handler 
+  - Data Get Handler
+  - Project Directory Handler
+- Investigate how to install sigmond with pip
 
 # Meeting 09/19 10 AM - Jo and Sarah
 - Sarah had questions/comments about last weeks meeting notes
