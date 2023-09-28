@@ -1,3 +1,4 @@
-ensemble: c103
-channel: isosinglet_nn
-nbins: 1490
+general:
+    ensemble: c103
+    channel: isosinglet_nn
+    nbins: 1490
