@@ -1,0 +1,100 @@
+############################################################################################
+##                 Date: 10/01/2023
+##          
+##          Purpose: Read HDF5 Data for LQCD
+#           Reads Lattice Size from input, and file path to hdf5
+#           Assume HDF5 has irreps with data in format
+#           PSQ#,IRREP, LEVEL
+#           NEEDS: to be generalized, ASAP
+############################################################################################
+##      Required packages
+import cmath                    #math library (complex)
+import csv                      # read csv files
+import h5py as h5               # library to open lattice data
+import math                     # math library, mostly use it for math.pi, math.pow()
+import matplotlib.pyplot as plt #plotting library            
+import numpy as np              #basic functions, linear algebra, etc. 
+import random
+import scipy.special as sp      #special functions
+import scipy.integrate as integrate #needed to do numerical integration, alt?
+##
+from matplotlib.lines import Line2D  # Import Line2D for custom legend handles
+from tqdm import tqdm  # Import the tqdm library
+from scipy import optimize,integrate
+from scipy.optimize import fsolve,minimize
+from scipy.integrate import quad
+from zeta import Z
+############################################################################################
+# first a class to access the h5py data
+class H5Data:
+    def __init__(self, file_path,L):
+        self.file_path = file_path
+        self.data = None  # You can initialize data here if needed
+        self.L = L
+
+    def load_data(self):
+        # Open the H5py file and load the data
+        self.data = h5.File(self.file_path)
+    
+    def single_hadron_data(self,term):
+        if self.data is None:
+            self.load_data()  # Load data if not already loaded
+        # term is a key for h5py files, can be accessed through .keys()  
+        # single hadron has hadrons
+        # L (Lambda), N (Nucleon), S (sigma), X (?), k (kaon), pi (pion)
+        return self.data.get('single_hadrons')[term][:]
+    
+    # need to change, [0] data is the average, rest is bootstrap
+    def energy_data(self,PSQ,Irrep,label): 
+        if self.data is None:
+            self.load_data()
+        # PSQ can be PSQ0,1,2,3
+        # Irrep is the FV irrep 'G1u',...
+        return self.data.get(PSQ)[Irrep].get(label)[:]
+    
+    def pi_masses(self):
+        if self.data is None:
+            self.load_data()
+        # the masses required for calculation of reduced L
+        mpi = self.single_hadron_data('pi(0)').tolist() #ref is in units of mpi
+        return mpi
+    
+    def sigma_pi_ref_masses(self):
+        if self.data is None:
+            self.load_data()
+        # the masses required for calculations including SigmaPi
+        mpi = self.single_hadron_data('pi(0)_ref').tolist() #ref is in units of mpi
+        mS = self.single_hadron_data('S(0)_ref').tolist() #ref is in units of mpi
+        return mpi, mS
+    
+    def sigma_pi_data(self):
+        if self.data is None:
+            self.load_data()
+        # output the energy values needed, _ref means its E/mpi
+        E1 = self.energy_data('PSQ0','G1u','ecm_0_ref').tolist()
+        E2 = self.energy_data('PSQ1','G1','ecm_1_ref').tolist()
+        E3 = self.energy_data('PSQ2','G','ecm_1_ref').tolist()
+        E4 = self.energy_data('PSQ3','G','ecm_1_ref').tolist()
+        # combine them for energy_data
+        energy_data = [E1,E2,E3,E4]
+        return energy_data 
+    
+    def sigma_pi_boot_data(self):
+        if self.data is None:
+            self.load_data()
+        # output the energy values needed, _ref means its E/mpi
+        E1 = self.energy_data('PSQ0','G1u','ecm_0_ref').tolist()[1:]
+        E2 = self.energy_data('PSQ1','G1','ecm_1_ref').tolist()[1:]
+        E3 = self.energy_data('PSQ2','G','ecm_1_ref').tolist()[1:]
+        E4 = self.energy_data('PSQ3','G','ecm_1_ref').tolist()[1:]
+        # combine them for energy_data
+        energy_data = [E1,E2,E3,E4]
+        return energy_data 
+    
+    def covariance_data(self):
+        if self.data is None:
+            self.load_data()
+        # covariance matrix of bootstrap samples
+        sp_data = np.array(self.sigma_pi_data())
+        return np.cov(sp_data[:,1:])
+
