@@ -1,5 +1,5 @@
 import argparse
-import luscher_schmuscher as ls
+import pycalq
 
 # this is the script that runs everything else
 
@@ -23,7 +23,7 @@ def pickup_configs():
 if __name__=="__main__":
     gen_configs, task_configs = pickup_configs()
     if task_configs:
-        this_channel = ls.LuscherSchmuscher(gen_configs, task_configs)
+        this_channel = pycalq.PyCALQ(gen_configs, task_configs)
     else:
-        this_channel = ls.LuscherSchmuscher(gen_configs)
+        this_channel = pycalq.PyCALQ(gen_configs)
     this_channel.run()

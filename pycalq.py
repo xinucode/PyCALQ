@@ -4,6 +4,8 @@ import general.config_handler as ch
 import fvspectrum.sigmond_view_corrs
 
 # Thanks to Drew and https://stackoverflow.com/a/48201163/191474
+#ends code when run logging.error(message) or logging.critical(message)
+# logging.warning(message) and logging.debug(message) won't end code but will output at certain verbosity settings
 class ExitOnExceptionHandler(logging.StreamHandler):
 
   def emit(self, record):
@@ -17,17 +19,20 @@ logging.basicConfig(format='%(levelname)s: %(message)s', handlers=[ExitOnExcepti
 DEFAULT_TASKS = { #manage default configurations
     "tasks":
         {
-            "view_corrs": None,
+            "preview_corrs": None,
             # "average":{}
         }
 }
-TASK_ORDER = ["view_corrs"] #manage order of tasks
+                    
+#manage order of tasks                                 
+TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#correlator analysis  
+              "single_channel_fit_mean?","single_channel_fit_err?","coupled_channel_fit"] #luscher qc
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
-    "view_corrs": fvspectrum.sigmond_view_corrs.SigmondViewCorrs
+    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondViewCorrs
 }
 
 
-class LuscherSchmuscher:
+class PyCALQ:
 
     def __init__( self, general_configs, task_configs = DEFAULT_TASKS ):
         self.general_configs = ch.ConfigHandler(general_configs).configs['general']
@@ -52,3 +57,5 @@ class LuscherSchmuscher:
                 logging.info(f"Beginning task: {task}...")
                 TASK_MAP[task](task, self.general_configs,self.task_configs[task])
                 logging.info(f"Task {task} completed.")
+
+
