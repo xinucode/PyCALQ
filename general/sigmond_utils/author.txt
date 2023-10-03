@@ -1,0 +1,15 @@
+#########################################################
+#                                                       #
+#  Code within this directory was written by            #
+#                                                       #
+#                     Dr. Andrew Hanlon,                #
+#                                                       #
+#  and the original code can be found in                #
+#                                                       #
+#    https://github.com/andrewhanlon/sigmond_scripts.   #
+#                                                       #
+#  We give him many thanks for allowing us to copy his  #
+#  code until we can configure pip for sigmond_scripts. #
+#                                                       #
+#########################################################
+
