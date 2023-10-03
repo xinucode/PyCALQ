@@ -1,4 +1,4 @@
-# pyCALC
+# pyCALQ
 Correlator Analysis and Luscher Quantization Condition.
 
 Full analysis chain of the finite volume spectrum from two-point correlators to phase-shifts and other infinite-volume observables using the Lüscher formalism
