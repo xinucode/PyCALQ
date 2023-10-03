@@ -3,16 +3,16 @@ import numpy as np
 import logging
 import general.sigmond_data_handling.data_handler as data_handler
 
-class ProjectInfo(NamedTuple):
-  project_dir: str
-  raw_data_dirs: list
-  ensembles_file: str
-  echo_xml: bool
-  bins_info: sigmond.MCBinsInfo
-  sampling_info: sigmond.MCSamplingInfo
-  data_files: data_handling.data_files.DataFiles
-  precompute: bool
-  latex_compiler: str
+# class ProjectInfo(NamedTuple):
+#   project_dir: str
+#   raw_data_dirs: list
+#   ensembles_file: str
+#   echo_xml: bool
+#   bins_info: sigmond.MCBinsInfo
+#   sampling_info: sigmond.MCSamplingInfo
+#   data_files: data_handling.data_files.DataFiles
+#   precompute: bool
+#   latex_compiler: str
 
 class SigmondViewCorrs:
 
@@ -22,7 +22,7 @@ class SigmondViewCorrs:
             logging.critical("No directory to view. Add 'raw_data_dirs' to 'view_data' task parameters.")
 
         raw_data_dirs = task_params.pop('raw_data_dirs',None)
-        if not raw_data_directory:
+        if not raw_data_dirs:
             logging.critical("No directory to view. Add 'raw_data_dirs' to 'view_data' task parameters.")
 
         #generate ensembles file?
