@@ -39,7 +39,9 @@ class PyCALQ:
         self.task_configs = ch.ConfigHandler(task_configs).configs['tasks']
         
         #perform checks on configs
-            #require a project directory?
+            #require a project directory? project_dir
+            # bins require reweighting? -> ensembles_file
+            # ensemble_info
 
             #make sure that there is only one of each task
             #make sure that the tasks that are dependent on eachother have those
@@ -54,8 +56,16 @@ class PyCALQ:
         #probably perform the tasks in an order that makes sense
         for task in TASK_ORDER:
             if task in self.task_configs.keys():
-                logging.info(f"Beginning task: {task}...")
-                TASK_MAP[task](task, self.general_configs,self.task_configs[task])
+                logging.info(f"Setting up task: {task}...")
+                this_task = TASK_MAP[task](task, self.general_configs,self.task_configs[task]) #initialize
+                logging.info(f"Task {task} set up.")
+
+                logging.info(f"Running task: {task}...")
+                this_task.run() #perform the task, produce the data
                 logging.info(f"Task {task} completed.")
+
+                logging.info(f"Plotting task: {task}...")
+                this_task.plot() #plot the results, have inputs to turn this on or off for a given task
+                logging.info(f"Task {task} plotted.")
 
 
