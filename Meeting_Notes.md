@@ -1,3 +1,19 @@
+# Meeting 10/03 10 AM
+- changed name to PyCALQ
+- Sarah has began incoorporating some of Drew's code, but still a work in progress
+- Jo is incoorporating Andre's code, but still a work in progress
+- Sarah is trying to finish "preview_corr" task as a first task
+- Jo is considering how to split his anaysis into 'tasks'
+- Jo has begun setting up a data_get_handler
+
+## Sarah to do
+- review joseph's code and make comments maybe
+- finish setting up sigmond tasks with pybindings -> view_data
+- Make simple python classes that I’ll think be useful for everyone and I will definitly use:
+  - Project Directory Handler
+  - add checks on config inputs in ConfigHandler
+- Investigate how to install sigmond with pip
+
 # Meeting 09/26 10 AM
 -  Set up Config handler for YML, XML, JSON.
 -  Run general config file, and info for specific file.
