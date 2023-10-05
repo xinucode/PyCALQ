@@ -20,7 +20,7 @@ class ProjectInfo(NamedTuple):
 class SigmondViewCorrs:
 
     #initialize
-    def __init__(self, task_name, general_params, task_params):
+    def __init__(self, task_name, general_params, task_params, log_dir):
         self.task_name = task_name
         if not task_params:
             logging.critical("No directory to view. Add 'raw_data_files' to 'view_data' task parameters.")
@@ -58,8 +58,8 @@ class SigmondViewCorrs:
 
         # self.data_handler = data_handler.DataHandler(project_info)
 
-    def run(self):
+    def run(self, data_dir, log_dir):
         pass
 
-    def plot(self):
+    def plot(self, plot_dir, log_dir):
         pass

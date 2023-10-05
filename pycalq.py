@@ -1,6 +1,7 @@
 import logging
 
 import general.config_handler as ch
+import general.project_directory as pd
 import fvspectrum.sigmond_view_corrs
 
 # Thanks to Drew and https://stackoverflow.com/a/48201163/191474
@@ -53,6 +54,8 @@ class PyCALQ:
         self.general_configs = self.general_configs_handler.configs['general']
         self.task_configs = self.task_configs_handler.configs['tasks']
 
+        self.proj_dir = pd.ProjectDirectoryHandler(self.general_configs['project_dir'])
+
     def run( self ):
         print("general_configs:", self.general_configs)
         print("task_configs:", self.task_configs)
@@ -63,15 +66,19 @@ class PyCALQ:
         for task in TASK_ORDER:
             if task in self.task_configs.keys():
                 logging.info(f"Setting up task: {task}...")
-                this_task = TASK_MAP[task](task, self.general_configs,self.task_configs[task]) #initialize
+                log_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "logs")
+                this_task = TASK_MAP[task](task, self.general_configs,self.task_configs[task], log_dir) #initialize
                 logging.info(f"Task {task} set up.")
 
                 logging.info(f"Running task: {task}...")
-                this_task.run() #perform the task, produce the data
+                data_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "data")
+                this_task.run(data_dir,log_dir) #perform the task, produce the data
                 logging.info(f"Task {task} completed.")
 
+                #probably add if parameter
                 logging.info(f"Plotting task: {task}...")
-                this_task.plot() #plot the results, have inputs to turn this on or off for a given task
+                plots_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "plots")
+                this_task.plot(plots_dir,log_dir) #plot the results, have inputs to turn this on or off for a given task
                 logging.info(f"Task {task} plotted.")
 
 
