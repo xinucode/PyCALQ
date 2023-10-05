@@ -31,22 +31,28 @@ TASK_MAP = { #manage which classes to use for each unique task -> change for sel
     "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondViewCorrs
 }
 
+#set required general parameters 
+#items in list must be str or {str: list of str}
+#we don't really want to go deeper than two levels
+REQUIRED_GENERAL_CONFIGS = [
+   'project_dir',
+   {'ensemble_info':['ensemble_id']},
+]
+
 
 class PyCALQ:
 
     def __init__( self, general_configs, task_configs = DEFAULT_TASKS ):
-        self.general_configs = ch.ConfigHandler(general_configs).configs['general']
-        self.task_configs = ch.ConfigHandler(task_configs).configs['tasks']
-        
-        #perform checks on configs
-            #require a project directory? project_dir
-            # bins require reweighting? -> ensembles_file
-            # ensemble_info
+        self.general_configs_handler = ch.ConfigHandler(general_configs)
+        self.task_configs_handler = ch.ConfigHandler(task_configs)
 
-            #make sure that there is only one of each task
-            #make sure that the tasks that are dependent on eachother have those
-                #tasks -> discuss what to do in that case
+        #perform checks on configs
+        self.general_configs_handler.check('general',REQUIRED_GENERAL_CONFIGS)
+        self.task_configs_handler.check('tasks',[])
         
+        self.general_configs = self.general_configs_handler.configs['general']
+        self.task_configs = self.task_configs_handler.configs['tasks']
+
     def run( self ):
         print("general_configs:", self.general_configs)
         print("task_configs:", self.task_configs)
