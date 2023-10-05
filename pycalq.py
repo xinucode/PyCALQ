@@ -67,18 +67,18 @@ class PyCALQ:
             if task in self.task_configs.keys():
                 logging.info(f"Setting up task: {task}...")
                 log_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "logs")
-                this_task = TASK_MAP[task](task, self.general_configs,self.task_configs[task], log_dir) #initialize
+                this_task = TASK_MAP[task](task, log_dir, self.general_configs,self.task_configs[task]) #initialize
                 logging.info(f"Task {task} set up.")
 
                 logging.info(f"Running task: {task}...")
                 data_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "data")
-                this_task.run(data_dir,log_dir) #perform the task, produce the data
+                this_task.run(data_dir) #perform the task, produce the data
                 logging.info(f"Task {task} completed.")
 
                 #probably add if parameter
                 logging.info(f"Plotting task: {task}...")
                 plots_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "plots")
-                this_task.plot(plots_dir,log_dir) #plot the results, have inputs to turn this on or off for a given task
+                this_task.plot(plots_dir) #plot the results, have inputs to turn this on or off for a given task
                 logging.info(f"Task {task} plotted.")
 
 
