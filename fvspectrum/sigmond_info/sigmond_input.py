@@ -9,9 +9,9 @@ import xml.etree.ElementTree as ET
 import copy
 import xml.dom.minidom as minidom
 
-import general.sigmond_info.sigmond_info
-import general.sigmond_info.fit_info
-import general.sigmond_utils.util as util
+import fvspectrum.sigmond_info.sigmond_info
+import fvspectrum.sigmond_info.fit_info
+import fvspectrum.sigmond_utils.util as util
 
 import sigmond
 
@@ -670,17 +670,17 @@ class SigmondInput:
 
                 # prior_width_multiplier = 10.0
                 conspiracy_fits = [
-                  general.sigmond_info.fit_info.FitModel.TimeForwardTwoExponential,
-                  general.sigmond_info.fit_info.FitModel.TimeForwardThreeExponential,
-                  general.sigmond_info.fit_info.FitModel.TimeForwardThreeDepExponential,
-                  general.sigmond_info.fit_info.FitModel.TimeForwardFourExponential,
+                  fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardTwoExponential,
+                  fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardThreeExponential,
+                  fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardThreeDepExponential,
+                  fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardFourExponential,
                 ]
                 if fit_info.model in conspiracy_fits:
                     ratio_name = f'TemporalCorrelatorFit/Model/SqrtGapTo{twothree[i]}Energy/'
                     fit_tag2.find(ratio_name+"Name").text=this_xml.find('Model/SqrtGapToSecondEnergy/Name').text
                     fit_tag2.find(ratio_name+"IDIndex").text=this_xml.find('Model/SqrtGapToSecondEnergy/IDIndex').text
 
-                if fit_info.model==general.sigmond_info.fit_info.FitModel.TimeForwardDoubleExpRatio1:
+                if fit_info.model==fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardDoubleExpRatio1:
                     
                     # prior_xml = ET.SubElement( this_xml, "Priors")
                     # prior_xml2 = ET.SubElement( prior_xml, "FirstEnergy")
@@ -709,7 +709,7 @@ class SigmondInput:
 #                         this_xml.append(ni_plot_tag)
 #                     fit_tag2.append(this_xml)
                     
-                if fit_info.model==general.sigmond_info.fit_info.FitModel.TimeForwardDoubleExpRatio1:
+                if fit_info.model==fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardDoubleExpRatio1:
                     # if (fit_info.is_tmin_vary or fit_info.is_tmax_vary):
                     #     ET.SubElement(this_xml, "Fixed")
 #                         this_xml.remove( this_xml.find("MinimumTimeSeparation") )
@@ -746,9 +746,9 @@ class SigmondInput:
                     ni_plot_tag.find('PlotFile').text = ni_plot_tag.find('PlotFile').text.replace(".agr",f"-{scat_fit_info.operator.compact_str}.agr")
                     this_xml.append(ni_plot_tag)
                 fit_tag2.append(this_xml)
-                if fit_info.model==general.sigmond_info.fit_info.FitModel.TimeForwardTwoExponential:
+                if fit_info.model==fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardTwoExponential:
                   break
-                if fit_info.model==general.sigmond_info.fit_info.FitModel.TimeForwardThreeDepExponential:
+                if fit_info.model==fvspectrum.sigmond_info.fit_info.FitModel.TimeForwardThreeDepExponential:
                   break
                         
         
@@ -909,12 +909,12 @@ class SigmondInput:
               ET.SubElement(opterm_tag, "Coefficient").text = improved_op[i+1]
 
 
-    if pivot_info.pivot_type is general.sigmond_info.sigmond_info.PivotType.SinglePivot:
+    if pivot_info.pivot_type is fvspectrum.sigmond_info.sigmond_info.PivotType.SinglePivot:
       ET.SubElement(pivot_init_tag, "NormTime").text = str(pivot_info.norm_time)
       ET.SubElement(pivot_init_tag, "MetricTime").text = str(pivot_info.metric_time)
       ET.SubElement(pivot_init_tag, "DiagonalizeTime").text = str(pivot_info.diagonalize_time)
       ET.SubElement(pivot_init_tag, "MinimumInverseConditionNumber").text = str(1./pivot_info.max_condition_number)
-    elif pivot_info.pivot_type is general.sigmond_info.sigmond_info.PivotType.RollingPivot:
+    elif pivot_info.pivot_type is fvspectrum.sigmond_info.sigmond_info.PivotType.RollingPivot:
       ET.SubElement(pivot_init_tag, "NormTime").text = str(pivot_info.norm_time)
       ET.SubElement(pivot_init_tag, "MetricTime").text = str(pivot_info.metric_time)
       ET.SubElement(pivot_init_tag, "ZMagSqTime").text = str(pivot_info.diagonalize_time)
@@ -1469,7 +1469,7 @@ class SigmondInput:
     self._addTask(xml)
 
   def writeToFile(self, file_name, observables,
-                  file_type=general.sigmond_info.sigmond_info.DataFormat.samplings, 
+                  file_type=fvspectrum.sigmond_info.sigmond_info.DataFormat.samplings, 
                   file_mode=sigmond.WriteMode.Overwrite, hdf5 = False):
     """Adds a 'WriteToFile' task to the SigmondInput object
 
@@ -1498,7 +1498,7 @@ class SigmondInput:
     self._addTask(xml)
 
   def writeCorrMatToFile(self, file_name, corrs,
-                  file_type=general.sigmond_info.sigmond_info.DataFormat.samplings, 
+                  file_type=fvspectrum.sigmond_info.sigmond_info.DataFormat.samplings, 
                   file_mode=sigmond.WriteMode.Overwrite, tmin=None, tmax=None):
     """Adds a 'WriteToFile' task to the SigmondInput object
 

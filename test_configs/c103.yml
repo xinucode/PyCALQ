@@ -1,4 +1,30 @@
 general:
-    ensemble: c103
+    # ensemble: c103
     channel: isosinglet_nn
-    nbins: 1490
+    project_dir: /latticeQCD/raid3/sarahski/lqcd/C103_R005/test_pycalq_project
+
+    # ensemble_info:
+    #   ensembles_file: /home/sarahski/latticeQCD/D200_analysis/ensembles.xml
+    ensemble_id: cls21_c103
+    # sampling_info:
+    #   mode: bootstrap
+    #   number_resampling: 300
+    # tweak_ensemble:
+    #   rebin: 5
+      #or
+    #   ensemble_id: cls21_c103
+    #   num_measurements: 
+    #   num_streams:
+    #   nx:
+    #   ny:
+    #   nz:
+    #   nt:
+      #or
+    #   ensemble_id: cls21_c103
+    #   num_measurements: 
+    #   num_streams:
+    #   ns:
+    #   nt:
+
+      
+

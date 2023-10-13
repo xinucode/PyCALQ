@@ -4,11 +4,11 @@ import logging
 from sortedcontainers import SortedSet
 from typing import NamedTuple
 
-import general.sigmond_utils.util as util
-import general.sigmond_operator_info.operator
-import general.sigmond_operator_info.channel
-import general.sigmond_info.sigmond_input
-import general.sigmond_data_handling.data_handler
+import fvspectrum.sigmond_utils.util as util
+import fvspectrum.sigmond_operator_info.operator
+import fvspectrum.sigmond_operator_info.channel
+import fvspectrum.sigmond_info.sigmond_input
+import fvspectrum.sigmond_data_handling.data_handler
 
 import sigmond
 

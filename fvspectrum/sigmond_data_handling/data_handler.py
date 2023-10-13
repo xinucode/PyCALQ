@@ -6,17 +6,17 @@ import logging
 from sortedcontainers import SortedSet
 import tqdm
 
-import general.sigmond_utils.util as util
-from general.sigmond_data_handling.data_files import DataFiles, FileInfo
-from general.sigmond_data_handling.correlator_data import CorrelatorData
-from general.sigmond_operator_info.operator import Operator
+import fvspectrum.sigmond_utils.util as util
+from fvspectrum.sigmond_data_handling.data_files import DataFiles, FileInfo
+from fvspectrum.sigmond_data_handling.correlator_data import CorrelatorData
+from fvspectrum.sigmond_operator_info.operator import Operator
 
 import sigmond
 
 class DataHandler(metaclass=util.Singleton):
   """ The all important Data Handler!  """
 
-  relative_datadir = ".sigmond/data"
+  relative_datadir = "1average_corrs/data"
 
   def __init__(self, project_info):
     self.project_info = project_info
@@ -51,6 +51,9 @@ class DataHandler(metaclass=util.Singleton):
   @property
   def data_files(self):
     return self.project_info.data_files
+  
+  # def raw_data_files(self):
+  #   return self.raw_data_files
   
   @property
   def precompute(self):
@@ -203,6 +206,7 @@ class DataHandler(metaclass=util.Singleton):
       for smp_file in tqdm.tqdm(data_files.sampling_files):
         self._raw_data += self._findSigmondData(smp_file, sigmond.FileType.Samplings)
 
+    self.raw_data_files = data_files
     logging.info("done")
 
   def findAveragedData(self):
@@ -268,63 +272,72 @@ class DataHandler(metaclass=util.Singleton):
 def _find_data_files(data_dir):
 
   logging.info(f"Searching '{data_dir}' for data...")
-  file_list_infos = dict()
-  bl_corr_files = set()
-  bl_vev_files = set()
-  bin_files = set()
-  smp_files = set()
-  for root, dirs, files in os.walk(data_dir, topdown=True):
-    for filename in files:
-      full_filename = os.path.join(root, filename)
-      roots = []
-      try:
-        with h5py.File(full_filename, 'r') as h5py_file:
-          if h5py_file['Info']['FIdentifier'][()].decode()=="Sigmond--SamplingsFile":
-            file_type = sigmond.FileType.Samplings
-          elif h5py_file['Info']['FIdentifier'][()].decode()=="Sigmond--BinsFile":
-            file_type = sigmond.FileType.Bins
-          roots = list(h5py_file.keys())
-          roots.remove("Info")
-      except OSError as err:
-        pass
-
-      if not roots: 
-        try:
-          file_type = sigmond.getFileID(full_filename)
-        except ValueError:
-          logging.warning(f"Invalid file '{full_filename}'")
-          continue
-
-      if file_type == sigmond.FileType.Correlator:
-        logging.info(f"Found BasicLaph Correlator file '{full_filename}'")
-        bl_corr_files.add(full_filename)
-      elif file_type == sigmond.FileType.VEV:
-        logging.info(f"Found BasicLaph VEV file '{full_filename}'")
-        bl_vev_files.add(full_filename)
-      elif file_type == sigmond.FileType.Bins:
-        logging.info(f"Found Bins file '{full_filename}'")
-        if roots:
-            for hroot in roots:
-                bin_files.add(f"{full_filename}[{hroot}]")
-        else:
-            bin_files.add(full_filename)
-      elif file_type == sigmond.FileType.Samplings:
-        logging.info(f"Found Samplings file '{full_filename}'")
-        if roots:
-            for hroot in roots:
-                smp_files.add(f"{full_filename}[{hroot}]")
-        else:
-            smp_files.add(full_filename)
-      else:
-        logging.error(f"Unrecognized filetype {file_type}")
-
+  
   data_files = DataFiles()
-  data_files.addCorrelatorFiles(*bl_corr_files)
-  data_files.addVEVFiles(*bl_vev_files)
-  data_files.addBinFiles(*bin_files)
-  data_files.addSamplingFiles(*smp_files)
+
+  if os.path.isdir(data_dir):
+    for root, dirs, files in os.walk(data_dir, topdown=True):
+      for filename in files:
+        full_filename = os.path.join(root, filename)
+        _find_data_file(full_filename, data_files)
+
+  elif os.path.isfile(data_dir):
+      _find_data_file(data_dir, data_files)
 
   if data_files.empty:
     logging.info(f"Found no data in '{data_dir}'")
 
   return data_files
+
+def _find_data_file(full_filename, data_files):
+  file_list_infos = dict()
+  bl_corr_files = set()
+  bl_vev_files = set()
+  bin_files = set()
+  smp_files = set()
+  roots = []
+  try:
+    with h5py.File(full_filename, 'r') as h5py_file:
+      if h5py_file['Info']['FIdentifier'][()].decode()=="Sigmond--SamplingsFile":
+        file_type = sigmond.FileType.Samplings
+      elif h5py_file['Info']['FIdentifier'][()].decode()=="Sigmond--BinsFile":
+        file_type = sigmond.FileType.Bins
+      roots = list(h5py_file.keys())
+      roots.remove("Info")
+  except OSError as err:
+    pass
+
+  if not roots: 
+    try:
+      file_type = sigmond.getFileID(full_filename)
+    except ValueError:
+      logging.warning(f"Invalid file '{full_filename}'")
+      return
+
+  if file_type == sigmond.FileType.Correlator:
+    logging.info(f"Found BasicLaph Correlator file '{full_filename}'")
+    bl_corr_files.add(full_filename)
+  elif file_type == sigmond.FileType.VEV:
+    logging.info(f"Found BasicLaph VEV file '{full_filename}'")
+    bl_vev_files.add(full_filename)
+  elif file_type == sigmond.FileType.Bins:
+    logging.info(f"Found Bins file '{full_filename}'")
+    if roots:
+        for hroot in roots:
+            bin_files.add(f"{full_filename}[{hroot}]")
+    else:
+        bin_files.add(full_filename)
+  elif file_type == sigmond.FileType.Samplings:
+    logging.info(f"Found Samplings file '{full_filename}'")
+    if roots:
+        for hroot in roots:
+            smp_files.add(f"{full_filename}[{hroot}]")
+    else:
+        smp_files.add(full_filename)
+  else:
+    logging.error(f"Unrecognized filetype {file_type}")
+
+  data_files.addCorrelatorFiles(*bl_corr_files)
+  data_files.addVEVFiles(*bl_vev_files)
+  data_files.addBinFiles(*bin_files)
+  data_files.addSamplingFiles(*smp_files)

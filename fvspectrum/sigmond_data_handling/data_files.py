@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import NamedTuple
 
 import sigmond
-import general.sigmond_utils.util as util
+import fvspectrum.sigmond_utils.util as util
 
 
 class FileInfo(NamedTuple):

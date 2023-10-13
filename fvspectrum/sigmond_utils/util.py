@@ -15,7 +15,7 @@ import h5py
 from sortedcontainers import SortedSet
 from aenum import MultiValueEnum
 
-import general.sigmond_operator_info.operator
+import fvspectrum.sigmond_operator_info.operator
 import sigmond
 
 

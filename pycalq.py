@@ -29,7 +29,7 @@ DEFAULT_TASKS = { #manage default configurations
 TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#correlator analysis  
               "single_channel_fit_mean?","single_channel_fit_err?","coupled_channel_fit"] #luscher qc
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
-    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondViewCorrs
+    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs
 }
 
 #set required general parameters 
@@ -37,7 +37,8 @@ TASK_MAP = { #manage which classes to use for each unique task -> change for sel
 #we don't really want to go deeper than two levels
 REQUIRED_GENERAL_CONFIGS = [
    'project_dir',
-   {'ensemble_info':['ensemble_id']},
+   'ensemble_id',
+#    {'ensemble_info':['ensemble_id']},
 ]
 
 
@@ -66,19 +67,17 @@ class PyCALQ:
         for task in TASK_ORDER:
             if task in self.task_configs.keys():
                 logging.info(f"Setting up task: {task}...")
-                log_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "logs")
-                this_task = TASK_MAP[task](task, log_dir, self.general_configs,self.task_configs[task]) #initialize
+                self.proj_dir.set_task(TASK_ORDER.index(task), task)
+                this_task = TASK_MAP[task](task, self.proj_dir, self.general_configs,self.task_configs[task]) #initialize
                 logging.info(f"Task {task} set up.")
 
                 logging.info(f"Running task: {task}...")
-                data_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "data")
-                this_task.run(data_dir) #perform the task, produce the data
+                this_task.run() #perform the task, produce the data
                 logging.info(f"Task {task} completed.")
 
                 #probably add if parameter
                 logging.info(f"Plotting task: {task}...")
-                plots_dir = self.proj_dir.task_subdir(TASK_ORDER.index(task), task, "plots")
-                this_task.plot(plots_dir) #plot the results, have inputs to turn this on or off for a given task
+                this_task.plot() #plot the results, have inputs to turn this on or off for a given task
                 logging.info(f"Task {task} plotted.")
 
 

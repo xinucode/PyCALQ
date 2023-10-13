@@ -3,9 +3,9 @@ import copy
 import itertools
 import logging
 
-from general.sigmond_data_handling.data_files import DataFiles, FileInfo
-from general.sigmond_operator_info.operator_set import OperatorSet
-from general.sigmond_operator_info.operator import Operator
+from fvspectrum.sigmond_data_handling.data_files import DataFiles, FileInfo
+from fvspectrum.sigmond_operator_info.operator_set import OperatorSet
+from fvspectrum.sigmond_operator_info.operator import Operator
 
 import sigmond
 
