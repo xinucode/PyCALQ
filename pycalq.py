@@ -29,7 +29,7 @@ DEFAULT_TASKS = { #manage default configurations
 TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#correlator analysis  
               "single_channel_fit_mean?","single_channel_fit_err?","coupled_channel_fit"] #luscher qc
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
-    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs
+    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
 }
 
 #set required general parameters 
@@ -58,9 +58,6 @@ class PyCALQ:
         self.proj_dir = pd.ProjectDirectoryHandler(self.general_configs['project_dir'])
 
     def run( self ):
-        print("general_configs:", self.general_configs)
-        print("task_configs:", self.task_configs)
-
         #output default input/default configurations somewhere in the project directory
 
         #probably perform the tasks in an order that makes sense

@@ -36,10 +36,10 @@ class SigmondPreviewCorrs:
         return os.path.join(self.proj_handler.data_dir(), f"{corr}_effenergy_estimates.csv")
     
     def corr_plot_file(self,corr, ptype):
-        return os.path.join(self.proj_handler.plot_dir(), f"{ptype}s", f"{corr}_correlator.{ptype}")
+        return os.path.join(self.proj_handler.plot_dir(f"{ptype}s"), f"{corr}_correlator.{ptype}")
 
     def effen_plot_file(self,corr, ptype):
-        return os.path.join(self.proj_handler.plot_dir(), f"{ptype}s", f"{corr}_effenergy.{ptype}")
+        return os.path.join(self.proj_handler.plot_dir(f"{ptype}s"), f"{corr}_effenergy.{ptype}")
     
     #initialize
     def __init__(self, task_name, proj_handler, general_params, task_params):
@@ -199,7 +199,7 @@ class SigmondPreviewCorrs:
         logging.info(f"Saving plots to directory {self.proj_handler.plot_dir()}...")
 
         #generate subdirectories
-        [pathlib.Path( os.path.join(self.proj_handler.plot_dir(), ptype)).mkdir(parents=True, exist_ok=True) for ptype in ["pdfs","pickles"]]
+        # [pathlib.Path( os.path.join(self.proj_handler.plot_dir(), ptype)).mkdir(parents=True, exist_ok=True) for ptype in ["pdfs","pickles"]]
 
         #set up fig object to reuse
         fig = plt.figure() #add inputs
