@@ -9,14 +9,13 @@ For NN analysis: There are 3 steps
   - single nucleon stability study
   - two-nucleon stability study
   - phase-shift analysis
-  - 
+  
 
 Questions
-- what is a data handler? I will look into that (Jo)
-- what does raw LQCD data look like, how is it handled? Comes in hdf5 files usually, so data handler has to know about keys ...
-- Is h5py as output to get LQCD data the best way? (down the road)
+- what is a data handler? 
+- Best tasks for both data handling and analysis
+- Exact steps for analyzing correlator data?
 
-Ideas
 
 
 Sample usage of proposed run setup:
