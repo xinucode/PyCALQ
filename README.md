@@ -9,16 +9,19 @@ For NN analysis: There are 3 steps
   - single nucleon stability study
   - two-nucleon stability study
   - phase-shift analysis
-  
 
 Questions
 - what is a data handler? 
 - Best tasks for both data handling and analysis
 - Exact steps for analyzing correlator data?
 
+## Setup
+```
+cd PyCALQ/
+python setup.py
+```
 
-
-Sample usage of proposed run setup:
+##Sample usage
 
 ```
 (base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py -h
@@ -30,40 +33,5 @@ options:
                         general configuration file
   -t TASKS [TASKS ...], --tasks TASKS [TASKS ...]
                         task(s) configuration file(s)
-(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py -g test
-Hello World
-general_configs: test
-task_configs: None
-(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py -g test -t test
-Hello World
-general_configs: test
-task_configs: ['test']
-(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py -g test -t test test2
-Hello World
-general_configs: test
-task_configs: ['test', 'test2']
-(base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> ipython
-Python 3.8.5 (default, Sep  3 2020, 21:29:08) [MSC v.1916 64 bit (AMD64)]
-Type 'copyright', 'credits' or 'license' for more information
-IPython 8.12.0 -- An enhanced Interactive Python. Type '?' for help.
-
-In [1]: import luscher
-
-In [2]: luscher.LuscherSchmusher( 'test' ).run()
----------------------------------------------------------------------------
-AttributeError                            Traceback (most recent call last)
-Cell In[2], line 1
-----> 1 luscher.LuscherSchmusher( 'test' ).run()
-
-AttributeError: module 'luscher' has no attribute 'LuscherSchmusher'
-
-In [3]: luscher.LuscherSchmuscher( 'test' ).run()
-Hello World
-general_configs: test
-task_configs: {}
-
-In [4]: luscher.LuscherSchmuscher( 'test', 'test' ).run()
-Hello World
-general_configs: test
-task_configs: test
 ```
+add more...
