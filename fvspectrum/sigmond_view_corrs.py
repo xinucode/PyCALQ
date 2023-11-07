@@ -6,9 +6,11 @@ import os
 import yaml
 import xml.etree.ElementTree as ET
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 import pathlib
 import pickle
+import shutil
 
 import sigmond
 import fvspectrum.sigmond_data_handling.data_handler as data_handler
@@ -63,7 +65,12 @@ class SigmondPreviewCorrs:
             logging.error("Ensembles file cannot be found. Please rerun 'setup.py'.")
         ensemble_file_path = os.path.join( proj_dir_path, "fvspectrum", "sigmond_utils", "ensembles.xml" )
 
+        self.latex = True
         plt.style.use(f'{proj_dir_path}/fvspectrum/spectrum_plotting_settings/spectrum.mplstyle')
+        if not shutil.which('latex'):
+            matplotlib.rcParams['text.usetex'] = False
+            logging.warning("Latex not found on system, please install latex to get nize looking matplotlib plots")
+            self.latex = False
         
         if not os.path.isfile( ensemble_file_path):
             logging.error("Ensembles file cannot be found. Please rerun 'setup.py'.")
@@ -235,7 +242,10 @@ class SigmondPreviewCorrs:
 
                     plt.clf()
                     plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[0], marker=psettings.markers[0] )
-                    plt.ylabel(r"$a_tE_{\textup{fit}}$")
+                    if self.latex:
+                        plt.ylabel(r"$a_tE_{\textup{fit}}$")
+                    else: 
+                        plt.ylabel(r"$a_tE_{fit}$")
                     plt.xlabel(r"$t/a_t$")
                     plt.figtext(text_x,text_y+0.1,f"snk: {str(op1)}")
                     plt.figtext(text_x,text_y,f"src: {str(op2)}")
