@@ -16,3 +16,4 @@ soupsieve==2.3.1
 tqdm==4.66.1
 uncertainties==3.1.7
 xmltodict
+pybind11
