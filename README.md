@@ -15,6 +15,10 @@ Questions
 - Best tasks for both data handling and analysis
 - Exact steps for analyzing correlator data?
 
+## Prerequisites
+
+[sigmond pybindings (pip branch)](https://github.com/andrewhanlon/sigmond/tree/pip)
+
 ## Setup
 ```
 cd PyCALQ/
@@ -22,7 +26,7 @@ pip install -r requirements.txt
 python setup.py
 ```
 
-##Sample usage
+## Sample usage
 
 ```
 (base) PS C:\cygwin64\home\sarah\lqcd\luscher-scmuscher> run.py -h
