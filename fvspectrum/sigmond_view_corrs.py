@@ -103,22 +103,16 @@ class SigmondPreviewCorrs:
         raw_data_files = _check_raw_data_files(raw_data_files, general_params['project_dir'])
 
         #check for ensembles file
-        try:
-            with open(".proj_dir_path.dat", "r") as proj_dir:
-                proj_dir_path = proj_dir.read().strip()
-        except FileNotFoundError as err:
-            logging.error("Ensembles file cannot be found. Please rerun 'setup.py'.")
-        ensemble_file_path = os.path.join( proj_dir_path, "fvspectrum", "sigmond_utils", "ensembles.xml" )
+        ensemble_file_path = os.path.join( os.path.dirname(__file__), "sigmond_utils", "ensembles.xml" )
+        if not os.path.isfile(ensemble_file_path):
+            logging.error("Ensembles file cannot be found.")
 
         self.latex = True
-        plt.style.use(f'{proj_dir_path}/fvspectrum/spectrum_plotting_settings/spectrum.mplstyle')
+        plt.style.use(os.path.join( os.path.dirname(__file__), "spectrum_plotting_settings", "spectrum.mplstyle" ))
         if not shutil.which('latex'):
             matplotlib.rcParams['text.usetex'] = False
-            logging.warning("Latex not found on system, please install latex to get nize looking matplotlib plots")
+            logging.warning("Latex not found on system, please install latex to get nice looking matplotlib plots.")
             self.latex = False
-        
-        if not os.path.isfile( ensemble_file_path):
-            logging.error("Ensembles file cannot be found. Please rerun 'setup.py'.")
 
         #check that ensemble_id is in ensembles file and if not print out options or instruct user to add the relevant info to ensembles.xml
         with open(ensemble_file_path, 'r') as f:

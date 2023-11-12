@@ -36,6 +36,9 @@ TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#corre
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
     "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
 }
+TASK_DOC = { #imports documentation from each task
+    "preview_corrs": fvspectrum.sigmond_view_corrs.doc,
+}
 
 #set required general parameters 
 #items in list must be str or {str: list of str}
