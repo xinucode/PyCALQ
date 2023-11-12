@@ -73,13 +73,23 @@ class PyCALQ:
                 this_task = TASK_MAP[task](task, self.proj_dir, self.general_configs,self.task_configs[task]) #initialize
                 logging.info(f"Task {task} set up.")
 
+                if 'info' in self.task_configs[task]:
+                   if self.task_configs[task]['info']:
+                      print(this_task.info)
+
                 logging.info(f"Running task: {task}...")
                 this_task.run() #perform the task, produce the data
                 logging.info(f"Task {task} completed.")
 
-                #probably add if parameter
+                #do not plot if "plot: False" is present in task yaml
+                if 'plot' in self.task_configs[task]:
+                   if not self.task_configs[task]['plot']:
+                      break
+                   
                 logging.info(f"Plotting task: {task}...")
-                this_task.plot() #plot the results, have inputs to turn this on or off for a given task
+                this_task.plot() 
                 logging.info(f"Task {task} plotted.")
+
+
 
 

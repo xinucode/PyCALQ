@@ -11,11 +11,49 @@ import matplotlib.pyplot as plt
 import pathlib
 import pickle
 import shutil
+import pylatex
 
 import sigmond
 import fvspectrum.sigmond_data_handling.data_handler as data_handler
 import fvspectrum.sigmond_data_handling.data_files
 import fvspectrum.spectrum_plotting_settings.settings as psettings
+import fvspectrum.sigmond_utils.util as utils
+
+doc = '''
+preview_corrs - a task a read in and estimate/plot any Lattice QCD temporal correlator data files given
+
+required inputs
+-------------
+general:
+  ensemble_id: cls21_c103
+  project_dir: /latticeQCD/raid3/sarahski/lqcd/C103_R005/test_pycalq_project
+preview_corrs:
+  raw_data_files:
+  - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
+
+optional inputs
+-------------
+general:
+  ensemble_id: cls21_c103
+  ensembles_file: /home/sarahski/latticeQCD/luscher-scmuscher/fvspectrum/sigmond_utils/ensembles.xml
+  project_dir: /latticeQCD/raid3/sarahski/lqcd/C103_R005/test_pycalq_project
+  sampling_info:
+    mode: Jackknife
+  tweak_ensemble:
+    omissions: []
+    rebin: 1
+preview_corrs:
+  create_pdfs: true
+  create_pickles: true
+  create_summary: true
+  figheight: 6
+  figwidth: 8
+  info: true
+  plot: true
+  raw_data_files:
+  - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
+  write_data: true
+'''
 
 class ProjectInfo(NamedTuple):
   project_dir: str
@@ -28,8 +66,11 @@ class ProjectInfo(NamedTuple):
   precompute: bool
   latex_compiler: str
       
-
 class SigmondPreviewCorrs:
+
+    @property
+    def info(self):
+        return doc
 
     def corr_data_file(self,corr):
         return os.path.join(self.proj_handler.data_dir(), f"{corr}_correlator_estimates.csv")
@@ -42,6 +83,10 @@ class SigmondPreviewCorrs:
 
     def effen_plot_file(self,corr, ptype):
         return os.path.join(self.proj_handler.plot_dir(f"{ptype}s"), f"{corr}_effenergy.{ptype}")
+    
+    @property
+    def summary_file(self):
+        return os.path.join(self.proj_handler.plot_dir(), f"{self.task_name}_summary") #add channel? project name?
     
     #initialize
     def __init__(self, task_name, proj_handler, general_params, task_params):
@@ -144,16 +189,33 @@ class SigmondPreviewCorrs:
             echo_xml=False, bins_info=bins_info, sampling_info=sampling_info, data_files=datafiles,
             precompute=True, latex_compiler=None)
         
+        #other params
+        self.other_params = {
+            'write_data': True,
+            'create_pdfs': True,
+            'create_pickles': True,
+            'create_summary': True,
+            'plot': True,
+            'figwidth':8,
+            'figheight':6,
+        }
+        for param in self.other_params:
+            if param in task_params:
+                self.other_params[param] = task_params[param]
+            else:
+                task_params[param] = self.other_params[param]
+
+        if not self.other_params['create_pdfs'] and not self.other_params['create_pickles']:
+            self.other_params['plot'] = False
+        
         #make yaml output
         logging.info(f"Full input written to '{os.path.join(proj_handler.log_dir(), 'full_input.yml')}'.")
         with open( os.path.join(proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_params, task_name: task_params}, log_file)
 
     def run(self):
-
         #actually read files now -> ssssslllloooowwwwww!!!!! maybe look into mpi/slurm jobs already
         self.data_handler = data_handler.DataHandler(self.project_info)
-
 
         mcobs_handler_init = ET.Element("MCObservables")
         if self.data_handler.raw_data_files.bl_corr_files:
@@ -185,62 +247,94 @@ class SigmondPreviewCorrs:
         with open(log_path, 'w+') as log_file:
             yaml.dump(ops_list, log_file)
         
-        #add parameter "save_data" default to true, if false, save to self
+        save_to_self = not self.other_params['write_data'] and self.other_params['plot']
+        if save_to_self:
+            self.data = {}
+        
+        if not self.other_params['write_data'] and not self.other_params['plot']:
+            logging.warning("You have set 'write_data' to 'False' and 'plot' to 'False' thus making this task obsolete. Congrats.")
+            return
+
         logging.info(f"Saving correlator estimates to directory {self.proj_handler.data_dir()}...")
         for channel in self.data_handler.raw_channels:
+            if save_to_self:
+                self.data[channel] = {}
             for op1 in self.data_handler.getChannelOperators(channel):
+                if save_to_self:
+                    self.data[channel][op1] = {}
                 for op2 in self.data_handler.getChannelOperators(channel):
                     corr = sigmond.CorrelatorInfo(op1.operator_info,op2.operator_info)
                     corr_name = repr(corr).replace(" ","-")
                     #add hermitian and subvev as inputs but default as True and False
                     estimates = sigmond.getCorrelatorEstimates(mcobs_handler,corr,True,False,sigmond.ComplexArg.RealPart, self.project_info.sampling_info.getSamplingMode())
-                    _estimates_to_csv(estimates, self.corr_data_file(corr_name) )
+                    if save_to_self:
+                        self.data[channel][op1][op2] = {}
+                        self.data[channel][op1][op2]["corr"] = _estimates_to_df(estimates)
+                    else:
+                        _estimates_to_csv(estimates, self.corr_data_file(corr_name) )
                     #add timesep, eff energy type, and subtraction constant? as parameters
                     estimates = sigmond.getEffectiveEnergy(mcobs_handler,corr,True,False,sigmond.ComplexArg.RealPart, self.project_info.sampling_info.getSamplingMode(), 1,0,0.0)
-                    _estimates_to_csv(estimates, self.effen_data_file(corr_name) )
+                    if save_to_self:
+                        self.data[channel][op1][op2]["effen"] = _estimates_to_df(estimates)
+                    else:
+                        _estimates_to_csv(estimates, self.effen_data_file(corr_name) )
+
 
 
     def plot(self):
-
         #make plot for each correlator -> save to pickle and pdf
-        logging.info(f"Saving plots to directory {self.proj_handler.plot_dir()}...")
-
-        #generate subdirectories
-        # [pathlib.Path( os.path.join(self.proj_handler.plot_dir(), ptype)).mkdir(parents=True, exist_ok=True) for ptype in ["pdfs","pickles"]]
+        if self.other_params['plot']:
+            logging.info(f"Saving plots to directory {self.proj_handler.plot_dir()}...")
+        else:
+            logging.info(f"No plots requested.")
+            return
+        
+        if self.other_params['create_summary']:
+            doc = utils.create_doc("Preview Data")
 
         #set up fig object to reuse
-        fig = plt.figure() #add inputs
-        fig.set_figheight(7)
-        fig.set_figwidth(10)
-        #add style file
+        fig = plt.figure(figsize=(self.other_params['figwidth'], self.other_params['figheight'])) #add inputs
         
         #loop through same channels #make loading bar
         for channel in self.data_handler.raw_channels:
+            if self.other_params['create_summary']:
+                doc.append(pylatex.Command("section",str(channel)))
             for op1 in self.data_handler.getChannelOperators(channel):
                 for op2 in self.data_handler.getChannelOperators(channel):
                     corr = sigmond.CorrelatorInfo(op1.operator_info,op2.operator_info)
                     corr_name = repr(corr).replace(" ","-")
-                    df = pd.read_csv(self.corr_data_file(corr_name))
+                    if not self.other_params['write_data'] and self.other_params['plot']:
+                        df = self.data[channel][op1][op2]["corr"]
+                    else:
+                        df = pd.read_csv(self.corr_data_file(corr_name))
 
                     text_x = 0.3
                     text_y = 0.7
                     plt.clf()
+                    plt.gcf().set_size_inches(self.other_params['figwidth'], self.other_params['figheight'])
                     plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[0], marker=psettings.markers[0] )
                     plt.ylabel(r"$C(t)$")
                     plt.xlabel(r"$t/a_t$")
                     plt.figtext(text_x,text_y+0.1,f"snk: {str(op1)}") #double check that I'm not messing up sink and source
                     plt.figtext(text_x,text_y,f"src: {str(op2)}")
                     plt.tight_layout()
+
+                    if self.other_params['create_pickles']:
+                        with open(self.corr_plot_file( corr_name, "pickle"), "wb") as f:
+                            pickle.dump(fig, f)
                     #put each channel in a pdf
-                    with open(self.corr_plot_file( corr_name, "pickle"), "wb") as f:
-                        pickle.dump(fig, f)
-                    plt.savefig( self.corr_plot_file( corr_name, "pdf") ) #add alpha (remove background)
+                    if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                        plt.savefig( self.corr_plot_file( corr_name, "pdf"), transparent=True ) 
 
                     #add pickle and pdf as option -> if none are selected -> no plot
 
-                    df = pd.read_csv(self.effen_data_file(corr_name))
+                    if not self.other_params['write_data'] and self.other_params['plot']:
+                        df = self.data[channel][op1][op2]["effen"]
+                    else:
+                        df = pd.read_csv(self.effen_data_file(corr_name))
 
                     plt.clf()
+                    plt.gcf().set_size_inches(self.other_params['figwidth'], self.other_params['figheight'])
                     plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[0], marker=psettings.markers[0] )
                     if self.latex:
                         plt.ylabel(r"$a_tE_{\textup{fit}}$")
@@ -250,10 +344,27 @@ class SigmondPreviewCorrs:
                     plt.figtext(text_x,text_y+0.1,f"snk: {str(op1)}")
                     plt.figtext(text_x,text_y,f"src: {str(op2)}")
                     plt.tight_layout()
+
+                    if self.other_params['create_pickles']:
+                        with open(self.effen_plot_file( corr_name, "pickle"), "wb") as f:
+                            pickle.dump(fig, f)
                     #put each channel in a pdf
-                    plt.savefig( self.effen_plot_file(corr_name, "pdf") ) #add alpha (remove background)
+                    if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                        plt.savefig( self.effen_plot_file(corr_name, "pdf"), transparent=True ) 
 
+                    if self.other_params['create_summary']:
+                        with doc.create(pylatex.Subsection(repr(corr))):
+                            with doc.create(pylatex.Figure(position='H')) as thisfig:
+                                with doc.create(pylatex.SubFigure(
+                                    position='b', width=pylatex.NoEscape(r'0.5\linewidth'))) as left_fig:
+                                    left_fig.add_image(self.corr_plot_file( corr_name, "pdf"),width=pylatex.NoEscape(r'\linewidth'), placement=pylatex.NoEscape("\centering") )
+                                with doc.create(pylatex.SubFigure(
+                                    position='b', width=pylatex.NoEscape(r'0.5\linewidth'))) as right_fig:
+                                    right_fig.add_image(self.effen_plot_file( corr_name, "pdf"),width=pylatex.NoEscape(r'\linewidth'), placement=pylatex.NoEscape("\centering") )
 
+        if self.other_params['create_summary']:
+            utils.compile_pdf(doc,self.summary_file) #detect compiler?
+                        
 
 def _check_raw_data_files(raw_data_files, project_dir):
     #check that raw_data_files are real files
@@ -280,6 +391,10 @@ def _check_raw_data_files(raw_data_files, project_dir):
     return raw_data_files
 
 def _estimates_to_csv( estimates, data_file):
+    df = _estimates_to_df( estimates )
+    df.to_csv(data_file, index=False, header=True)
+
+def _estimates_to_df( estimates ):
     pestimates = [ {
         "aTime": key,
         "FullEstimate": estimates[key].getFullEstimate(), #should MC estimate have upper error and lower error as well?
@@ -288,4 +403,4 @@ def _estimates_to_csv( estimates, data_file):
         "RelativeError": estimates[key].getRelativeError(),
         } for key in estimates ]
     df = pd.DataFrame.from_dict(pestimates) 
-    df.to_csv(data_file, index=False, header=True)
+    return df

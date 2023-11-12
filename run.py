@@ -9,6 +9,10 @@ import pycalq
 
 # we will hopefully break this down and detail out these steps further in the future
 
+'''
+preview_corrs - a task a read in and estimate/plot any correlator data files given
+'''
+
 
 def pickup_configs():
     parser = argparse.ArgumentParser()
