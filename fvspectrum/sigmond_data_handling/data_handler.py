@@ -16,7 +16,8 @@ import sigmond
 class DataHandler(metaclass=util.Singleton):
   """ The all important Data Handler!  """
 
-  relative_datadir = "1average_corrs/data"
+  rel_averaged_datadir = os.path.join("1average_corrs","data",'samples') #add bins
+  rel_rotated_datadir = os.path.join("2rotate_corrs","data",'samples')
 
   def __init__(self, project_info):
     self.project_info = project_info
@@ -70,14 +71,14 @@ class DataHandler(metaclass=util.Singleton):
 
   @property
   def averaged_datadir(self):
-    datadir = os.path.join(self.project_dir, self.relative_datadir, "averaged_correlators")
-    os.makedirs(datadir, exist_ok=True)
+    datadir = os.path.join(self.project_dir, self.rel_averaged_datadir, "averaged_correlators")
+    # os.makedirs(datadir, exist_ok=True)
     return datadir
 
   @property
   def rotated_datadir(self):
-    datadir = os.path.join(self.project_dir, self.relative_datadir, "rotated_correlators")
-    os.makedirs(datadir, exist_ok=True)
+    datadir = os.path.join(self.project_dir, self.rel_rotated_datadir, "rotated_correlators")
+    # os.makedirs(datadir, exist_ok=True)
     return datadir
 
   def rotated_datafile(self, rotated_operator_set):
@@ -86,7 +87,7 @@ class DataHandler(metaclass=util.Singleton):
 
   @property
   def pivot_datadir(self):
-    datadir = os.path.join(self.project_dir, self.relative_datadir, "pivots")
+    datadir = os.path.join(self.project_dir, self.rel_rotated_datadir, "pivots")
     os.makedirs(datadir, exist_ok=True)
     return datadir
 
