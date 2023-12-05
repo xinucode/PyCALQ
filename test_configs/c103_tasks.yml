@@ -1,7 +1,8 @@
 tasks:
   preview_corrs: 
     raw_data_files: 
-      - /latticeQCD/raid3/ahanlon/data/cls21_c103/sigmond.fwd/cls21_c103/nucleon_S0.bin
-  # rotate_corrs:
-  #   t0:
+      - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
+  average_corrs:
+    raw_data_files: 
+      - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
 
