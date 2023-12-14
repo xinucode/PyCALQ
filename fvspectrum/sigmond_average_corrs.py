@@ -3,14 +3,19 @@ import yaml
 import os
 # from sortedcontainers import SortedSet
 import matplotlib.pyplot as plt
-import numpy as np
+# import numpy as np
 import pandas as pd
 import itertools
+import tqdm
+
 
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.sigmond_operator_info.operator
 import general.plotting_handler as ph
+import fvspectrum.sigmond_data_handling.data_handler as data_handler
+from fvspectrum.sigmond_data_handling.data_files import DataFiles #, FileInfo
+from fvspectrum.sigmond_data_handling.correlator_data import CorrelatorData
 
 doc = '''
 average_corrs - a task a read in and automatically average over any Lattice QCD temporal correlator data files 
@@ -108,6 +113,38 @@ class SigmondAverageCorrs:
         self.latex = sigmond_util.set_latex_in_plots(plt.style)
 
         self.project_info = sigmond_util.setup_project(general_configs,raw_data_files)
+        #check that raw data files match what's in the data handler currently, get list of files in datahandler. 
+        this_data_handler = data_handler.DataHandler(self.project_info)
+        present_files = list(this_data_handler.raw_data_files.bl_corr_files)+list(this_data_handler.raw_data_files.bl_vev_files)
+        present_files += list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.raw_data_files.sampling_files)
+        if set(present_files)<=set(raw_data_files):
+            needed_files = raw_data_files[:]
+            [needed_files.remove(file) for file in present_files]
+
+            data_files = DataFiles()
+            for data_dir in needed_files:
+                data_files += data_handler._find_data_files(data_dir)
+            logging.info("Searching through found raw data files...")
+            this_data_handler._raw_data += this_data_handler._findLaphData(data_files)
+            if data_files.bin_files:
+                logging.info("Reading bin data")
+                for bin_file in tqdm.tqdm(data_files.bin_files):
+                    this_data_handler._raw_data += this_data_handler._findSigmondData(bin_file, sigmond.FileType.Bins)
+
+            if data_files.sampling_files:
+                logging.info("Reading sampling data")
+                for smp_file in tqdm.tqdm(data_files.sampling_files):
+                    this_data_handler._raw_data += this_data_handler._findSigmondData(smp_file, sigmond.FileType.Samplings)
+
+            this_data_handler.raw_data_files += data_files
+        else:
+            # del this_data_handler
+            this_data_handler.project_info = self.project_info
+            data_files = DataFiles()
+            this_data_handler.raw_data_files = data_files
+            this_data_handler._raw_data = CorrelatorData()
+            this_data_handler._findRawData()
+
         
         #other params
         self.other_params = {
@@ -123,7 +160,7 @@ class SigmondAverageCorrs:
             'bins_mode': True,
             'tmin':0,
             'tmax':64,
-            'erase_original_matrix_from_memory': False,
+            'erase_original_matrix_from_memory': True,
             'ignore_missing_correlators': True,
             'generate_estimates': True,
             'average_by_bins': True,
@@ -142,7 +179,7 @@ class SigmondAverageCorrs:
     def run( self ):
         this_data_handler, mcobs_handler, mcobs_get_handler = sigmond_util.get_data_handlers(self.project_info)
         self.data_handler = this_data_handler
-        self.averaged_channels = dict()
+        averaged_channels = dict()
         log_output = dict()
 
         for channel in self.data_handler.raw_channels:
@@ -150,13 +187,13 @@ class SigmondAverageCorrs:
                 logging.warning(f"Channel {str(channel)} is averaged already.")
 
             averaged_channel = channel.averaged
-            if averaged_channel not in self.averaged_channels:
-                self.averaged_channels[averaged_channel] = list()
+            if averaged_channel not in averaged_channels:
+                averaged_channels[averaged_channel] = list()
                 log_output[str(averaged_channel)] = list()
             
             if channel.is_averaged:
                 log_output[str(averaged_channel)].append("WARNING: is averaged already.")
-            self.averaged_channels[averaged_channel].append(channel)
+            averaged_channels[averaged_channel].append(channel)
             log_output[str(averaged_channel)].append(str(channel))
 
         log_path = os.path.join(self.proj_dir_handler.log_dir(), 'channels_combined_log.yml')
@@ -166,7 +203,7 @@ class SigmondAverageCorrs:
 
         self.averaged_operators = {}
         log_output = dict()
-        for avchannel, rawchannels in self.averaged_channels.items():
+        for avchannel, rawchannels in averaged_channels.items():
             if avchannel not in self.averaged_operators.keys():
                 self.averaged_operators[avchannel] = {}
                 log_output[str(avchannel)] = {}
