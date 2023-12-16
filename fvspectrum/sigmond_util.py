@@ -47,7 +47,7 @@ def check_raw_data_files(raw_data_files, project_dir):
 
     return raw_data_files
 
-def setup_project(general_params, raw_data_files):
+def get_ensemble_info(general_params):
     #check for ensembles file
     ensemble_file_path = os.path.join( os.path.dirname(__file__), "sigmond_utils", "ensembles.xml" )
     if not os.path.isfile(ensemble_file_path):
@@ -62,6 +62,12 @@ def setup_project(general_params, raw_data_files):
 
     #get bins info
     ensemble_info = sigmond.MCEnsembleInfo(general_params['ensemble_id'], ensemble_file_path)
+    return ensemble_info
+
+def setup_project(general_params, raw_data_files = []):
+    ensemble_info = get_ensemble_info(general_params)
+    ensemble_file_path = general_params["ensembles_file"]
+    
     if 'tweak_ensemble' in general_params.keys():
         bins_info_config = general_params['tweak_ensemble']
         if 'keep_first' in bins_info_config:
