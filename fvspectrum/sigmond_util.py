@@ -148,21 +148,24 @@ def update_params( other_params, task_params):
 def get_data_handlers(project_info):
     
     this_data_handler = data_handler.DataHandler(project_info)
+    mcobs_handler, mcobs_get_handler = get_mcobs_handlers(this_data_handler, project_info)
+    return this_data_handler, mcobs_handler, mcobs_get_handler
 
+def get_mcobs_handlers(this_data_handler, project_info):
     mcobs_handler_init = ET.Element("MCObservables")
-    if this_data_handler.raw_data_files.bl_corr_files:
+    if this_data_handler.raw_data_files.bl_corr_files or this_data_handler.averaged_data_files.bl_corr_files:
         bl_corr_xml = ET.SubElement(mcobs_handler_init,"BLCorrelatorData")
         #file list info
-    if this_data_handler.raw_data_files.bl_vev_files:
+    if this_data_handler.raw_data_files.bl_vev_files or this_data_handler.averaged_data_files.bl_vev_files:
         bl_vev_files_xml = ET.SubElement(mcobs_handler_init,"BLVEVData")
         #file list info
-    if this_data_handler.raw_data_files.bin_files:
+    if this_data_handler.raw_data_files.bin_files or this_data_handler.averaged_data_files.bin_files:
         bin_files_xml = ET.SubElement(mcobs_handler_init,"BinData")
-        for filename in this_data_handler.raw_data_files.bin_files:
+        for filename in list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.averaged_data_files.bin_files):
             ET.SubElement(bin_files_xml,"FileName").text = filename
-    if this_data_handler.raw_data_files.sampling_files:
+    if this_data_handler.raw_data_files.sampling_files or this_data_handler.averaged_data_files.sampling_files:
         sampling_files_xml = ET.SubElement(mcobs_handler_init,"SamplingData")
-        for filename in this_data_handler.raw_data_files.sampling_files:
+        for filename in list(this_data_handler.raw_data_files.sampling_files)+list(this_data_handler.averaged_data_files.sampling_files):
             ET.SubElement(sampling_files_xml,"FileName").text = filename
 
     mcobs_init = sigmond.XMLHandler()
@@ -176,7 +179,7 @@ def get_data_handlers(project_info):
     mcobs_handler = sigmond.MCObsHandler(mcobs_get_handler, project_info.precompute)
     mcobs_handler.setSamplingBegin()
 
-    return this_data_handler, mcobs_handler, mcobs_get_handler
+    return mcobs_handler, mcobs_get_handler
 
 
 def estimates_to_csv( estimates, data_file):

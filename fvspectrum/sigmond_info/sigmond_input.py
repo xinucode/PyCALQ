@@ -89,6 +89,9 @@ class SigmondInput:
 
     logging.info("Wrote XML to: {}".format(self.filename))
 
+  def to_str(self):
+    return minidom.parseString(
+      ET.tostring(self.sigmondXML, 'utf-8')).toprettyxml(indent="  ")
 
   def doCorrelatorCheck(self, operators, mintime, maxtime, **extra_options):
     """Adds a 'DoChecks' task of type 'TemporalCorrelatorMatrix'

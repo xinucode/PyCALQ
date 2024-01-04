@@ -4,6 +4,7 @@ import general.config_handler as ch
 import general.project_directory as pd
 import fvspectrum.sigmond_view_corrs
 import fvspectrum.sigmond_average_corrs
+import fvspectrum.sigmond_rotate_corrs
 
 # Thanks to Drew and https://stackoverflow.com/a/48201163/191474
 #ends code when run logging.error(message) or logging.critical(message)
@@ -23,6 +24,7 @@ DEFAULT_TASKS = { #manage default configurations
         {
             "preview_corrs": None,
             "average_corrs": None,
+            "rotate_corrs": None,
         }
 }
                     
@@ -38,10 +40,12 @@ TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#corre
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
     "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
     "average_corrs": fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
+    "rotate_corrs": fvspectrum.sigmond_rotate_corrs.SigmondRotateCorrs,
 }
 TASK_DOC = { #imports documentation from each task
     "preview_corrs": fvspectrum.sigmond_view_corrs.doc,
     "average_corrs": fvspectrum.sigmond_average_corrs.doc,
+    "rotate_corrs": fvspectrum.sigmond_rotate_corrs.doc,
 }
 
 #set required general parameters 
@@ -50,7 +54,6 @@ TASK_DOC = { #imports documentation from each task
 REQUIRED_GENERAL_CONFIGS = [
    'project_dir',
    'ensemble_id',
-#    {'ensemble_info':['ensemble_id']},
 ]
 
 

@@ -211,4 +211,5 @@ class SigmondPreviewCorrs:
 
         if self.other_params['create_summary']:
             plh.compile_pdf(self.summary_file) 
+            logging.info(f"Summary file saved to {self.summary_file}.")
 

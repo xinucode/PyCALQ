@@ -1,9 +1,7 @@
 import logging
 import yaml
 import os
-# from sortedcontainers import SortedSet
 import matplotlib.pyplot as plt
-# import numpy as np
 import pandas as pd
 import itertools
 import tqdm
@@ -14,7 +12,7 @@ import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.sigmond_operator_info.operator
 import general.plotting_handler as ph
 import fvspectrum.sigmond_data_handling.data_handler as data_handler
-from fvspectrum.sigmond_data_handling.data_files import DataFiles #, FileInfo
+from fvspectrum.sigmond_data_handling.data_files import DataFiles 
 from fvspectrum.sigmond_data_handling.correlator_data import CorrelatorData
 
 doc = '''
@@ -40,7 +38,7 @@ average_corrs:                          #required
   average_hadron_spatial_info: true     #not required #default true
   bins_mode: true                       #not required #default true
   create_pdfs: true                     #not required #default true
-create_pickles: true                    #not required #default true
+  create_pickles: true                    #not required #default true
   create_summary: true                  #not required #default true
   erase_original_matrix_from_memory: false #not required #default false
   figheight: 6                          #not required #default 6
@@ -62,7 +60,7 @@ class SigmondAverageCorrs:
     def summary_file(self):
         return os.path.join(self.proj_dir_handler.plot_dir(), f"{self.task_name}_summary") #add channel? project name?
     
-    def averaged_file( self, binned, channel = None ):
+    def averaged_file( self, binned, channel = None ): #add average info
         if binned:
             subdir = 'bins'
         else:
@@ -108,9 +106,6 @@ class SigmondAverageCorrs:
         self.subtract_vev = False
         self.vev_const = 0.0
         self.effective_energy_type = 0 #0=TimeForward, 1=TimeSymmetric, 2=TimeBackward?
-
-        self.latex = True
-        self.latex = sigmond_util.set_latex_in_plots(plt.style)
 
         self.project_info = sigmond_util.setup_project(general_configs,raw_data_files)
         #check that raw data files match what's in the data handler currently, get list of files in datahandler. 
@@ -231,7 +226,12 @@ class SigmondAverageCorrs:
         if save_to_self:
             self.data = {}
 
+        file_created = False
         for avchannel in self.averaged_operators:
+            if file_created:
+                wmode = sigmond.WriteMode.Update
+            else:
+                wmode = sigmond.WriteMode.Overwrite
             result_ops = [op.operator_info for op in self.averaged_operators[avchannel]]
             input_ops = list()
             if save_to_self:
@@ -247,13 +247,14 @@ class SigmondAverageCorrs:
                                                             self.other_params['tmax'], self.other_params['erase_original_matrix_from_memory'],
                                                             self.other_params['ignore_missing_correlators'])
                 decoy = sigmond.XMLHandler()
-                mcobs_handler.writeBinsToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],repr(avchannel)),decoy,sigmond.WriteMode.Overwrite, 'H')
+                mcobs_handler.writeBinsToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],repr(avchannel)),decoy,wmode, 'H')
             else:
                 result_obs = sigmond.doCorrelatorMatrixSuperpositionBySamplings(mcobs_handler, input_ops, result_ops, self.hermitian, self.other_params['tmin'],
                                                             self.other_params['tmax'], self.other_params['erase_original_matrix_from_memory'],
                                                             self.other_params['ignore_missing_correlators'])
                 decoy = sigmond.XMLHandler()
-                mcobs_handler.writeSamplingValuesToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],repr(avchannel)),decoy,sigmond.WriteMode.Overwrite, 'H')
+                mcobs_handler.writeSamplingValuesToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],repr(avchannel)),decoy,wmode, 'H')
+            file_created = True
             
             if save_to_self or self.other_params['generate_estimates']:
                 for avop1,avop2 in itertools.product(self.averaged_operators[avchannel],self.averaged_operators[avchannel]):
