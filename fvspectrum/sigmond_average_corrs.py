@@ -51,6 +51,7 @@ average_corrs:                          #required
   write_data: true                      #not required #default true
 '''
 
+#to do: specify irreps to average
 class SigmondAverageCorrs:
     @property
     def info(self):
@@ -58,7 +59,7 @@ class SigmondAverageCorrs:
     
     @property
     def summary_file(self):
-        return os.path.join(self.proj_dir_handler.plot_dir(), f"{self.task_name}_summary") #add channel? project name?
+        return os.path.join(self.proj_dir_handler.plot_dir(), f"{self.task_name}_summary{self.other_params['task_tag']}") #add channel? project name?
     
     def averaged_file( self, binned, channel = None ): #add average info
         if binned:
@@ -66,9 +67,9 @@ class SigmondAverageCorrs:
         else:
             subdir = 'samples'
         if channel:
-            return os.path.join(self.proj_dir_handler.data_dir(subdir),f"averaged_corrs.hdf5[{channel}]")
+            return os.path.join(self.proj_dir_handler.data_dir(subdir),f"averaged_corrs{self.other_params['task_tag']}.hdf5[{channel}]")
         else:
-            return os.path.join(self.proj_dir_handler.data_dir(subdir),f"averaged_corrs.hdf5")
+            return os.path.join(self.proj_dir_handler.data_dir(subdir),f"averaged_corrs{self.other_params['task_tag']}.hdf5")
         
     def corr_data_file(self,corr):
         return os.path.join(self.proj_dir_handler.data_dir("estimates"), f"{corr}_correlator_estimates.csv")
@@ -159,17 +160,59 @@ class SigmondAverageCorrs:
             'ignore_missing_correlators': True,
             'generate_estimates': True,
             'average_by_bins': True,
+            'task_tag': "",
+            'separate_mom': False
         }
         sigmond_util.update_params(self.other_params,task_configs) #update other_params with task_params, 
                                                                         #otherwise fill in missing task params
 
         if not self.other_params['create_pdfs'] and not self.other_params['create_pickles'] and not self.other_params['create_summary']:
             self.other_params['plot'] = False
+
         
+        self.channels = this_data_handler.raw_channels[:]
+        if 'only' in task_configs:
+            only_moms = []
+            only_channels = []
+            for item in task_configs['only']:
+                if item.startswith('PSQ='):
+                    only_moms.append(int(item.replace('PSQ=',"")))
+                elif item.startswith('psq='):
+                    only_moms.append(int(item.replace('psq=',"")))
+                else:
+                    only_channels.append(item)
+            final_channels = []
+            for channel in self.channels:
+                if channel.psq in only_moms or str(channel) in only_channels:
+                    final_channels.append(channel)
+                else:
+                    logging.info(f'Channel {str(channel)} omitted due to "only" setting.')
+            self.channels = final_channels
+        elif 'omit' in task_configs:
+            omit_moms = []
+            omit_channels = []
+            for item in task_configs['omit']:
+                if item.startswith('PSQ='):
+                    omit_moms.append(int(item.replace('PSQ=',"")))
+                elif item.startswith('psq='):
+                    omit_moms.append(int(item.replace('psq=',"")))
+                else:
+                    omit_channels.append(item)
+            final_channels = []
+            for channel in self.channels:
+                if channel.psq in omit_moms or str(channel) in omit_channels:
+                    logging.info(f'Channel {str(channel)} omitted due to "omit" setting.')
+                else:
+                    final_channels.append(channel)
+            self.channels = final_channels
+
         #make yaml output
         logging.info(f"Full input written to '{os.path.join(proj_dir_handler.log_dir(), 'full_input.yml')}'.")
         with open( os.path.join(proj_dir_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs, task_name: task_configs}, log_file)
+
+        if self.other_params['task_tag']:
+            self.other_params['task_tag'] = "-"+self.other_params['task_tag']
 
     def run( self ):
         this_data_handler, mcobs_handler, mcobs_get_handler = sigmond_util.get_data_handlers(self.project_info)
@@ -177,7 +220,7 @@ class SigmondAverageCorrs:
         averaged_channels = dict()
         log_output = dict()
 
-        for channel in self.data_handler.raw_channels:
+        for channel in self.channels:
             if channel.is_averaged:
                 logging.warning(f"Channel {str(channel)} is averaged already.")
 
@@ -226,9 +269,20 @@ class SigmondAverageCorrs:
         if save_to_self:
             self.data = {}
 
-        file_created = False
+        if self.other_params['separate_mom']:
+            file_created = [False, False, False, False, False, False, False, False, False, False]
+            self.other_params['task_tag'] += "-PSQ0"
+        else:
+            file_created = [False]
+        index = 0
+        self.max_mom = 0
         for avchannel in self.averaged_operators:
-            if file_created:
+            if self.other_params['separate_mom']:
+                index = avchannel.momentum_squared
+                if index>self.max_mom:
+                    self.max_mom = index
+                self.other_params['task_tag'] = self.other_params['task_tag'][:-1]+str(index)
+            if file_created[index]:
                 wmode = sigmond.WriteMode.Update
             else:
                 wmode = sigmond.WriteMode.Overwrite
@@ -254,7 +308,7 @@ class SigmondAverageCorrs:
                                                             self.other_params['ignore_missing_correlators'])
                 decoy = sigmond.XMLHandler()
                 mcobs_handler.writeSamplingValuesToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],repr(avchannel)),decoy,wmode, 'H')
-            file_created = True
+            file_created[index] = True
             
             if save_to_self or self.other_params['generate_estimates']:
                 for avop1,avop2 in itertools.product(self.averaged_operators[avchannel],self.averaged_operators[avchannel]):
@@ -274,6 +328,8 @@ class SigmondAverageCorrs:
                     else:
                         sigmond_util.estimates_to_csv(estimates, self.effen_data_file(corr_name) )
         
+        if self.other_params['separate_mom']:
+            self.other_params['task_tag'] = self.other_params['task_tag'][:-5]
         logging.info(f"Saved averaged correlators to {self.averaged_file(self.other_params['average_by_bins'])}.")
         if self.other_params['generate_estimates']:
             logging.info(f"Estimates generated in directory {self.proj_dir_handler.data_dir('estimates')}.")
@@ -287,16 +343,25 @@ class SigmondAverageCorrs:
             return
         
         plh = ph.PlottingHandler()
-        if self.other_params['create_summary']:
+        if self.other_params['create_summary'] and self.other_params['separate_mom']:
+            for i in range(self.max_mom+1):
+                plh.create_summary_doc("Average Data")
+        elif self.other_params['create_summary']:
             plh.create_summary_doc("Average Data")
 
         #set up fig object to reuse
         plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
         
+        print(self.max_mom)
+
         #loop through same channels #make loading bar
         for channel in self.averaged_operators:
+            index = 0
+            if self.other_params['separate_mom']:
+                index = channel.momentum_squared
+                print(index)
             if self.other_params['create_summary']:
-                plh.append_section(str(channel))
+                plh.append_section(str(channel), index)
             for avop1,avop2 in itertools.product(self.averaged_operators[channel],self.averaged_operators[channel]):
                 corr = sigmond.CorrelatorInfo(avop1.operator_info,avop2.operator_info)
                 corr_name = repr(corr).replace(" ","-")
@@ -328,9 +393,13 @@ class SigmondAverageCorrs:
 
                 if self.other_params['create_summary']:
                     plh.add_correlator_subsection(repr(corr),self.corr_plot_file( corr_name, "pdf"),
-                                                    self.effen_plot_file( corr_name, "pdf"))
-
-        if self.other_params['create_summary']:
+                                                    self.effen_plot_file( corr_name, "pdf"), index)
+        
+        if self.other_params['separate_mom'] and self.other_params['create_summary']:
+            for i in range(self.max_mom+1):
+                self.other_params['task_tag'] = self.other_params['task_tag'][:-1]+str(i)
+                plh.compile_pdf(self.summary_file, i) 
+        elif self.other_params['create_summary']:
             plh.compile_pdf(self.summary_file) 
          
 

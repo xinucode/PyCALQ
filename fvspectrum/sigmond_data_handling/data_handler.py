@@ -18,21 +18,24 @@ class DataHandler(metaclass=util.Singleton):
 
   rel_averaged_datadir = [""]
   rel_rotated_datadir = [""]
-  rel_rotated_pivotdir = ""
+  # rel_rotated_pivotdir = ""
 
   def __init__(self, project_info):
     self.project_info = project_info
     
     self._raw_data = CorrelatorData()
     self._averaged_data = CorrelatorData()
-    self._rotated_data = dict()
+    self._rotated_data = CorrelatorData()
 
     self.raw_data_files = DataFiles()
     self.averaged_data_files = DataFiles()
+    self.rotated_data_files = DataFiles()
 
     self._findRawData()
     if self.rel_averaged_datadir[0]:
       self.findAveragedData()
+    if self.rel_rotated_datadir[0]:
+      self.findRotatedData()
 
   @property
   def project_dir(self):
@@ -73,7 +76,10 @@ class DataHandler(metaclass=util.Singleton):
   def averaged_channels(self):
     return self._averaged_data.channels
 
-
+  @property
+  def rotated_channels(self):
+    return self._rotated_data.channels
+  
   @property
   def averaged_datadir(self):
     datadir = os.path.join(self.project_dir, self.rel_averaged_datadir[0])
@@ -111,30 +117,45 @@ class DataHandler(metaclass=util.Singleton):
     datafile = f"{rotated_operator_set!r}.piv"
     return os.path.join(self.pivot_datadir, datafile)
 
-  def getRotatedDataFiles(self, rotated_basis=None):
-    corr_data = self._readRotatedData(rotated_basis)
-    return corr_data.getChannelDataFiles(corr_data.channel)
+  # def getRotatedDataFiles(self, rotated_basis=None):
+  #   corr_data = self._readRotatedData(rotated_basis)
+  #   return corr_data.getChannelDataFiles(corr_data.channel)
 
-  def getRotatedOperators(self, rotated_basis=None):
-    corr_data = self._readRotatedData(rotated_basis)
-    return corr_data.getChannelOperators(corr_data.channel)
+  # def getRotatedOperators(self, rotated_basis=None):
+  #   corr_data = self._readRotatedData(rotated_basis)
+  #   return corr_data.getChannelOperators(corr_data.channel)
   
-  def getRotatedTRange(self, rotated_basis=None):
-    corr_data = self._readRotatedData(rotated_basis)
-    time_extent = self.ensemble_info.getLatticeTimeExtent()
-    return corr_data.getOperatorSetSmallestTRange(time_extent, corr_data.operator_set)
+  # def getRotatedTRange(self, rotated_basis=None):
+  #   corr_data = self._readRotatedData(rotated_basis)
+  #   time_extent = self.ensemble_info.getLatticeTimeExtent()
+  #   return corr_data.getOperatorSetSmallestTRange(time_extent, corr_data.operator_set)
   
-  def getRotatedChannels(self):
-    corr_data = self._readRotatedData()
-    return corr_data.keys()
+  # def getRotatedChannels(self):
+  #   corr_data = self._readRotatedData()
+  #   return corr_data.keys()
 
 
   def getChannelOperators(self, channel):
     if channel in self.averaged_channels:
       return self._averaged_data.getChannelOperators(channel)
+    
+    elif channel in self.rotated_channels:
+      return self._rotated_data.getChannelOperators(channel)
 
     elif channel in self.raw_channels:
       return self._raw_data.getChannelOperators(channel)
+
+    return SortedSet()
+  
+  def getAveragedOperators(self, channel):
+    if channel in self.averaged_channels:
+      return self._averaged_data.getChannelOperators(channel)
+
+    return SortedSet()
+  
+  def getRotatedOperators(self, channel):
+    if channel in self.rotated_channels:
+      return self._rotated_data.getChannelOperators(channel)
 
     return SortedSet()
 
@@ -144,6 +165,18 @@ class DataHandler(metaclass=util.Singleton):
 
     if channel in self.raw_channels:
       return self._raw_data.getChannelDataFiles(channel)
+
+    return DataFiles()
+  
+  def getAveragedDataFiles(self, channel):
+    if channel in self.averaged_channels:
+      return self._averaged_data.getChannelDataFiles(channel)
+
+    return DataFiles()
+  
+  def getRotatedDataFiles(self, channel):
+    if channel in self.rotated_channels:
+      return self._rotated_data.getChannelDataFiles(channel)
 
     return DataFiles()
 
@@ -172,39 +205,39 @@ class DataHandler(metaclass=util.Singleton):
       logging.warning( f"Operator set {operator_set.name} cannot find data files for all operators")
       return raw_trange
 
-  def _readRotatedData(self, rotated_basis):
-    if rotated_basis in self._rotated_data:
-      return self._rotated_data[rotated_basis]
+  # def _readRotatedData(self, rotated_basis):
+  #   if rotated_basis in self._rotated_data:
+  #     return self._rotated_data[rotated_basis]
 
-    data_file = self.rotated_datafile(rotated_basis)
-    if not os.path.isfile(data_file):
-      logging.error(f"No basis {rotated_basis.name} with {rotated_basis.pivot_info}")
+  #   data_file = self.rotated_datafile(rotated_basis)
+  #   if not os.path.isfile(data_file):
+  #     logging.error(f"No basis {rotated_basis.name} with {rotated_basis.pivot_info}")
 
-    file_type = sigmond.getFileID(data_file)
-    if file_type == sigmond.FileType.Bins:
-      sigmond_handler = sigmond.BinsGetHandler(self.bins_info, {data_file})
-      fileinfo = FileInfo(data_file, sigmond.FileType.Bins)
-    elif file_type == sigmond.FileType.Samplings:
-      sigmond_handler = sigmond.SamplingsGetHandler(self.bins_info, self.sampling_info, {data_file})
-      fileinfo = FileInfo(data_file, sigmond.FileType.Samplings)
-    else:
-      logging.critical(f"Invalid rotated data file {data_file}")
+  #   file_type = sigmond.getFileID(data_file)
+  #   if file_type == sigmond.FileType.Bins:
+  #     sigmond_handler = sigmond.BinsGetHandler(self.bins_info, {data_file})
+  #     fileinfo = FileInfo(data_file, sigmond.FileType.Bins)
+  #   elif file_type == sigmond.FileType.Samplings:
+  #     sigmond_handler = sigmond.SamplingsGetHandler(self.bins_info, self.sampling_info, {data_file})
+  #     fileinfo = FileInfo(data_file, sigmond.FileType.Samplings)
+  #   else:
+  #     logging.critical(f"Invalid rotated data file {data_file}")
 
-    rotated_data = CorrelatorData()
-    for mc_obs in sigmond_handler.getKeys():
-      if mc_obs.isCorrelatorAtTime():
-        corr = mc_obs.getCorrelatorInfo()
-        t = mc_obs.getCorrelatorTimeIndex()
-        rotated_data.addCorrelator(corr, t, t, fileinfo)
+  #   rotated_data = CorrelatorData()
+  #   for mc_obs in sigmond_handler.getKeys():
+  #     if mc_obs.isCorrelatorAtTime():
+  #       corr = mc_obs.getCorrelatorInfo()
+  #       t = mc_obs.getCorrelatorTimeIndex()
+  #       rotated_data.addCorrelator(corr, t, t, fileinfo)
 
-      elif mc_obs.isVEV():
-        rotated_data.addVEV(vev, fileinfo)
+  #     elif mc_obs.isVEV():
+  #       rotated_data.addVEV(vev, fileinfo)
 
-      else:
-        logging.warning(f"Ignoring observable '{mc_obs}'")
+  #     else:
+  #       logging.warning(f"Ignoring observable '{mc_obs}'")
 
-    self._rotated_data[rotated_basis] = rotated_data
-    return rotated_data
+  #   self._rotated_data[rotated_basis] = rotated_data
+  #   return rotated_data
 
   def _findRawData(self):
     data_files = DataFiles()
@@ -227,26 +260,47 @@ class DataHandler(metaclass=util.Singleton):
     self.raw_data_files = data_files
     logging.info("done")
 
-  def findAveragedData(self):
-    data_files = _find_data_files(self.averaged_datadirs[0])
-    for data_dir in self.averaged_datadirs[1:]:
+  def findAveragedData(self, rotated=False):
+    if rotated:
+      data_dirs = self.rotated_datadirs
+      dtype = "rotated"
+    else:
+      data_dirs = self.averaged_datadirs
+      dtype = "averaged"
+
+    data_files = _find_data_files(data_dirs[0])
+    for data_dir in data_dirs[1:]:
       data_files += _find_data_files(data_dir)
 
-    logging.info("Searching through found averaged data files...")
+    logging.info(f"Searching through found {dtype} data files...")
+
+    self._averaged_data += self._findLaphData(data_files)
 
     if data_files.bin_files:
       logging.info("Reading bin data")
       for bin_file in tqdm.tqdm(data_files.bin_files):
-        self._averaged_data += self._findSigmondData(bin_file, sigmond.FileType.Bins)
+        if rotated:
+          self._rotated_data += self._findSigmondData(bin_file, sigmond.FileType.Bins)
+        else:
+          self._averaged_data += self._findSigmondData(bin_file, sigmond.FileType.Bins)
 
     if data_files.sampling_files:
       logging.info("Reading sampling data")
       for sampling_file in tqdm.tqdm(data_files.sampling_files):
-        self._averaged_data += self._findSigmondData(sampling_file, sigmond.FileType.Samplings)
+        if rotated:
+          self._rotated_data += self._findSigmondData(sampling_file, sigmond.FileType.Samplings)
+        else:
+          self._averaged_data += self._findSigmondData(sampling_file, sigmond.FileType.Samplings)
 
-    self.averaged_data_files = data_files
+    if rotated:
+      self.rotated_data_files = data_files
+    else:
+      self.averaged_data_files = data_files
     logging.info("done")
     return data_files
+  
+  def findRotatedData(self):
+    return self.findAveragedData(True)
 
   def _findLaphData(self, data_files):
     laph_corr_handler = sigmond.BLCorrelatorDataHandler(data_files.bl_corr_files, set(), set(), self.ensemble_info)

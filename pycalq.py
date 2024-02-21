@@ -5,6 +5,7 @@ import general.project_directory as pd
 import fvspectrum.sigmond_view_corrs
 import fvspectrum.sigmond_average_corrs
 import fvspectrum.sigmond_rotate_corrs
+import fvspectrum.sigmond_spectrum_fits
 
 # Thanks to Drew and https://stackoverflow.com/a/48201163/191474
 #ends code when run logging.error(message) or logging.critical(message)
@@ -25,11 +26,12 @@ DEFAULT_TASKS = { #manage default configurations
             "preview_corrs": None,
             "average_corrs": None,
             "rotate_corrs": None,
+            "fit_spectrum": None,
         }
 }
                     
 #manage order of tasks                                 
-TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#correlator analysis  
+TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_spectrum",#correlator analysis  
               # leuscher analysis
               # includes load data, can plot mean data for check "data_load"
               # includes identifying channel thresholds in relevant energy region
@@ -41,11 +43,13 @@ TASK_MAP = { #manage which classes to use for each unique task -> change for sel
     "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
     "average_corrs": fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
     "rotate_corrs": fvspectrum.sigmond_rotate_corrs.SigmondRotateCorrs,
+    "fit_spectrum": fvspectrum.sigmond_spectrum_fits.SigmondSpectrumFits,
 }
 TASK_DOC = { #imports documentation from each task
     "preview_corrs": fvspectrum.sigmond_view_corrs.doc,
     "average_corrs": fvspectrum.sigmond_average_corrs.doc,
     "rotate_corrs": fvspectrum.sigmond_rotate_corrs.doc,
+    "fit_spectrum": fvspectrum.sigmond_spectrum_fits.doc,
 }
 
 #set required general parameters 

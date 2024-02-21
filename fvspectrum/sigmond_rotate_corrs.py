@@ -23,6 +23,9 @@ general:
     omissions: []                       #default []
     rebin: 1                            #default 1
 rotate_corrs:                           #required
+  t0: 5                                 #required
+  tD: 10                                #required
+  tN: 5                                 #required
   averaged_input_correlators_dir: {project_dir}/1average_corrs/data/bins #not required #default {project_dir}/1average_corrs/data/bins 
   create_pdfs: true                     #not required #default true
   create_pickles: true                  #not required #default true
@@ -43,15 +46,12 @@ rotate_corrs:                           #required
   plot: true                            #not required #default true
   precompute: true                      #not required #default true
   rotate_by_samplings: true             #not required #default true; otherwise rotate by bins
-  t0: 5
-  tD: 10
-  tN: 5
-  tmax: 25
-  tmin: 2
-  used_averaged_bins: true
-  write_data: true
+  tmax: 25                              #not required #default 25
+  tmin: 2                               #not required #default 2
+  used_averaged_bins: true              #not required #default true
 '''
-
+#to do: add specilized pivots for individual irreps, get average directory without hardcode
+    #address tmin/tmax problem
 class SigmondRotateCorrs:
     @property
     def info(self):
@@ -99,7 +99,6 @@ class SigmondRotateCorrs:
 
         #other params
         self.other_params = {
-            'write_data': True,
             'create_pdfs': True,
             'create_pickles': True,
             'create_summary': True,
@@ -121,12 +120,15 @@ class SigmondRotateCorrs:
                                                                         #otherwise fill in missing task params
 
         #get averaged channels 
-        this_data_handler, mcobs_handler, mcobs_get_handler = sigmond_util.get_data_handlers(self.project_info)
+        this_data_handler = data_handler.DataHandler(self.project_info)
         averaged_directories = []
         averaged_bin_dir = os.path.join(self.project_info.project_dir,"1average_corrs","data",'bins')
         averaged_samples_dir = os.path.join(self.project_info.project_dir,"1average_corrs","data",'samples')
         if 'averaged_input_correlators_dir' in task_configs:
-            averaged_directories.append(task_configs['averaged_input_correlators_dir'])
+            if type(task_configs['averaged_input_correlators_dir'])==list:
+                averaged_directories+=task_configs['averaged_input_correlators_dir']
+            else:
+                averaged_directories.append(task_configs['averaged_input_correlators_dir'])
         elif self.other_params['used_averaged_bins'] and os.path.isdir(averaged_bin_dir):
             averaged_directories.append(os.path.join("1average_corrs","data",'bins'))
             task_configs['averaged_input_correlators_dir'] = averaged_bin_dir
@@ -326,6 +328,9 @@ class SigmondRotateCorrs:
                                     os.remove(self.rotated_correstimates_file(corr_name))
                         elif self.other_params['plot']:
                             self.rotated_estimates[str(channel)][corr]["corr"] = sigmond_util.estimates_to_df(estimates)
+                        if not estimates:
+                            logging.warning(f"No data found for {repr(corr)}.")
+
                         estimates = sigmond.getEffectiveEnergy(mcobs_handler,corr,self.hermitian,self.subtract_vev,sigmond.ComplexArg.RealPart, 
                                                            self.project_info.sampling_info.getSamplingMode(),self.time_separation,self.effective_energy_type,self.vev_const)
                         if self.other_params['generate_estimates']:
@@ -337,8 +342,6 @@ class SigmondRotateCorrs:
                         elif self.other_params['plot']:
                             self.rotated_estimates[str(channel)][corr]["effen"] = sigmond_util.estimates_to_df(estimates)
 
-                        if not estimates:
-                            logging.warning(f"No data found for {repr(corr)}.")
         
     def plot( self ):
         if self.other_params['plot']:
@@ -384,18 +387,21 @@ class SigmondRotateCorrs:
                 if self.other_params['create_pdfs'] or self.other_params['create_summary']:
                     plh.save_pdf(self.corr_plot_file( corr_name, "pdf"))
 
-                if not self.other_params['generate_estimates']:
-                    df = self.rotated_estimates[str(channel)][corr]["effen"]
-                else:
-                    df = pd.read_csv(self.rotated_effestimates_file(corr_name))
+                try:
+                    if not self.other_params['generate_estimates']:
+                        df = self.rotated_estimates[str(channel)][corr]["effen"]
+                    else:
+                        df = pd.read_csv(self.rotated_effestimates_file(corr_name))
 
-                plh.clf()
-                plh.correlator_plot(df, 1, rop1, rop2) #1 for effective energy plot
+                    plh.clf()
+                    plh.correlator_plot(df, 1, rop1, rop2) #1 for effective energy plot
 
-                if self.other_params['create_pickles']:
-                    plh.save_pickle(self.effen_plot_file( corr_name, "pickle"))
-                if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-                    plh.save_pdf( self.effen_plot_file(corr_name, "pdf")) 
+                    if self.other_params['create_pickles']:
+                        plh.save_pickle(self.effen_plot_file( corr_name, "pickle"))
+                    if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                        plh.save_pdf( self.effen_plot_file(corr_name, "pdf")) 
+                except FileNotFoundError as err:
+                    pass
 
                 if self.other_params['create_summary']:
                     if i==j:

@@ -469,7 +469,6 @@ class SigmondInput:
           being fit
       **minimizer_info (sigmond_xml.MinimizerInfo): Specifies the
           info for the Minimizer.
-      **subtractvev (bool): 
       **sampling_mode (sigmond_xml.SamplingMode): specifies a
           sampling mode to use for the fit.
       **cov_sampling_mode (sigmond_xml.SamplingMode): specifies the

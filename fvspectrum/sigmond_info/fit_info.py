@@ -358,6 +358,10 @@ class FitInfo:
   @property
   def num_params(self):
     return len(self.PARAMETERS[self.model])
+  
+  @property
+  def param_names(self):
+    return self.PARAMETERS[self.model]
 
   @property
   def model_value(self):

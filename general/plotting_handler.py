@@ -2,6 +2,9 @@
 import matplotlib.pyplot as plt
 import pickle
 import pylatex
+import copy
+import os
+import logging
 
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
@@ -12,6 +15,8 @@ ctext_x = 0.3
 ctext_y = 0.7
 
 class PlottingHandler:
+
+    doc = []
 
     def __init__(self):
 
@@ -62,6 +67,7 @@ class PlottingHandler:
     # (they are written with bytes because that was the only it would let me)
     def save_pickle( self, filename):
         """Save the current Matplotlib figure as a pickle file."""
+        # fig = copy.deepcopy(self.fig)
         with open(filename, "wb") as f:
             pickle.dump(self.fig, f)
 
@@ -75,23 +81,36 @@ class PlottingHandler:
     
     def create_summary_doc(self, title):
         """Create a new LaTeX document with a specified title."""
-        self.doc = utils.create_doc(title)
+        self.doc.append(utils.create_doc(title))
 
-    def append_section(self, title):
+    def append_section(self, title, index = 0):
         """Append a new section to the LaTeX document."""
-        self.doc.append(pylatex.Command("section",title))
+        self.doc[index].append(pylatex.Command("section",title))
 
-    def add_correlator_subsection(self,corrname, leftplotfile, rightplotfile): #add table of estimates?, list of correlators?
+    def add_correlator_subsection(self,corrname, leftplotfile, rightplotfile, index = 0): #add table of estimates?, list of correlators?
         """Add a subsection with two plots to the LaTeX document."""
-        with self.doc.create(pylatex.Subsection(corrname)):
-            with self.doc.create(pylatex.Figure(position='H')) as thisfig:
-                with self.doc.create(pylatex.SubFigure(
+
+        rlinewidth = r'\linewidth'
+        llinewidth = r'\linewidth'
+        if not os.path.exists(leftplotfile):
+            leftplotfile = rightplotfile
+            llinewidth = r'0.1\linewidth'
+        if not os.path.exists(rightplotfile):
+            rightplotfile = leftplotfile
+            rlinewidth = r'0.1\linewidth'
+        if not os.path.exists(leftplotfile) and not os.path.exists(rightplotfile):
+            logging.warning(f"Unable to include {corrname} in summary pdf.")
+            return
+
+        with self.doc[index].create(pylatex.Subsection(corrname)):
+            with self.doc[index].create(pylatex.Figure(position='H')) as thisfig:
+                with self.doc[index].create(pylatex.SubFigure(
                     position='b', width=pylatex.NoEscape(r'0.5\linewidth'))) as left_fig:
-                    left_fig.add_image(leftplotfile,width=pylatex.NoEscape(r'\linewidth'), placement=pylatex.NoEscape("\centering") )
-                with self.doc.create(pylatex.SubFigure(
+                    left_fig.add_image(leftplotfile,width=pylatex.NoEscape(llinewidth), placement=pylatex.NoEscape("\centering") )
+                with self.doc[index].create(pylatex.SubFigure(
                     position='b', width=pylatex.NoEscape(r'0.5\linewidth'))) as right_fig:
-                    right_fig.add_image(rightplotfile,width=pylatex.NoEscape(r'\linewidth'), placement=pylatex.NoEscape("\centering") )
+                    right_fig.add_image(rightplotfile,width=pylatex.NoEscape(rlinewidth), placement=pylatex.NoEscape("\centering") )
     
-    def compile_pdf(self, filename):
+    def compile_pdf(self, filename, index = 0):
         """Compile the LaTeX document into a PDF file."""
-        utils.compile_pdf(self.doc,filename) #detect compiler? -> if self.latex, check for pylatex?
+        utils.compile_pdf(self.doc[index],filename) #detect compiler? -> if self.latex, check for pylatex?

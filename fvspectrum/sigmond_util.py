@@ -10,6 +10,8 @@ import pandas as pd
 import sigmond
 import fvspectrum.sigmond_data_handling.data_files
 import fvspectrum.sigmond_data_handling.data_handler as data_handler
+import fvspectrum.sigmond_info.fit_info as fit_info
+import fvspectrum.sigmond_info.sigmond_info as sigmond_info
 
 
 class ProjectInfo(NamedTuple):
@@ -146,26 +148,27 @@ def update_params( other_params, task_params):
             task_params[param] = other_params[param]
 
 def get_data_handlers(project_info):
-    
     this_data_handler = data_handler.DataHandler(project_info)
     mcobs_handler, mcobs_get_handler = get_mcobs_handlers(this_data_handler, project_info)
     return this_data_handler, mcobs_handler, mcobs_get_handler
 
 def get_mcobs_handlers(this_data_handler, project_info):
     mcobs_handler_init = ET.Element("MCObservables")
-    if this_data_handler.raw_data_files.bl_corr_files or this_data_handler.averaged_data_files.bl_corr_files:
+    if this_data_handler.raw_data_files.bl_corr_files or this_data_handler.averaged_data_files.bl_corr_files or this_data_handler.rotated_data_files.bl_corr_files:
         bl_corr_xml = ET.SubElement(mcobs_handler_init,"BLCorrelatorData")
-        #file list info
+        for filename in list(this_data_handler.raw_data_files.bl_corr_files)+list(this_data_handler.averaged_data_files.bl_corr_files)+list(this_data_handler.rotated_data_files.bl_corr_files):
+            flist = filename.xml()
+            bl_corr_xml.insert(1,flist)
     if this_data_handler.raw_data_files.bl_vev_files or this_data_handler.averaged_data_files.bl_vev_files:
         bl_vev_files_xml = ET.SubElement(mcobs_handler_init,"BLVEVData")
         #file list info
-    if this_data_handler.raw_data_files.bin_files or this_data_handler.averaged_data_files.bin_files:
+    if this_data_handler.raw_data_files.bin_files or this_data_handler.averaged_data_files.bin_files or this_data_handler.rotated_data_files.bin_files:
         bin_files_xml = ET.SubElement(mcobs_handler_init,"BinData")
-        for filename in list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.averaged_data_files.bin_files):
+        for filename in list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.averaged_data_files.bin_files)+list(this_data_handler.rotated_data_files.bin_files):
             ET.SubElement(bin_files_xml,"FileName").text = filename
-    if this_data_handler.raw_data_files.sampling_files or this_data_handler.averaged_data_files.sampling_files:
+    if this_data_handler.raw_data_files.sampling_files or this_data_handler.averaged_data_files.sampling_files or this_data_handler.rotated_data_files.sampling_files:
         sampling_files_xml = ET.SubElement(mcobs_handler_init,"SamplingData")
-        for filename in list(this_data_handler.raw_data_files.sampling_files)+list(this_data_handler.averaged_data_files.sampling_files):
+        for filename in list(this_data_handler.raw_data_files.sampling_files)+list(this_data_handler.averaged_data_files.sampling_files)+list(this_data_handler.rotated_data_files.sampling_files):
             ET.SubElement(sampling_files_xml,"FileName").text = filename
 
     mcobs_init = sigmond.XMLHandler()
@@ -196,3 +199,114 @@ def estimates_to_df( estimates ):
         } for key in estimates ]
     df = pd.DataFrame.from_dict(pestimates) 
     return df
+
+def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs, 
+                mcobs_handler, sampling_info, subvev, logfile, delete_samplings = False):
+
+    this_fit_info = fit_info.FitInfo( 
+        fitop,
+        fit_configs['model'],
+        fit_configs['tmin'],
+        fit_configs['tmax'],
+        subvev,
+        fit_configs['ratio'],
+        fit_configs['exclude_times'],
+        fit_configs['noise_cutoff'],
+        fit_configs['non_interacting_operators'],
+        -1,
+        -1,
+        sim_fit = fit_configs['sim_fit'],
+        initial_params = fit_configs['initial_params'],
+        priors = fit_configs['priors'],
+    )
+    #minimizer info
+    this_minimizer_info = sigmond_info.getMinimizerInfo(minimizer_configs)
+    fit_options = {
+        'minimizer_info': this_minimizer_info,
+        'sampling_mode': sampling_info,
+    }
+    # if fit_configs['non_interacting_operators']:
+    #     fit_options['non_interacting_level'] = [(op, 0) for op in fit_configs['non_interacting_operators']]
+        # non_interacting_level: #add these in somehow
+        # reference_energy: 
+        # spatial_extent:
+        # anisotropy:
+    
+    if not fit_configs['ratio'] and not fit_configs['sim_fit']: #and not vary
+        fittype = "TemporalCorrelatorFit"
+    elif fit_configs['ratio']:
+        fittype = "TemporalCorrelatorInteractionRatioFit"
+
+    task_input.doTemporalCorrelatorFit(this_fit_info,**fit_options)
+    # print(dir(task_input))
+    task_xml = task_input.sigmondXML
+    if delete_samplings:
+        for item in task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name'):
+            item.text = "dummy"
+        for i,item in enumerate(task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/IDIndex')):
+            item.text = str(i)
+        num_params = len(task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name'))
+        for i in range(num_params):
+            param = sigmond.MCObsInfo("dummy",i)
+            mcobs_handler.eraseSamplings(param)
+
+    if fit_configs['ratio']:
+        #construct a "non-ratio" xml with ratio correlator as the fit correlator
+        ratio_elem = task_xml.find(f'TaskSequence/Task/{fittype}/Ratio/*')
+        optype = ratio_elem.tag
+        opstring = ratio_elem.text
+
+        fit_elem = task_xml.find(f'TaskSequence/Task/{fittype}')
+        fit_elem.tag = "TemporalCorrelatorFit"
+        ET.SubElement(fit_elem, optype).text = opstring
+
+        #make the ratio correlator
+        if optype == 'GIOperatorString':
+            optype = sigmond.OpKind.GenIrrep
+        else:
+            optype = sigmond.OpKind.BasicLapH
+
+        ni_ops = []
+        for op in fit_configs['non_interacting_operators'].operators:
+            ni_ops.append((op.operator_info, 0))
+        ratio_op = sigmond.OperatorInfo(opstring, optype)
+        sigmond.doCorrelatorInteractionRatioBySamplings(mcobs_handler,(this_fit_info.operator.operator_info, 0),ni_ops,
+                                                        fit_configs['tmin'],fit_configs['tmax'],ratio_op, set(), 0)
+
+    setuptaskhandler = sigmond.XMLHandler()
+    setuptaskhandler.set_from_string(task_input.to_str())
+
+    fitxml = sigmond.XMLHandler(setuptaskhandler,"TemporalCorrelatorFit")
+
+    RTC = sigmond.RealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+
+    chisqr = 0.0
+    qual = 0.0
+    log_xml = sigmond.XMLHandler("FitLogFile")
+
+    try:
+        best_fit_results = sigmond.doChiSquareFitting(RTC, this_minimizer_info, chisqr, qual, log_xml)
+    except Exception as err:
+        if not delete_samplings:
+            f = open(logfile,"w+")
+            f.write(log_xml.output(1))
+            f.close()
+            raise RuntimeError(err)
+        
+
+
+    log_xml.seek_unique("DegreesOfFreedom")
+    dof = log_xml.get_text_content()
+    log_xml.seek_unique("ChiSquarePerDof")
+    chisqr = log_xml.get_text_content()
+    log_xml.seek_unique("FitQuality")
+    qual = log_xml.get_text_content()
+
+    if not delete_samplings:
+        f = open(logfile,"w+")
+        f.write(log_xml.output(1))
+        f.close()
+        # logging.info(f"Logfile written to {logfile}.")
+
+    return this_fit_info, best_fit_results, chisqr, qual, dof
+    

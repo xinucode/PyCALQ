@@ -1,0 +1,12 @@
+general:
+    project_dir: /latticeQCD/raid3/sarahski/lqcd/D200_R000/pycalq_lambda_repeat
+    ensemble_id: cls21_s64_t128_D200
+    sampling_info:
+      # mode: Jackknife
+      mode: Bootstrap
+      number_resampling: 800
+      seed: 3103
+      boot_skip: 297
+    tweak_ensemble:               #not required
+      omissions: [2000]               #default []
+      rebin: 10                    #default 1
