@@ -5,10 +5,8 @@ Full analysis chain of the finite volume spectrum from two-point correlators to 
 
 Pipeline:
 - first we pick operators to fit correlation functions
-For NN analysis: There are 3 steps
-  - single nucleon stability study
-  - two-nucleon stability study
-  - phase-shift analysis
+- use Luescher formalism to fit energy data from correlation functions to s-wave scattering phase shift
+
 
 Questions
 - what is a data handler? 
