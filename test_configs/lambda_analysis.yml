@@ -3,19 +3,21 @@ tasks:
   #   raw_data_files: 
   #     - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_rowdiraveraged/isosinglet_strange_fermionic/F_I0_Sm1.h5bins
   #     - /latticeQCD/raid3/sarahski/lqcd/D200_R000/short_term_hadrons_noL/
-      # - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_srcavg/single_hadrons/pions_larget/
-      # - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_srcavg/single_hadrons/kaons_larget/
-    # create_pickles: False
+  #   # create_pickles: False
     
   # rotate_corrs:
   #   t0: 4
   #   tN: 4
   #   tD: 16
   #   averaged_input_correlators_dir: "/latticeQCD/raid4/laph/cls21_D200_r000/correlators_rowdiraveraged/isosinglet_strange_fermionic/F_I0_Sm1.h5bins"
+  #   # plot: False
+  #   # generate_estimates: False
 
   fit_spectrum:
     # only:
-    #   - psq=0
+    # - isosinglet S=-1 G1g PSQ=0
+    # - isosinglet S=-1 G1u PSQ=0
+      # - psq=0
     #   - psq=1
     #   - psq=2
     #   - psq=3
@@ -24,6 +26,7 @@ tasks:
       # - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_srcavg/single_hadrons/pions_larget/
       # - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_srcavg/single_hadrons/kaons_larget/
     reference_particle: pi
+    thresholds: [ [pi,S], [k, N] ]
     single_hadrons:
       N:
         - isodoublet S=0 P=(0,0,0) G1g N[SS0] 0
@@ -36,18 +39,24 @@ tasks:
         - isodoublet S=-1 PSQ=1 A2 k[SS1] 0
         - isodoublet S=-1 PSQ=2 A2 k[SS0] 0
         - isodoublet S=-1 PSQ=3 A2 k[SS0] 0
-        - isodoublet S=-1 PSQ=4 A2 k[SS1] 0
+        # - isodoublet S=-1 PSQ=4 A2 k[SS1] 0
       S: 
         - isotriplet S=-1 P=(0,0,0) G1g S[SS0] 0
         - isotriplet S=-1 PSQ=1 G1 S[SS0] 0
         - isotriplet S=-1 PSQ=2 G S[SS0] 0
         - isotriplet S=-1 PSQ=3 G S[SS0] 0
-        - isotriplet S=-1 PSQ=4 G1 S[SS0] 0
+        # - isotriplet S=-1 PSQ=4 G1 S[SS0] 0
       pi:
         - pion P=(0,0,0) A1um_1 SS_0
         - isotriplet S=0 PSQ=1 A2m P[SS1] 0
         - isotriplet S=0 PSQ=2 A2m P[SS0] 0
         - isotriplet S=0 PSQ=3 A2m P[SS0] 0
+      L: 
+        - isosinglet S=-1 P=(0,0,0) G1g L[SS0] 0
+        - isosinglet S=-1 PSQ=1 G1 L[SS0] 0
+        # - isotriplet S=-1 PSQ=2 G S[SS0] 0
+        # - isotriplet S=-1 PSQ=3 G S[SS0] 0
+        # - isotriplet S=-1 PSQ=4 G1 S[SS0] 0
 
     single_hadrons_ratio:
       k: 
@@ -55,7 +64,7 @@ tasks:
         - isodoublet S=-1 PSQ=1 A2 k[SS1] 0
         - isodoublet S=-1 PSQ=2 A2 k[SS0] 0
         - isodoublet S=-1 PSQ=3 A2 k[SS0] 0
-        - isodoublet S=-1 PSQ=4 A2 k[SS1] 0
+        # - isodoublet S=-1 PSQ=4 A2 k[SS1] 0
       pi:
         - isotriplet S=0 P=(0,0,0) A1um P[SS0] 0
         - isotriplet S=0 PSQ=1 A2m P[SS1] 0
@@ -85,10 +94,10 @@ tasks:
       tmin_plots:
       - model: 1-exp
         tmin_min: 10
-        tmin_max: 20
+        tmin_max: 25
       - model: 2-exp
         tmin_min: 5
-        tmin_max: 15
+        tmin_max: 20
     non_interacting_levels:
       isosinglet S=-1 G1g PSQ=0: [[pi(1), S(1)], [pi(1), S(1)], [k(1), N(1)], [pi(1), S(1)], [pi(1), S(1)]]
       isosinglet S=-1 G1u PSQ=0: [[S(0), pi(0)], [S(0), pi(0)], [N(0), k(0)], [pi(1), S(1)], [k(1), N(1)], [pi(1), S(1)], [k(1), N(1)], [k(1), N(1)]]

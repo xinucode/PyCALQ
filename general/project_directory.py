@@ -15,17 +15,23 @@ class ProjectDirectoryHandler:
     #   /1task_name
     #     /...
 
-    def __init__(self, root ):
+    def __init__(self, root, tasks=[] ):
         """
         Initializes the project directory handler.
 
         Parameters:
         - root (str): The root directory for the project.
         """
-        self.root = root
         pathlib.Path(root).mkdir(parents=True, exist_ok=True) 
 
-    def set_task(self, index, task_name ):
+        self.root = root
+        self.all_tasks = {}
+        for i,task in enumerate(tasks):
+            if os.path.exists(os.path.join(root,f"{i}{task}")):
+                self.all_tasks[task] = ProjectDirectoryHandler(root)
+                self.all_tasks[task].set_task(i,task)
+                
+    def set_task(self, index, task_name, recursive = True):
         """
         Sets up a subdirectory in the project directory for the given task.
 
@@ -36,11 +42,20 @@ class ProjectDirectoryHandler:
         Returns:
         - str: The path to the created task subdirectory.
         """
-        subdir = os.path.join( self.root, f"{index}{task_name}")
-        pathlib.Path(subdir).mkdir(parents=True, exist_ok=True) 
-        self.task_name = task_name
-        self.index = index
-        self.current_working_dir = subdir
+        if task_name in self.all_tasks:
+            self.task_name = task_name
+            self.index = index
+            self.current_working_dir = self.all_tasks[task_name].current_working_dir
+            return self.all_tasks[task_name].current_working_dir
+        else:
+            subdir = os.path.join( self.root, f"{index}{task_name}")
+            pathlib.Path(subdir).mkdir(parents=True, exist_ok=True) 
+            self.task_name = task_name
+            self.index = index
+            self.current_working_dir = subdir
+            if recursive:
+                self.all_tasks[task_name] = ProjectDirectoryHandler(self.root)
+                self.all_tasks[task_name].set_task(index, task_name, False)
         return subdir
         
     def log_dir(self, sub_dir = []):

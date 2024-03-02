@@ -935,6 +935,8 @@ class SigmondInput:
       ET.SubElement(write_pivot_tag, "PivotFileName").text = extra_options['pivot_filename']
       if extra_options.get('pivot_overwrite'):
         ET.SubElement(write_pivot_tag, "Overwrite")
+      else:
+        ET.SubElement(write_pivot_tag, "Update")
     if extra_options.get('show_transformation'):
       ET.SubElement(pivot_init_tag, "PrintTransformationMatrix")
     if extra_options.get('set_imaginary_parts_zero'):

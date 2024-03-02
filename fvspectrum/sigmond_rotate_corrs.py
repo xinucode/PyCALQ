@@ -245,10 +245,10 @@ class SigmondRotateCorrs:
         for channel in self.channels:
             if file_created:
                 wmode = sigmond.WriteMode.Update
-                overwrite = True
+                overwrite = False
             else:
                 wmode = sigmond.WriteMode.Overwrite
-                overwrite = False
+                overwrite = True
             operators = set([op.operator_info for op in self.data_handler.getChannelOperators(channel)])
             self.nlevels[channel] = len(operators)
             if len(operators)<2:
@@ -295,10 +295,10 @@ class SigmondRotateCorrs:
             logging.info(f"Rotated correlators written to {self.rotated_corrs_file(not self.other_params['rotate_by_samplings'])}.") #add FAIR
         logging.info(f"Log file written to {os.path.join(self.proj_dir_handler.log_dir(),'sigmond_rotation_log.xml')}")
 
-        data_files = CorrelatorData()
-        self.data_handler._averaged_data = data_files
-        self.data_handler.rel_averaged_datadir = [self.rotated_corrs_dir(not self.other_params['rotate_by_samplings'])]
-        self.data_handler.findAveragedData()
+        # data_files = CorrelatorData()
+        # self.data_handler._averaged_data = data_files
+        self.data_handler.rel_rotated_datadir = [self.rotated_corrs_dir(not self.other_params['rotate_by_samplings'])]
+        self.data_handler.findRotatedData()
         mcobs_handler, mcobs_get_handler = sigmond_util.get_mcobs_handlers(self.data_handler, self.project_info)
 
         if self.other_params['plot'] and not self.other_params['generate_estimates']:

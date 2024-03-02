@@ -42,6 +42,10 @@ class FitModel(MultiValueEnum):
   @property
   def short_name(self):
     return FIT_MODEL_SHORT_NAMES[self]
+  
+  @property
+  def sigmond_object(self):
+    return FIT_MODEL_SIGMOND[self]
 
   @property
   def has_gap(self):
@@ -78,6 +82,35 @@ FIT_MODEL_SHORT_NAMES = {
     FitModel.TimeForwardThreeExponential: "3-exp",
     FitModel.TimeForwardFourExponential: "4-exp",
     FitModel.TimeForwardThreeDepExponential: "3-dep-exp",
+    # FitModel.OneStateConspiracy: "conspiracy"
+}
+
+FIT_MODEL_SIGMOND = {
+    FitModel.TimeForwardSingleExponential: sigmond.TimeForwardSingleExponential,
+    # FitModel.TimeSymSingleExponential: "1-exp-sym",
+    # FitModel.TimeForwardSingleExponentialPlusConstant: "1-exp-const",
+    # FitModel.TimeSymSingleExponentialPlusConstant: "1-exp-sym-const",
+    FitModel.TimeForwardTwoExponential: sigmond.TimeForwardTwoExponential,
+    # FitModel.TimeSymTwoExponential: "2-exp-sym",
+    # FitModel.TimeForwardTwoExponentialPlusConstant: "2-exp-const",
+    # FitModel.TimeSymTwoExponentialPlusConstant: "2-exp-sym-const",
+    # FitModel.TimeForwardGeomSeriesExponential: "geom",
+    # FitModel.TimeSymGeomSeriesExponential: "geom-sym",
+    # FitModel.LogTimeForwardSingleExponential: "log-1-exp",
+    # FitModel.LogTimeForwardTwoExponential: "log-2-exp",
+    # FitModel.TimeForwardMultiExponential: "multi-exp",
+    # FitModel.TimeForwardSTIGeomSeriesExponential: "sti-geom",
+    # FitModel.TimeForwardTruncGeomSeriesExponential: "trunc-geom",
+    # FitModel.TimeForwardDoubleExpRatio1: "two-exp-ratio1",
+    # FitModel.TimeForwardDoubleExpRatio2: "two-exp-ratio",
+    # FitModel.TimeForwardTwoIndExp: "two-ind-exp",
+    # FitModel.TimeForwardGeomSeriesSTI: "geom-sti",
+    # FitModel.TimeForwardThreeIndExp: "3-ind-exp",
+    # FitModel.TimeForwardConspiracy: "conspiracy",
+    # FitModel.TimeForwardConspiracyPlus: "conspiracy2",
+    # FitModel.TimeForwardThreeExponential: "3-exp",
+    # FitModel.TimeForwardFourExponential: "4-exp",
+    # FitModel.TimeForwardThreeDepExponential: "3-dep-exp",
     # FitModel.OneStateConspiracy: "conspiracy"
 }
 
