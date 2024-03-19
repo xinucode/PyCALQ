@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import pickle
 import pylatex
-import copy
 import os
 import logging
 import numpy as np
@@ -11,7 +10,8 @@ import numpy as np
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
-import fvspectrum.sigmond_utils.util as utils
+from sigmond_scripts.analysis.utils import util as utils
+from sigmond_scripts.analysis.sigmond_info import fit_info
 
 
 ctext_x = 0.3
@@ -73,8 +73,6 @@ def shift_levels( indexes, vals, errors, shifted_array=np.array([]), index=0 ):
 
 class PlottingHandler:
 
-    doc = []
-
     def __init__(self):
 
         # Flag to check if LaTeX is available for plot labels
@@ -82,6 +80,7 @@ class PlottingHandler:
         #checks if latex compler is present, if not sets this variable to false
             #use this for latex labels, and make an option for non-latex labels.
         self.latex = sigmond_util.set_latex_in_plots(plt.style)
+        self.doc = []
 
     #############################
     ##### matplotlib actions ####
@@ -100,6 +99,8 @@ class PlottingHandler:
         plt.gcf().set_size_inches(self.figwidth, self.figheight)
 
     def set_figsize(self, figwidth, figheight):
+        self.figheight = figheight
+        self.figwidth = figwidth
         plt.gcf().set_size_inches(figwidth, figheight)
 
     def moving_textbox(self, labels):
@@ -119,14 +120,17 @@ class PlottingHandler:
         plt.xlabel(r"$t/a_t$")
 
         # Annotate the plot with additional information if provided
+        labels = []
         if op1:
-            plt.figtext(ctext_x,ctext_y+0.1,f"snk: {str(op1)}") #double check that I'm not messing up sink and source
+            labels.append(f"snk: {str(op1)}") #double check that I'm not messing up sink and source
         if op2:
-            plt.figtext(ctext_x,ctext_y,f"src: {str(op2)}")
+            labels.append(f"src: {str(op2)}")
+        if labels:
+            self.moving_textbox(labels)
 
         plt.tight_layout()
 
-    def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, color_index = 0):
+    def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, sh_index = 0, color_index = 0):
         """Generate a correlator plot with fit using Matplotlib."""
         labels = []
         plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index], zorder=1)
@@ -147,20 +151,36 @@ class PlottingHandler:
         else:
             if fit_result_info["success"]:
                 #for single -> use eval for double. 
+                energy_index = fit_result_info["info"].energy_index
                 if fit_result_info["info"].model.short_name!="1-exp":
                     x=np.linspace(fit_result_info["info"].tmin, fit_result_info["info"].tmax, fit_result_info["info"].tmax-fit_result_info["info"].tmin+1)
                     model = fit_result_info["info"].model.sigmond_object(Nt)
-                    params = []
-                    for estimate in fit_result_info["estimates"]:
-                        params.append(estimate.getFullEstimate())
+                    if fit_result_info["info"].sim_fit: #make distinct between Deg/2-3exponential
+                        if sh_index==0:
+                            min_index = 0
+                            max_index = fit_result_info["info"].num_params
+                            params = [estimate.getFullEstimate() for estimate in fit_result_info["estimates"][min_index:max_index]] 
+                        if sh_index==1:
+                            model=fit_info.FitModel.TimeForwardTwoExponential.sigmond_object(Nt)
+                            min_index = fit_result_info["info"].num_params
+                            indexes = [min_index,min_index+1,2,min_index+2]
+                            params = [fit_result_info["estimates"][i].getFullEstimate() for i in indexes]
+                        if sh_index==2:
+                            model=fit_info.FitModel.TimeForwardTwoExponentialForCons.sigmond_object(Nt)
+                            min_index = fit_result_info["info"].num_params+3
+                            indexes = [min_index,min_index+1,2,3,min_index+2]
+                            params = [fit_result_info["estimates"][i].getFullEstimate() for i in indexes]
+                        energy_index = min_index #correspond to fit model
+                    else:
+                        params = []
+                        for estimate in fit_result_info["estimates"]:
+                            params.append(estimate.getFullEstimate())
                     y = [-np.log(model.eval(params, x[i+1])/model.eval(params, x[i])) for i in range(len(x)-1)]
                     plt.plot(x[:-1]+0.5,y, color="black", ls="--")
-                energy_result = fit_result_info["estimates"][fit_result_info["info"].energy_index].getFullEstimate()
-                energy_err = fit_result_info["estimates"][fit_result_info["info"].energy_index].getSymmetricError()
+                energy_result = fit_result_info["estimates"][energy_index].getFullEstimate()
+                energy_err = fit_result_info["estimates"][energy_index].getSymmetricError()
                 plt.hlines(energy_result, fit_result_info["info"].tmin, fit_result_info["info"].tmax, color="black", zorder=2)
                 plt.gca().add_patch(patches.Rectangle((fit_result_info["info"].tmin, energy_result-energy_err), fit_result_info["info"].tmax-fit_result_info["info"].tmin, 2.0*energy_err, zorder=0, color="gray"))
-                # plt.hlines(energy_result-energy_err, fit_result_info["info"].tmin, fit_result_info["info"].tmax, color="gray")
-                # plt.hlines(energy_result+energy_err, fit_result_info["info"].tmin, fit_result_info["info"].tmax, color="gray")
             if self.latex:
                 if fit_result_info["info"].ratio:
                     yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
@@ -197,11 +217,11 @@ class PlottingHandler:
         plt.errorbar(x=t,y=e,yerr=de, linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], 
                      marker=psettings.markers[color_index], label=model, mfc=marker_color)
 
-    def add_chosen_fit(self,tmin, energyval, energyerr):
+    def add_chosen_fit(self, energyval, energyerr, label="chosen"):
         plt.axhspan(energyval-energyerr, energyval+energyerr, color="gray")
-        plt.axhline(energyval,color="black",ls="--", label="chosen")
+        plt.axhline(energyval,color="black",ls="--", label=label)
 
-    def finalize_tmin_plot(self, ratio=False):
+    def finalize_tmin_plot(self, title=None, ratio=False):
         if self.latex:
             if ratio:
                 yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
@@ -218,7 +238,7 @@ class PlottingHandler:
         else:
             plt.xlabel(r"$t_{min}/a_t$")
         plt.ylabel(yscale)
-        plt.legend()
+        plt.legend(title=title)
         plt.tight_layout()
 
     def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[]):
@@ -289,6 +309,10 @@ class PlottingHandler:
         """Append a new section to the LaTeX document."""
         self.doc[index].append(pylatex.Command("subsection",title))
 
+    def append_subsubsection(self, title, index = 0):
+        """Append a new section to the LaTeX document."""
+        self.doc[index].append(pylatex.Command("subsubsection",title))
+
     def add_correlator_subsection(self,corrname, leftplotfile, rightplotfile, index = 0): #add table of estimates?, list of correlators?
         """Add a subsection with two plots to the LaTeX document."""
         if not os.path.exists(leftplotfile) and not os.path.exists(rightplotfile):
@@ -329,27 +353,39 @@ class PlottingHandler:
 
 
     def summary_table(self, reference, headers, data, title = "", index = 0):
-        latex_rest_mass = psettings.latex_format[reference].replace('$',"")
-        headers = [header.replace("latex_rest_mass",latex_rest_mass) for header in headers]
+        if reference:
+            latex_rest_mass = psettings.latex_format[reference].replace('$',"")
+            headers = [header.replace("latex_rest_mass",latex_rest_mass) for header in headers]
         headers = [pylatex.NoEscape(header) for header in headers]
         with self.doc[index].create(pylatex.Center()) as centered:
-            if title:
-                self.doc[index].append(pylatex.NoEscape(pylatex.utils.bold(title)+"\n\n"))
-            with centered.create(pylatex.Tabular("|".join(['c']*len(headers)))) as current_table:
-                current_table.add_row(headers)
-                current_table.add_hline()
-                for line in data:
-                    line = [psettings.latex_format[col] if col in psettings.latex_format.keys() else col for col in line]
-                    line = [pylatex.NoEscape(col) for col in line]
-                    current_table.add_row(line)
+            # if title:
+                # self.doc[index].append(pylatex.Command("caption",pylatex.NoEscape(pylatex.utils.bold(pylatex.NoEscape(title)))))
+                # self.doc[index].append(pylatex.NoEscape("\n\n"))
+            with self.doc[index].create(pylatex.Table(position='h!')) as table:
+                table.append(pylatex.Command("centering"))
+                if title:
+                    table.add_caption(pylatex.NoEscape(pylatex.utils.bold(pylatex.NoEscape(title))))
+                with table.create(pylatex.Tabular("|".join(['c']*len(headers)))) as current_table:
+                    current_table.add_row(headers)
+                    current_table.add_hline()
+                    for line in data:
+                        line = [psettings.latex_format[col] if col in psettings.latex_format.keys() else col for col in line]
+                        line = [pylatex.NoEscape(col) for col in line]
+                        current_table.add_row(line)
 
     def add_operator_overlaps(self, files, index=0):
         with self.doc[index].create(pylatex.Subsubsection("Operator Overlaps")):
-            for x,y in zip(files[::2],files[1::2]):
-                self.include_additional_plots(x,y, index)
-            if len(files)%2:
-                self.include_additional_plots(files[-1],files[-1]+"2")
+            self.add_plot_series(files,index)
+            # for x,y in zip(files[::2],files[1::2]):
+            #     self.include_additional_plots(x,y, index)
+            # if len(files)%2:
+            #     self.include_additional_plots(files[-1],files[-1]+"2")
 
+    def add_plot_series(self, files, index=0):
+        for x,y in zip(files[::2],files[1::2]):
+            self.include_additional_plots(x,y, index)
+        if len(files)%2:
+            self.include_additional_plots(files[-1],files[-1]+"2")
 
     def compile_pdf(self, filename, index = 0):
         """Compile the LaTeX document into a PDF file."""

@@ -7,10 +7,9 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 
 import sigmond
-import fvspectrum.sigmond_data_handling.data_handler as data_handler
-import fvspectrum.sigmond_data_handling.data_files
 import fvspectrum.sigmond_util as sigmond_util
 import general.plotting_handler as ph
+from sigmond_scripts.analysis.data_handling import data_handler
 
 doc = '''
 preview_corrs - a task a read in and estimate/plot any Lattice QCD temporal correlator data files given

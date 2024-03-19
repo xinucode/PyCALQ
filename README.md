@@ -16,6 +16,7 @@ Questions
 ## Prerequisites
 
 [sigmond pybindings (pip branch)](https://github.com/andrewhanlon/sigmond/tree/pip)
+[sigmond scripts pybindings (pip branch)](https://github.com/andrewhanlon/sigmond_scripts/tree/pip)
 
 ## Setup
 ```

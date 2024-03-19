@@ -3,7 +3,8 @@ tasks:
   #   raw_data_files: 
   #     - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_rowdiraveraged/isosinglet_strange_fermionic/F_I0_Sm1.h5bins
   #     - /latticeQCD/raid3/sarahski/lqcd/D200_R000/short_term_hadrons_noL/
-  #   # create_pickles: False
+  #   create_pickles: False
+  #   generate_estimates: False
     
   # rotate_corrs:
   #   t0: 4
@@ -11,22 +12,24 @@ tasks:
   #   tD: 16
   #   averaged_input_correlators_dir: "/latticeQCD/raid4/laph/cls21_D200_r000/correlators_rowdiraveraged/isosinglet_strange_fermionic/F_I0_Sm1.h5bins"
   #   # plot: False
-  #   # generate_estimates: False
+  #   create_pickles: False
+  #   generate_estimates: False
 
   fit_spectrum:
     # only:
     # - isosinglet S=-1 G1g PSQ=0
     # - isosinglet S=-1 G1u PSQ=0
+    # - isosinglet S=-1 G1 PSQ=1
       # - psq=0
     #   - psq=1
     #   - psq=2
     #   - psq=3
     averaged_input_correlators_dir: 
       - /latticeQCD/raid3/sarahski/lqcd/D200_R000/short_term_hadrons_noL/
-      # - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_srcavg/single_hadrons/pions_larget/
-      # - /latticeQCD/raid4/laph/cls21_D200_r000/correlators_srcavg/single_hadrons/kaons_larget/
     reference_particle: pi
     thresholds: [ [pi,S], [k, N] ]
+    generate_estimates: False
+    create_pickles: False
     single_hadrons:
       N:
         - isodoublet S=0 P=(0,0,0) G1g N[SS0] 0

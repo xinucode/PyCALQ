@@ -8,12 +8,12 @@ import tqdm
 
 
 import sigmond
-import fvspectrum.sigmond_util as sigmond_util
-import fvspectrum.sigmond_operator_info.operator
 import general.plotting_handler as ph
-import fvspectrum.sigmond_data_handling.data_handler as data_handler
-from fvspectrum.sigmond_data_handling.data_files import DataFiles 
-from fvspectrum.sigmond_data_handling.correlator_data import CorrelatorData
+import fvspectrum.sigmond_util as sigmond_util
+from sigmond_scripts.analysis.operator_info import operator as operator_lib
+from sigmond_scripts.analysis.data_handling import data_handler
+from sigmond_scripts.analysis.data_handling.data_files import DataFiles
+from sigmond_scripts.analysis.data_handling.correlator_data import CorrelatorData
 
 doc = '''
 average_corrs - a task a read in and automatically average over any Lattice QCD temporal correlator data files 
@@ -48,7 +48,6 @@ average_corrs:                          #required
   plot: true                            #not required #default true
   tmax: 64                              #not required #default 64
   tmin: 0                               #not required #default 0
-  write_data: true                      #not required #default true
 '''
 
 #to do: specify irreps to average
@@ -113,7 +112,7 @@ class SigmondAverageCorrs:
         this_data_handler = data_handler.DataHandler(self.project_info)
         present_files = list(this_data_handler.raw_data_files.bl_corr_files)+list(this_data_handler.raw_data_files.bl_vev_files)
         present_files += list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.raw_data_files.sampling_files)
-        if set(present_files)<=set(raw_data_files):
+        if set(present_files)<=set(raw_data_files): #raw_data_files could be directory
             needed_files = raw_data_files[:]
             [needed_files.remove(file) for file in present_files]
 
@@ -144,7 +143,6 @@ class SigmondAverageCorrs:
         
         #other params
         self.other_params = {
-            'write_data': True,
             'create_pdfs': True,
             'create_pickles': True,
             'create_summary': True,
@@ -317,14 +315,14 @@ class SigmondAverageCorrs:
                     estimates = sigmond.getCorrelatorEstimates(mcobs_handler,corr,self.hermitian,self.subtract_vev,sigmond.ComplexArg.RealPart, 
                                                                 self.project_info.sampling_info.getSamplingMode())
                     if save_to_self:
-                        self.data[channel][corr] = {}
-                        self.data[channel][corr]["corr"] = sigmond_util.estimates_to_df(estimates)
+                        self.data[avchannel][corr] = {}
+                        self.data[avchannel][corr]["corr"] = sigmond_util.estimates_to_df(estimates)
                     else:
                         sigmond_util.estimates_to_csv(estimates, self.corr_data_file(corr_name) )
                     estimates = sigmond.getEffectiveEnergy(mcobs_handler,corr,self.hermitian,self.subtract_vev,sigmond.ComplexArg.RealPart, 
                                                             self.project_info.sampling_info.getSamplingMode(),self.time_separation,self.effective_energy_type,self.vev_const)
                     if save_to_self:
-                        self.data[channel][corr]["effen"] = sigmond_util.estimates_to_df(estimates)
+                        self.data[avchannel][corr]["effen"] = sigmond_util.estimates_to_df(estimates)
                     else:
                         sigmond_util.estimates_to_csv(estimates, self.effen_data_file(corr_name) )
         
@@ -359,13 +357,12 @@ class SigmondAverageCorrs:
             index = 0
             if self.other_params['separate_mom']:
                 index = channel.momentum_squared
-                print(index)
             if self.other_params['create_summary']:
                 plh.append_section(str(channel), index)
             for avop1,avop2 in itertools.product(self.averaged_operators[channel],self.averaged_operators[channel]):
                 corr = sigmond.CorrelatorInfo(avop1.operator_info,avop2.operator_info)
                 corr_name = repr(corr).replace(" ","-")
-                if not self.other_params['write_data'] and self.other_params['plot']:
+                if not self.other_params['generate_estimates'] and self.other_params['plot']:
                     df = self.data[channel][corr]["corr"]
                 else:
                     df = pd.read_csv(self.corr_data_file(corr_name))
@@ -378,10 +375,12 @@ class SigmondAverageCorrs:
                 if self.other_params['create_pdfs'] or self.other_params['create_summary']:
                     plh.save_pdf(self.corr_plot_file( corr_name, "pdf"))
 
-                if not self.other_params['write_data'] and self.other_params['plot']:
+                if not self.other_params['generate_estimates'] and self.other_params['plot']:
                     df = self.data[channel][corr]["effen"]
                 else:
                     df = pd.read_csv(self.effen_data_file(corr_name))
+                if df.empty:
+                    continue
 
                 plh.clf()
                 plh.correlator_plot(df, 1, avop1, avop2) #1 for effective energy plot
@@ -444,7 +443,7 @@ def _getAveragedOperator(operator, averaged_channel, get_had_spat=False, get_had
 
         obs_id = op_info.getLGClebschGordonIdNum()
 
-    return fvspectrum.sigmond_operator_info.operator.Operator(averaged_channel.getGIOperator(obs_name, obs_id))
+    return operator_lib.Operator(averaged_channel.getGIOperator(obs_name, obs_id))
 
 
 NAME_MAP = {

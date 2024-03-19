@@ -8,10 +8,8 @@ from typing import NamedTuple
 import pandas as pd
 
 import sigmond
-import fvspectrum.sigmond_data_handling.data_files
-import fvspectrum.sigmond_data_handling.data_handler as data_handler
-import fvspectrum.sigmond_info.fit_info as fit_info
-import fvspectrum.sigmond_info.sigmond_info as sigmond_info
+from sigmond_scripts.analysis.data_handling import data_files, data_handler
+from sigmond_scripts.analysis.sigmond_info import fit_info, sigmond_info
 
 
 class ProjectInfo(NamedTuple):
@@ -21,7 +19,7 @@ class ProjectInfo(NamedTuple):
   echo_xml: bool
   bins_info: sigmond.MCBinsInfo
   sampling_info: sigmond.MCSamplingInfo
-  data_files: fvspectrum.sigmond_data_handling.data_files.DataFiles
+  data_files: data_files.DataFiles
   precompute: bool
   latex_compiler: str
 
@@ -122,7 +120,7 @@ def setup_project(general_params, raw_data_files = []):
     else:
         sampling_info = sigmond.MCSamplingInfo()
 
-    datafiles = fvspectrum.sigmond_data_handling.data_files.DataFiles()
+    datafiles = data_files.DataFiles()
 
     return ProjectInfo( project_dir=general_params['project_dir'], raw_data_dirs=raw_data_files, ensembles_file=ensemble_file_path,
             echo_xml=False, bins_info=bins_info, sampling_info=sampling_info, data_files=datafiles,
@@ -152,7 +150,7 @@ def get_data_handlers(project_info):
     mcobs_handler, mcobs_get_handler = get_mcobs_handlers(this_data_handler, project_info)
     return this_data_handler, mcobs_handler, mcobs_get_handler
 
-def get_mcobs_handlers(this_data_handler, project_info):
+def get_mcobs_handlers(this_data_handler, project_info, additional_sampling_files = []):
     mcobs_handler_init = ET.Element("MCObservables")
     if this_data_handler.raw_data_files.bl_corr_files or this_data_handler.averaged_data_files.bl_corr_files or this_data_handler.rotated_data_files.bl_corr_files:
         bl_corr_xml = ET.SubElement(mcobs_handler_init,"BLCorrelatorData")
@@ -166,9 +164,9 @@ def get_mcobs_handlers(this_data_handler, project_info):
         bin_files_xml = ET.SubElement(mcobs_handler_init,"BinData")
         for filename in list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.averaged_data_files.bin_files)+list(this_data_handler.rotated_data_files.bin_files):
             ET.SubElement(bin_files_xml,"FileName").text = filename
-    if this_data_handler.raw_data_files.sampling_files or this_data_handler.averaged_data_files.sampling_files or this_data_handler.rotated_data_files.sampling_files:
+    if this_data_handler.raw_data_files.sampling_files or this_data_handler.averaged_data_files.sampling_files or this_data_handler.rotated_data_files.sampling_files or additional_sampling_files:
         sampling_files_xml = ET.SubElement(mcobs_handler_init,"SamplingData")
-        for filename in list(this_data_handler.raw_data_files.sampling_files)+list(this_data_handler.averaged_data_files.sampling_files)+list(this_data_handler.rotated_data_files.sampling_files):
+        for filename in list(this_data_handler.raw_data_files.sampling_files)+list(this_data_handler.averaged_data_files.sampling_files)+list(this_data_handler.rotated_data_files.sampling_files)+additional_sampling_files:
             ET.SubElement(sampling_files_xml,"FileName").text = filename
 
     mcobs_init = sigmond.XMLHandler()
@@ -201,7 +199,7 @@ def estimates_to_df( estimates ):
     return df
 
 def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs, 
-                mcobs_handler, sampling_info, subvev, logfile, delete_samplings = False):
+                mcobs_handler, sampling_info, subvev, logfile, delete_samplings = False, sh_priors={}, scat_info = []):
 
     this_fit_info = fit_info.FitInfo( 
         fitop,
@@ -224,32 +222,38 @@ def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs,
     fit_options = {
         'minimizer_info': this_minimizer_info,
         'sampling_mode': sampling_info,
+        'sh_priors': sh_priors,
+        'scattering_fit_info': scat_info,
     }
-    # if fit_configs['non_interacting_operators']:
-    #     fit_options['non_interacting_level'] = [(op, 0) for op in fit_configs['non_interacting_operators']]
-        # non_interacting_level: #add these in somehow
-        # reference_energy: 
-        # spatial_extent:
-        # anisotropy:
     
     if not fit_configs['ratio'] and not fit_configs['sim_fit']: #and not vary
         fittype = "TemporalCorrelatorFit"
     elif fit_configs['ratio']:
         fittype = "TemporalCorrelatorInteractionRatioFit"
+    elif fit_configs["sim_fit"]:
+        fittype = "NSimTemporalCorrelatorFit/Fits/TemporalCorrelatorFit"
 
-    task_input.doTemporalCorrelatorFit(this_fit_info,**fit_options)
-    # print(dir(task_input))
+    task_input.doTemporalCorrelatorFit(this_fit_info,**fit_options) #add input for ni level priors
+
     task_xml = task_input.sigmondXML
     if delete_samplings:
-        for item in task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name'):
-            item.text = "dummy"
-        for i,item in enumerate(task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/IDIndex')):
-            item.text = str(i)
-        num_params = len(task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name'))
-        for i in range(num_params):
-            param = sigmond.MCObsInfo("dummy",i)
+                # print(this_fit_info.model_name)
+        dummy_map = {}
+        for i,(name,index) in enumerate(zip(task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name'),task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/IDIndex'))):
+            if (name.text,index.text) not in dummy_map:
+                dummy_map[(name.text,index.text)] = ("dummy", str(i))
+                name.text = "dummy"
+                index.text = str(i)
+            else:
+                name.text,  index.text = dummy_map[(name.text,index.text)]
+            param = sigmond.MCObsInfo(name.text,int(index.text))
             mcobs_handler.eraseSamplings(param)
-
+        if fit_configs['sim_fit']:
+            task_xml.find(f'TaskSequence/Task/FinalEnergy/Name').text = "dummy"
+            task_xml.find(f'TaskSequence/Task/FinalEnergy/IDIndex').text = "0"
+            task_xml.find(f'TaskSequence/Task/FinalAmplitude/Name').text = "dummy"
+            task_xml.find(f'TaskSequence/Task/FinalAmplitude/IDIndex').text = "1"
+    
     if fit_configs['ratio']:
         #construct a "non-ratio" xml with ratio correlator as the fit correlator
         ratio_elem = task_xml.find(f'TaskSequence/Task/{fittype}/Ratio/*')
@@ -273,28 +277,79 @@ def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs,
         sigmond.doCorrelatorInteractionRatioBySamplings(mcobs_handler,(this_fit_info.operator.operator_info, 0),ni_ops,
                                                         fit_configs['tmin'],fit_configs['tmax'],ratio_op, set(), 0)
 
-    setuptaskhandler = sigmond.XMLHandler()
-    setuptaskhandler.set_from_string(task_input.to_str())
 
-    fitxml = sigmond.XMLHandler(setuptaskhandler,"TemporalCorrelatorFit")
+    attempts = []
+    if fit_configs['tmin_try_min'] and fit_configs['tmin_try_max'] and not delete_samplings:
+        attempts+=list(range(fit_configs['tmin'],fit_configs['tmin_try_max']+1))
+        attempts+=list(range(fit_configs['tmin']-1,fit_configs['tmin_try_min']-1,-1))
+        
+    if attempts:
+        for attempt in attempts:
+            if attempt!=fit_configs['tmin']:
+                task_xml.find(f'TaskSequence/Task/{fittype}/MinimumTimeSeparation').text=str(attempt)
+                old_obs_name = this_fit_info.obs_name
+                this_fit_info.tmin = attempt
+                obs_list = task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name')
+                for obs in obs_list:
+                    obs.text = obs.text.replace(old_obs_name, this_fit_info.obs_name)
+                    # print(old_obs_name, this_fit_info.obs_name, obs.text)
 
-    RTC = sigmond.RealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+            setuptaskhandler = sigmond.XMLHandler()
+            setuptaskhandler.set_from_string(task_input.to_str())
 
-    chisqr = 0.0
-    qual = 0.0
-    log_xml = sigmond.XMLHandler("FitLogFile")
+            if fit_configs['sim_fit']:
+                # print(task_input.to_str())
+                fit_xml_tag = "NSimTemporalCorrelatorFit"
+            else:
+                fit_xml_tag = "TemporalCorrelatorFit"
+            fitxml = sigmond.XMLHandler(setuptaskhandler,fit_xml_tag)
+            if fit_configs['sim_fit']:
+                RTC = sigmond.NSimRealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+            else:
+                RTC = sigmond.RealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+            chisqr = 0.0
+            qual = 0.0
+            log_xml = sigmond.XMLHandler("FitLogFile")
 
-    try:
-        best_fit_results = sigmond.doChiSquareFitting(RTC, this_minimizer_info, chisqr, qual, log_xml)
-    except Exception as err:
-        if not delete_samplings:
-            f = open(logfile,"w+")
-            f.write(log_xml.output(1))
-            f.close()
+            try:
+                best_fit_results = sigmond.doChiSquareFitting(RTC, this_minimizer_info, chisqr, qual, log_xml)
+                if attempt!=fit_configs['tmin']:
+                    # this_fit_info.tmin = attempt
+                    logging.warning(f"Failed fit for {fitop} with tmin of {fit_configs['tmin']}. Using tmin={attempt} instead.")
+                break
+            except Exception as err:
+                if not delete_samplings and attempt==attempts[-1]:
+                    f = open(logfile,"w+")
+                    f.write(log_xml.output(1))
+                    f.close()
+                    logging.warning(f"Failed fit for {fitop} with tmin of {fit_configs['tmin']}. Using tmin={attempt} instead.")
+                    raise RuntimeError(err)
+            
+    else:
+        setuptaskhandler = sigmond.XMLHandler()
+        setuptaskhandler.set_from_string(task_input.to_str())
+        if fit_configs['sim_fit']:
+            fit_xml_tag = "NSimTemporalCorrelatorFit"
+        else:
+            fit_xml_tag = "TemporalCorrelatorFit"
+        fitxml = sigmond.XMLHandler(setuptaskhandler,fit_xml_tag)
+        if fit_configs['sim_fit']:
+            RTC = sigmond.NSimRealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+        else:
+            RTC = sigmond.RealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+        chisqr = 0.0
+        qual = 0.0
+        log_xml = sigmond.XMLHandler("FitLogFile")
+
+        try:
+            best_fit_results = sigmond.doChiSquareFitting(RTC, this_minimizer_info, chisqr, qual, log_xml)
+        except Exception as err:
+            if not delete_samplings:
+                f = open(logfile,"w+")
+                f.write(log_xml.output(1))
+                f.close()
             raise RuntimeError(err)
         
-
-
     log_xml.seek_unique("DegreesOfFreedom")
     dof = log_xml.get_text_content()
     log_xml.seek_unique("ChiSquarePerDof")
@@ -309,4 +364,66 @@ def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs,
         # logging.info(f"Logfile written to {logfile}.")
 
     return this_fit_info, best_fit_results, chisqr, qual, dof
-    
+
+def get_pivot_type(pivot_file):
+    ftype = sigmond.getFileID(pivot_file)
+    if ftype==sigmond.FileType.SinglePivot_CN or ftype==sigmond.FileType.SinglePivot_RN:
+        pivot_type = "single_pivot"
+    elif ftype==sigmond.FileType.RollingPivot:
+        pivot_type = "rolling_pivot"
+    else:
+        return None
+    return sigmond_info.PivotType(pivot_type)
+
+def setup_pivoter(pivot_type, pivot_file, channel, mcobs):
+    #set up pivoter based on pivot file
+    xmlinitiate_str = f'<Task><{pivot_type.name}Initiate><ReadPivotFromFile>'
+    xmlinitiate_str += f'<PivotFileName>{pivot_file}[{repr(channel)}]</PivotFileName>'
+    xmlinitiate_str += f'</ReadPivotFromFile></{pivot_type.name}Initiate></Task>'
+    xmlinitiate = sigmond.XMLHandler()
+    xmlinitiate.set_from_string(xmlinitiate_str)
+    argsinitiate = sigmond.ArgsHandler(xmlinitiate)
+    loghelper = sigmond.LogHelper()
+    xmlout = sigmond.XMLHandler("LogFile")
+
+    pivoter = sigmond.Pivot()
+    pivoter.setType(pivot_type.name)
+    pivoter.initiatePivotPython(mcobs, argsinitiate, loghelper)
+    pivoter.checkInitiate(loghelper, xmlout)
+    return pivoter
+
+def filter_channels( task_configs, channel_list):
+    final_channels = []
+    if 'only' in task_configs:
+        only_moms = []
+        only_channels = []
+        for item in task_configs['only']:
+            if item.startswith('PSQ='):
+                only_moms.append(int(item.replace('PSQ=',"")))
+            elif item.startswith('psq='):
+                only_moms.append(int(item.replace('psq=',"")))
+            else:
+                only_channels.append(item)
+        for channel in channel_list:
+            if channel.psq in only_moms or str(channel) in only_channels:
+                final_channels.append(channel)
+            else:
+                logging.info(f'Channel {str(channel)} omitted due to "only" setting.')
+    elif 'omit' in task_configs:
+        omit_moms = []
+        omit_channels = []
+        for item in task_configs['omit']:
+            if item.startswith('PSQ='):
+                omit_moms.append(int(item.replace('PSQ=',"")))
+            elif item.startswith('psq='):
+                omit_moms.append(int(item.replace('psq=',"")))
+            else:
+                omit_channels.append(item)
+        for channel in channel_list:
+            if channel.psq in omit_moms or str(channel) in omit_channels:
+                logging.info(f'Channel {str(channel)} omitted due to "omit" setting.')
+            else:
+                final_channels.append(channel)
+    else: 
+        final_channels = channel_list[:]
+    return final_channels

@@ -5,12 +5,16 @@ import pandas as pd
 
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
-import fvspectrum.sigmond_info.sigmond_input as sigmond_input
-import fvspectrum.sigmond_info.sigmond_info as sigmond_info
-import fvspectrum.sigmond_operator_info.operator as operator
-from fvspectrum.sigmond_data_handling.correlator_data import CorrelatorData
-import fvspectrum.sigmond_data_handling.data_handler as data_handler
 import general.plotting_handler as ph
+# import fvspectrum.sigmond_info.sigmond_input as sigmond_input
+# import fvspectrum.sigmond_info.sigmond_info as sigmond_info
+# import fvspectrum.sigmond_operator_info.operator as operator
+# from fvspectrum.sigmond_data_handling.correlator_data import CorrelatorData
+# import fvspectrum.sigmond_data_handling.data_handler as data_handler
+from sigmond_scripts.analysis.sigmond_info import sigmond_info, sigmond_input
+from sigmond_scripts.analysis.operator_info import operator
+from sigmond_scripts.analysis.data_handling import data_handler
+from sigmond_scripts.analysis.data_handling.correlator_data import CorrelatorData
 
 doc = '''
 general:
@@ -297,18 +301,19 @@ class SigmondRotateCorrs:
 
         # data_files = CorrelatorData()
         # self.data_handler._averaged_data = data_files
-        self.data_handler.rel_rotated_datadir = [self.rotated_corrs_dir(not self.other_params['rotate_by_samplings'])]
-        self.data_handler.findRotatedData()
-        mcobs_handler, mcobs_get_handler = sigmond_util.get_mcobs_handlers(self.data_handler, self.project_info)
+        if self.other_params['plot'] or self.other_params['generate_estimates']:
+            self.data_handler.rel_rotated_datadir = [self.rotated_corrs_dir(not self.other_params['rotate_by_samplings'])]
+            self.data_handler.findRotatedData()
+            mcobs_handler, mcobs_get_handler = sigmond_util.get_mcobs_handlers(self.data_handler, self.project_info)
 
         if self.other_params['plot'] and not self.other_params['generate_estimates']:
             self.rotated_estimates = {}
         if self.other_params['generate_estimates'] or self.other_params['plot']:
-            logging.info(f"Writing estimates to directory {self.proj_dir_handler.data_dir('estimates')}...")
+            logging.info(f"Generating estimates for {self.proj_dir_handler.data_dir('estimates')}...")
             for channel in self.channels:
                 if self.other_params['plot'] and not self.other_params['generate_estimates']:
                     self.rotated_estimates[str(channel)] = {}
-                logging.info(f"\tWriting estimates for channel {str(channel)}...")
+                logging.info(f"\tGenerating estimates for channel {str(channel)}...")
                 for i in range(self.nlevels[channel]):
                     for j in range(self.nlevels[channel]):
                         rop1 = operator.Operator( channel.getRotatedOp(i) )
@@ -373,6 +378,8 @@ class SigmondRotateCorrs:
 
                 if not self.other_params['generate_estimates']:
                     df = self.rotated_estimates[str(channel)][corr]["corr"]
+                    if df.empty:
+                        continue
                 else:
                     if os.path.exists(self.rotated_correstimates_file(corr_name)):
                         df = pd.read_csv(self.rotated_correstimates_file(corr_name))
@@ -401,6 +408,8 @@ class SigmondRotateCorrs:
                     if self.other_params['create_pdfs'] or self.other_params['create_summary']:
                         plh.save_pdf( self.effen_plot_file(corr_name, "pdf")) 
                 except FileNotFoundError as err:
+                    pass
+                except KeyError as err:
                     pass
 
                 if self.other_params['create_summary']:
