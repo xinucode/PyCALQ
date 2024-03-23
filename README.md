@@ -1,17 +1,8 @@
 # PyCALQ
-Correlator Analysis and Luscher Quantization Condition.
-
-Full analysis chain of the finite volume spectrum from two-point correlators to phase-shifts and other infinite-volume observables using the Lüscher formalism
-
-Pipeline:
-- first we pick operators to fit correlation functions
-- use Luescher formalism to fit energy data from correlation functions to s-wave scattering phase shift
-
-
-Questions
-- what is a data handler? 
-- Best tasks for both data handling and analysis
-- Exact steps for analyzing correlator data?
+# Luescher
+- Updating my single_channel_fit to include error bars based of derivative method
+- Updating single_channel_fit to create error bars from a small sample of bootstrap -> next to use all of them
+- committing coupled_channel_fit next, just with means
 
 ## Prerequisites
 
