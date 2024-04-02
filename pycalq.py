@@ -1,12 +1,16 @@
 import logging
 
+import general.task_manager as tm
 import general.config_handler as ch
 import general.project_directory as pd
+
+import fvspectrum.sigmond_project_handler as sph
 import fvspectrum.sigmond_view_corrs
-import fvspectrum.sigmond_average_corrs
+import fvspectrum.sigmond_average_corrs 
 import fvspectrum.sigmond_rotate_corrs
 import fvspectrum.sigmond_spectrum_fits
-#import fvspectrum.generate_toy_correlators
+# import fvspectrum.generate_toy_correlators
+import fvspectrum.compare_sigmond_levels
 
 # Thanks to Drew and https://stackoverflow.com/a/48201163/191474
 #ends code when run logging.error(message) or logging.critical(message)
@@ -24,37 +28,40 @@ logging.basicConfig(format='%(levelname)s: %(message)s', handlers=[ExitOnExcepti
 DEFAULT_TASKS = { #manage default configurations
     "tasks":
         {
-            "preview_corrs": None,
-            "average_corrs": None,
-            "rotate_corrs": None,
-            "fit_spectrum": None,
-#            "toy_corrs": None,
+            tm.Task.preview_corrs: None,
+            tm.Task.average_corrs: None,
+            tm.Task.rotate_corrs: None,
+            tm.Task.fit_spectrum: None,
+            # tm.Task.toy_corrs: None,
+            tm.Task.compare_spectrums: None,
         }
 }
                     
-#manage order of tasks                                 
-TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_spectrum",#correlator analysis  
-              #"toy_corrs",
-              # leuscher analysis
-              # includes load data, can plot mean data for check "data_load"
-              # includes identifying channel thresholds in relevant energy region
-              # singlew_channel_fit_mean seems good, need to idenfify single channels
-              # signe channel fit mean can use bootstrap to estimate errors
-              "single_channel_fit_mean"] #default is estimate errors, bootstrap option
-              # "single_channel_fit_err?","coupled_channel_fit"] #luscher qc
+#manage order of tasks  
+TASK_ORDER = list(dict(tm.Task.__members__).values())   
+TASK_NAMES = {task.name:task for task in TASK_ORDER}
+SIGMOND_TASKS = [ #manage which classes to use for each unique task -> change for selection (fvspectrum)
+    tm.Task.preview_corrs,
+    tm.Task.average_corrs,
+    tm.Task.rotate_corrs,
+    tm.Task.fit_spectrum,
+    # tm.Task.toy_corrs,
+]                            
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
-    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
-    "average_corrs": fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
-    "rotate_corrs": fvspectrum.sigmond_rotate_corrs.SigmondRotateCorrs,
-    "fit_spectrum": fvspectrum.sigmond_spectrum_fits.SigmondSpectrumFits,
-    #"toy_corrs": fvspectrum.generate_toy_correlators.GenerateToyCorrs,
+    tm.Task.preview_corrs: fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
+    tm.Task.average_corrs: fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
+    tm.Task.rotate_corrs: fvspectrum.sigmond_rotate_corrs.SigmondRotateCorrs,
+    tm.Task.fit_spectrum: fvspectrum.sigmond_spectrum_fits.SigmondSpectrumFits,
+    # tm.Task.toy_corrs: fvspectrum.generate_toy_correlators.GenerateToyCorrs,
+    tm.Task.compare_spectrums: fvspectrum.compare_sigmond_levels.CompareLevels,
 }
 TASK_DOC = { #imports documentation from each task
-    "preview_corrs": fvspectrum.sigmond_view_corrs.doc,
-    "average_corrs": fvspectrum.sigmond_average_corrs.doc,
-    "rotate_corrs": fvspectrum.sigmond_rotate_corrs.doc,
-    "fit_spectrum": fvspectrum.sigmond_spectrum_fits.doc,
-    #"toy_corrs": fvspectrum.generate_toy_correlators.doc,
+    tm.Task.preview_corrs: fvspectrum.sigmond_view_corrs.doc,
+    tm.Task.average_corrs: fvspectrum.sigmond_average_corrs.doc,
+    tm.Task.rotate_corrs: fvspectrum.sigmond_rotate_corrs.doc,
+    tm.Task.fit_spectrum: fvspectrum.sigmond_spectrum_fits.doc,
+    # tm.Task.toy_corrs: fvspectrum.generate_toy_correlators.doc,
+    tm.Task.compare_spectrums: fvspectrum.compare_sigmond_levels.doc,
 }
 
 #set required general parameters 
@@ -79,34 +86,72 @@ class PyCALQ:
         self.general_configs = self.general_configs_handler.configs['general']
         self.task_configs = self.task_configs_handler.configs['tasks']
 
+        if type(self.task_configs)!=list:
+            logging.error("Error in task configuration file. List tasks.")
+
         self.proj_dir = pd.ProjectDirectoryHandler(self.general_configs['project_dir'],TASK_ORDER)
+
+        #sort tasks by task order
+        task_names = [task.name for task in TASK_ORDER]
+        self.task_configs.sort(key = lambda x: task_names.index(list(x.keys())[0]) if list(x.keys())[0] in task_names else len(self.task_configs))
+
+        #set up sigmond handler and set up project directory handler 
+        max_task = 0
+        self.sig_proj_hand = None
+        sigmond_tasks = []
+        for task in self.task_configs:
+            key = list(task.keys())
+            if len(key)>1:
+                logging.error("Error in task configuration file.")
+            if key[0] in TASK_NAMES.keys():
+                if TASK_NAMES[key[0]] in SIGMOND_TASKS:
+                    sigmond_tasks.append(TASK_NAMES[key[0]])
+                max_task = task_names.index(key[0]) if task_names.index(key[0])>max_task else max_task
+        if sigmond_tasks:
+            self.sig_proj_hand = sph.SigmondProjectHandler(self.general_configs,sigmond_tasks)
+
+        for task in TASK_ORDER[:max_task+1]:
+            self.proj_dir.set_task(task.value, task.name)
 
     def run( self ):
         #probably perform the tasks in an order that makes sense
-        for task in TASK_ORDER:
-            if task in self.task_configs.keys():
+        for task_config in self.task_configs:
+            task_name = list(task_config.keys())[0] #root
+            if task_name in TASK_NAMES:
+                task = TASK_NAMES[task_name]
+                self.proj_dir.set_task(task.value, task.name)
 
-                if 'info' in self.task_configs[task]:
-                   if self.task_configs[task]['info']:
+                #print documentation if requested
+                if 'info' in task_config[task.name]:
+                   if task_config[task.name]['info']:
                       print(TASK_DOC[task])
 
-                logging.info(f"Setting up task: {task}...")
-                self.proj_dir.set_task(TASK_ORDER.index(task), task)
-                this_task = TASK_MAP[task](task, self.proj_dir, self.general_configs,self.task_configs[task]) #initialize
-                logging.info(f"Task {task} set up.")
+                #if sigmond task, set up project handler
+                logging.info(f"Setting up task: {task.name}...")
+                if task in SIGMOND_TASKS:
+                    this_task = TASK_MAP[task](task.name, self.proj_dir, self.general_configs,task_config[task.name], self.sig_proj_hand) #initialize
+                else:
+                    this_task = TASK_MAP[task](task.name, self.proj_dir, self.general_configs,task_config[task.name]) #initialize
+                logging.info(f"Task {task.name} set up.")
 
-                logging.info(f"Running task: {task}...")
+                logging.info(f"Running task: {task.name}...")
                 this_task.run() #perform the task, produce the data
-                logging.info(f"Task {task} completed.")
+                logging.info(f"Task {task.name} completed.")
 
                 #do not plot if "plot: False" is present in task yaml
-                if 'plot' in self.task_configs[task]:
-                   if not self.task_configs[task]['plot']:
-                      continue
+                if 'plot' in task_config[task.name]:
+                    if not task_config[task.name]['plot']:
+                        if task in SIGMOND_TASKS:
+                            self.sig_proj_hand.switch_tasks()
+                        continue
                    
-                logging.info(f"Plotting task: {task}...")
+                logging.info(f"Plotting task: {task.name}...")
                 this_task.plot() 
-                logging.info(f"Task {task} plotted.")
+                logging.info(f"Task {task.name} plotted.")
+                
+                if task in SIGMOND_TASKS:
+                   self.sig_proj_hand.switch_tasks()
+
 
 
 

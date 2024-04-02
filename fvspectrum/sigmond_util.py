@@ -10,6 +10,7 @@ import pandas as pd
 import sigmond
 from sigmond_scripts.analysis.data_handling import data_files, data_handler
 from sigmond_scripts.analysis.sigmond_info import fit_info, sigmond_info
+from sigmond_scripts.analysis.operator_info import channel
 
 
 class ProjectInfo(NamedTuple):
@@ -328,6 +329,7 @@ def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs,
     else:
         setuptaskhandler = sigmond.XMLHandler()
         setuptaskhandler.set_from_string(task_input.to_str())
+        # print(task_input.to_str())
         if fit_configs['sim_fit']:
             fit_xml_tag = "NSimTemporalCorrelatorFit"
         else:
@@ -348,6 +350,7 @@ def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs,
                 f = open(logfile,"w+")
                 f.write(log_xml.output(1))
                 f.close()
+                logging.info(f"Fit Log written to '{logfile}'.")
             raise RuntimeError(err)
         
     log_xml.seek_unique("DegreesOfFreedom")
@@ -392,6 +395,19 @@ def setup_pivoter(pivot_type, pivot_file, channel, mcobs):
     pivoter.checkInitiate(loghelper, xmlout)
     return pivoter
 
+def get_selected_mom( task_configs):
+    only_moms = []
+    if 'only' in task_configs:
+        for item in task_configs['only']:
+            if item.startswith('PSQ='):
+                only_moms.append(int(item.replace('PSQ=',"")))
+            elif item.startswith('psq='):
+                only_moms.append(int(item.replace('psq=',"")))
+            else:
+                only_moms.append(channel.Channel.CreateFromString(item).psq)
+    only_moms = list(set(only_moms))
+    return only_moms
+
 def filter_channels( task_configs, channel_list):
     final_channels = []
     if 'only' in task_configs:
@@ -424,6 +440,53 @@ def filter_channels( task_configs, channel_list):
                 logging.info(f'Channel {str(channel)} omitted due to "omit" setting.')
             else:
                 final_channels.append(channel)
+        final_moms = list(set(range(10))-set(omit_moms))
     else: 
         final_channels = channel_list[:]
     return final_channels
+
+
+def write_channel_plots(operators, plh, create_pickles, create_pdfs, pdh, data=None):
+    saved_to_self = (data!=None)
+    for op1 in operators:
+        for op2 in operators:
+            corr = sigmond.CorrelatorInfo(op1.operator_info,op2.operator_info)
+            corr_name = repr(corr).replace(" ","-")
+
+            try:
+                if saved_to_self:
+                    df = data[op1][op2]["corr"]
+                else:
+                    df = pd.read_csv(pdh.corr_estimates_file(corr_name))
+            except pd.errors.EmptyDataError as err:
+                logging.warning(f"pandas.errors.EmptyDataError: {err} for correlator {corr_name}.")
+
+            plh.clf()
+            plh.correlator_plot(df, 0) #, op1, op2) #0 for regular corr plot
+
+            if create_pickles:
+                plh.save_pickle(pdh.corr_plot_file( corr_name, "pickle"))
+            if create_pdfs:
+                plh.save_pdf(pdh.corr_plot_file( corr_name, "pdf"))
+
+            try:
+                if saved_to_self:
+                    df = data[op1][op2]["effen"]
+                else:
+                    df = pd.read_csv(pdh.effen_estimates_file(corr_name))
+                    
+                plh.clf()
+                plh.correlator_plot(df, 1) #, op1, op2) #1 for effective energy plot
+
+                if create_pickles:
+                    plh.save_pickle(pdh.effen_plot_file( corr_name, "pickle"))
+                if create_pdfs:
+                    plh.save_pdf( pdh.effen_plot_file(corr_name, "pdf")) 
+            except pd.errors.EmptyDataError as err:
+                pass
+                # continue
+                # logging.warning(f"pandas.errors.EmptyDataError: {err} for effective energy {corr_name}.")
+            
+#sort channel based on isospin-strangeness-momentum
+def channel_sort(item):
+    return f"{item.isospin}{item.strangeness}{item.psq}"

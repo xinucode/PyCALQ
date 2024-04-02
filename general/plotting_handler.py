@@ -209,7 +209,9 @@ class PlottingHandler:
 
         plt.tight_layout()
 
-    def add_tmin_fits(self, t,e,de,color_index, filled=True, model=None): #incorporate pvalue and chosen fit
+    #tmin or tmax plots
+    def add_fit_series(self, t,e,de,color_index, filled=True, model=None): #incorporate pvalue and chosen fit
+        """add a set of fits to a tmin or tmax plot"""
         if filled:
             marker_color = psettings.colors[color_index]
         else:
@@ -218,10 +220,13 @@ class PlottingHandler:
                      marker=psettings.markers[color_index], label=model, mfc=marker_color)
 
     def add_chosen_fit(self, energyval, energyerr, label="chosen"):
+        """add chosen fit as a horizontal bar to a plot"""
         plt.axhspan(energyval-energyerr, energyval+energyerr, color="gray")
         plt.axhline(energyval,color="black",ls="--", label=label)
 
-    def finalize_tmin_plot(self, title=None, ratio=False):
+    #tmin or tmax or t_whatever plots
+    def finalize_fit_series_plot(self, series_type="min", title=None, ratio=False):
+        """finalize a tmin or tmax plot"""
         if self.latex:
             if ratio:
                 yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
@@ -234,47 +239,66 @@ class PlottingHandler:
                 yscale = r"$a_tE_{lab}$"
 
         if self.latex:
-            plt.xlabel(r"$t_{\textup{min}}/a_t$")
+            plt.xlabel(rf"$t_{{\textup{{{series_type}}}}}/a_t$")
         else:
-            plt.xlabel(r"$t_{min}/a_t$")
+            plt.xlabel(rf"$t_{{{series_type}}}/a_t$")
         plt.ylabel(yscale)
         plt.legend(title=title)
         plt.tight_layout()
 
-    def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[]):
-        color_index = 0
+    def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[], label=None, index=0, ndatasets=1, shift=False):
+        """Summary of spectrum plot"""
         indexes = np.array(indexes)
         levels = np.array(levels)
         errs = np.array(errs)
-        shifted_array = 0.25*shift_levels(indexes,levels,errs)
-        plt.errorbar(x=indexes+shifted_array, y=levels, yerr=errs,linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index])
-        plt.xlim(min(indexes)-1.0,max(indexes)+1.0)
+        shifted_array = 0.25*shift_levels(indexes,levels,errs)/ndatasets
+        shifted_array += index/ndatasets-0.5+0.5/ndatasets
+        
+        plt.errorbar(x=indexes+shifted_array, y=levels, yerr=errs,linewidth=0.0, elinewidth=1.5, capsize=5, 
+                     color=psettings.colors[index], marker=psettings.markers[index], label=label)
 
-        dd = 0.005
-        for line in thresholds:
-            plt.axhline(line[1], color="black", ls="--")
-            line_label = ""
-            for particle in line[0]:
-                line_label+=psettings.latex_format[particle]
-            minx,maxx = plt.xlim()
-            miny,maxy = plt.ylim()
-            plt.text(minx+dd*(maxx-minx), line[1]+dd*(maxy-miny), line_label )
-        xticks = [f"{psettings.latex_format[irrep]}({mom})" for (irrep, mom) in xticks]
-        plt.xticks(list(range(len(xticks))),xticks)
-        if self.latex:
-            if reference:
-                latex_rest_mass = psettings.latex_format[reference].replace('$',"")
-                plt.ylabel(rf"$E_{{\textup{{cm}}}}/E_{{{latex_rest_mass}}}$") #change to ref
+        if index==ndatasets-1:
+            plt.xlim(min(indexes)-1.0,max(indexes)+1.0)
+            dd = 0.005
+            for line in thresholds:
+                plt.axhline(line[1], color="black", ls="--")
+                line_label = ""
+                for particle in line[0]:
+                    line_label+=psettings.latex_format[particle]
+                minx,maxx = plt.xlim()
+                miny,maxy = plt.ylim()
+                plt.text(minx+dd*(maxx-minx), line[1]+dd*(maxy-miny), line_label )
+            if len(xticks[0])==2:
+                xticks = [f"{psettings.latex_format[irrep]}({mom})" for (irrep, mom) in xticks]
+                rotation = 0
+            elif len(xticks[0])==3:
+                xticks = [f"{psettings.latex_format[irrep]}({mom}) {level}" for (irrep, mom, level) in xticks]
+                rotation = 90
+
+            plt.xticks(list(range(len(xticks))),xticks,size="small", rotation=rotation)
+            if self.latex:
+                if reference:
+                    latex_rest_mass = psettings.latex_format[reference].replace('$',"")
+                    plt.ylabel(rf"$E_{{\textup{{cm}}}}/E_{{{latex_rest_mass}}}$") #change to ref
+                else:
+                    if shift:
+                        plt.ylabel(r"$a_t \delta E_{lab}$") #change to ref
+                    else:
+                        plt.ylabel(r"$a_t E_{\textup{cm}}$") #change to ref
             else:
-                plt.ylabel(r"$a_t E_{\textup{cm}}$") #change to ref
-        else:
-            if reference:
-                latex_rest_mass = psettings.latex_format[reference].replace('$',"")
-                plt.ylabel(rf"$E_{{cm}}/E_{{{latex_rest_mass}}}$") #change to ref
-            else:
-                plt.ylabel(r"$a_t E_{cm}$")
+                if reference:
+                    latex_rest_mass = psettings.latex_format[reference].replace('$',"")
+                    plt.ylabel(rf"$E_{{cm}}/E_{{{latex_rest_mass}}}$") #change to ref
+                else:
+                    if shift:
+                        plt.ylabel(r"$a_t \delta E_{lab}$")
+                    else:
+                        plt.ylabel(r"$a_t E_{cm}$")
+            if label:
+                plt.legend()
 
     def plot_operator_overlaps(self, values, errors, opname):
+        """histogram of operator overlaps"""
         plt.bar(range(len(values)),values)
         plt.errorbar(x=range(len(values)), y=values, yerr=errors,linewidth=0.0, elinewidth=1.5, capsize=5, marker=None, color="black")
         plt.xlabel("rotate level")
@@ -344,6 +368,7 @@ class PlottingHandler:
                 thisfig.add_image(rightplotfile,width=pylatex.NoEscape(r'0.5\linewidth'), placement=pylatex.NoEscape("\centering") )
 
     def add_single_plot(self, plotfile, index=0):
+        """add only one plot the textwidth"""
         if not os.path.exists(plotfile):
             logging.warning(f"Unable to include {plotfile} in summary pdf.")
             return
@@ -353,6 +378,7 @@ class PlottingHandler:
 
 
     def summary_table(self, reference, headers, data, title = "", index = 0):
+        """a table that includes the fit information of the correlators"""
         if reference:
             latex_rest_mass = psettings.latex_format[reference].replace('$',"")
             headers = [header.replace("latex_rest_mass",latex_rest_mass) for header in headers]
@@ -374,6 +400,8 @@ class PlottingHandler:
                         current_table.add_row(line)
 
     def add_operator_overlaps(self, files, index=0):
+        """creates a section called 'Operator Overlaps' 
+        and fills it in with the given file list"""
         with self.doc[index].create(pylatex.Subsubsection("Operator Overlaps")):
             self.add_plot_series(files,index)
             # for x,y in zip(files[::2],files[1::2]):
@@ -382,6 +410,7 @@ class PlottingHandler:
             #     self.include_additional_plots(files[-1],files[-1]+"2")
 
     def add_plot_series(self, files, index=0):
+        """adds a series of plots in a two columns"""
         for x,y in zip(files[::2],files[1::2]):
             self.include_additional_plots(x,y, index)
         if len(files)%2:

@@ -45,7 +45,13 @@ class ConfigHandler:
             if not yaml_file and not json_file and not xml_file:
                 logging.error("Configs cannot be handled at this time.")
                 
-            self.configs.update(config_info)
+            root = list(config_info.keys())[0]
+            if type(config_info[root])==list:
+                if root not in self.configs:
+                    self.configs[root] = []
+                self.configs[root]+=config_info[root]
+            else:
+                self.configs.update(config_info)
                 
         elif type(input)==dict:
             self.configs.update(input)

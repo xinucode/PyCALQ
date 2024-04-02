@@ -51,15 +51,15 @@ class MyTaskName:
     def info(self):
         return doc
 
-    def __init__( self, task_name, proj_dir_handler, general_configs, task_configs ):
-        self.proj_dir_handler= proj_dir_handler
-        #initialize your task, store default input in self.proj_dir_handler.log_dir() (basically, throw the full possible input with all parameters where all the assumed parameters have been filled in in there)
+    def __init__( self, task_name, proj_files_handler, general_configs, task_configs ):
+        self.proj_files_handler= proj_files_handler
+        #initialize your task, store default input in self.proj_files_handler.log_dir() (basically, throw the full possible input with all parameters where all the assumed parameters have been filled in in there)
 
     def run( self ):
         pass
-        # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
+        # do the task, produce the data, data goes in self.proj_files_handler.data_dir(), info/warning/errors about the process goes in self.proj_files_handler.log_dir() (if any)
 
     def plot( self ):
         pass
-        # make the plots, store in self.proj_dir_handler.plot_dir(), again, any log/error warnings go in self.proj_dir_handler.log_dir() as well (if any)
+        # make the plots, store in self.proj_files_handler.plot_dir(), again, any log/error warnings go in self.proj_files_handler.log_dir() as well (if any)
 ```
