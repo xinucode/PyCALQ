@@ -7,8 +7,15 @@ tasks:
   #     - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
   single_channel_fit:
     data_file:
-      - /home/
+      - /home/jomo/PyCALQ-analysis_pre/rebin10_fer.hdf5
     channel: #'Sigma','Pi'
-       - 'Sigma'
        - 'Pi'
+       - 'Sigma'
+    irreps:
+      PSQ0: 'G1u'
+      PSQ1: 'G1'
+      PSQ2: 'G'
+      PSQ3: 'G'
+
+       
 

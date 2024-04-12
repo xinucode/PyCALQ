@@ -29,7 +29,7 @@ DEFAULT_TASKS = { #manage default configurations
 }
                     
 #manage order of tasks                                 
-TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#correlator analysis  
+TASK_ORDER = [#"preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#correlator analysis  
               # leuscher analysis
               # includes load data, can plot mean data for check "data_load"
               # includes identifying channel thresholds in relevant energy region
@@ -38,8 +38,8 @@ TASK_ORDER = ["preview_corrs", "average_corrs","rotate_corrs","fit_corrs",#corre
               "single_channel_fit"] #default is estimate errors, bootstrap option
               # "single_channel_fit_err?","coupled_channel_fit"] #luscher qc
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
-    "preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
-    "average_corrs": fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
+    #"preview_corrs": fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
+   # "average_corrs": fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
     "single_channel_fit": luescher.single_channel_fit_mean.SingleChannelFitMean,
 }
 TASK_DOC = { #imports documentation from each task
