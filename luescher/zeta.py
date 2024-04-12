@@ -78,7 +78,7 @@ def Z(q2, gamma = 1.0, l = 0, m = 0, d = np.array([0., 0., 0.]), \
     print('Gamma must be larger or equal to 1.0')
     exit(0)
   # reading the three momenta for summation from file
-  n = np.load("./momenta.npy", allow_pickle=True)
+  n = np.load("/home/jomo/PyCALQ-analysis_pre/luescher/momenta.npy", allow_pickle=True)
   # the computation
   res = A(q2, gamma, l, m, d, precision, verbose, m_split, n) + \
         B(q2, gamma, l, precision, verbose) + \
