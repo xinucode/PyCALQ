@@ -16,6 +16,13 @@ tasks:
   #     generate_estimates: False
 
   - fit_spectrum:
+      minimizer_info:
+        # minimizer: scipy
+        minimizer: lmder
+        parameter_rel_tol: 1e-7
+        chisquare_rel_tol: 1e-5
+        max_iterations: 1000
+        verbosity: high
       # only:
       # - isosinglet S=-1 G1g PSQ=0
       # - isosinglet S=-1 G1u PSQ=0
@@ -80,28 +87,28 @@ tasks:
         tmin: 15
         tmax: 25
         ratio: true
-        tmin_plots:
-        - model: 1-exp
-          tmin_min: 10
-          tmin_max: 20
-        - model: 1-exp
-          tmin_min: 10
-          tmin_max: 20
-          ratio: true
-        - model: 2-exp
-          tmin_min: 5
-          tmin_max: 15
+        # tmin_plots:
+        # - model: 1-exp
+        #   tmin_min: 10
+        #   tmin_max: 20
+        # - model: 1-exp
+        #   tmin_min: 10
+        #   tmin_max: 20
+        #   ratio: true
+        # - model: 2-exp
+        #   tmin_min: 5
+        #   tmin_max: 15
       default_noninteracting_corr_fit:
         model: 2-exp
         tmin: 10
         tmax: 25
-        tmin_plots:
-        - model: 1-exp
-          tmin_min: 10
-          tmin_max: 25
-        - model: 2-exp
-          tmin_min: 5
-          tmin_max: 20
+        # tmin_plots:
+        # - model: 1-exp
+        #   tmin_min: 10
+        #   tmin_max: 25
+        # - model: 2-exp
+        #   tmin_min: 5
+        #   tmin_max: 20
       non_interacting_levels:
         isosinglet S=-1 G1g PSQ=0: [[pi(1), S(1)], [pi(1), S(1)], [k(1), N(1)], [pi(1), S(1)], [pi(1), S(1)]]
         isosinglet S=-1 G1u PSQ=0: [[S(0), pi(0)], [S(0), pi(0)], [N(0), k(0)], [pi(1), S(1)], [k(1), N(1)], [pi(1), S(1)], [k(1), N(1)], [k(1), N(1)]]

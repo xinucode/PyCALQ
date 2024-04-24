@@ -245,6 +245,7 @@ class ProjectDirectoryHandler:
         if tm.Task.rotate_corrs.name==self.task_name:
             data_files += list(glob.glob(self.samplings_file(binned, None, None, rebin,sampling_type, rotate_type, tN, t0, tD)))
         else:
+            print(self.all_tasks[tm.Task.rotate_corrs.name].samplings_file(binned, None, None, rebin,sampling_type,rotate_type, tN, t0, tD))
             data_files += list(glob.glob(self.all_tasks[tm.Task.rotate_corrs.name].samplings_file(binned, None, None, rebin,sampling_type,rotate_type, tN, t0, tD)))
         return data_files
         

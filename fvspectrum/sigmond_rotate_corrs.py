@@ -51,13 +51,14 @@ rotate_corrs:                           #required
   tmin: 2                               #not required #default 2
   used_averaged_bins: true              #not required #default true
 '''
-#to do: add specilized pivots for individual irreps, get average directory without hardcode
-    #address tmin/tmax problem
+#to do: add specilized pivots for individual irreps
+    #address tmin/tmax problem -> I've forgotten what this problem is
 class SigmondRotateCorrs:
     @property
     def info(self):
         return doc
         
+    #data file for rotated data, samplings or bins
     def rotated_corrs_file( self, binned, channel = None ): #add rotation info, and then average info  
         if self.project_handler.project_info.sampling_info.isJackknifeMode():
             sampling_mode = 'J'
@@ -70,6 +71,7 @@ class SigmondRotateCorrs:
                                                      self.project_handler.project_info.bins_info.getRebinFactor(),
                                                      sampling_mode, rotate_type, self.tN, self.t0, self.tD)
         
+    #data file for saving pivot information
     def pivot_file(self, channel=None):      
         if self.project_handler.project_info.sampling_info.isJackknifeMode():
             sampling_mode = 'J'
@@ -87,7 +89,6 @@ class SigmondRotateCorrs:
         self.proj_file_handler= proj_file_handler
 
         self.project_handler = sph
-        # self.project_info = sigmond_util.setup_project(general_configs)
 
         #establish rotation parameters
         for param in ['t0','tN','tD']:
@@ -119,7 +120,7 @@ class SigmondRotateCorrs:
         }
         sigmond_util.update_params(self.other_params,task_configs) #update other_params with task_params, 
                                                                         #otherwise fill in missing task params
-
+        #get averaged data
         averaged_data_files = []
         if 'averaged_input_correlators_dir' in task_configs:
             if type(task_configs['averaged_input_correlators_dir'])==list:
@@ -134,11 +135,9 @@ class SigmondRotateCorrs:
             averaged_data_files = self.proj_file_handler.get_averaged_data(self.other_params['used_averaged_bins'],
                                                                            self.project_handler.project_info.bins_info.getRebinFactor(),
                                                                            sampling_mode, sigmond_util.get_selected_mom(task_configs))
-        
         self.project_handler.add_averaged_data(averaged_data_files)
-        # self.averaged_data_files = self.data_handler.averaged_data_files
 
-        #do only channels specified
+        #filter channels
         self.data_handler = self.project_handler.data_handler
         self.channels = self.data_handler.averaged_channels[:]
         final_channels = sigmond_util.filter_channels(task_configs, self.channels)
@@ -155,13 +154,16 @@ class SigmondRotateCorrs:
         self.channels = final_channels
         self.channels.sort(key=sigmond_util.channel_sort)
 
+        #save channel set to log
         task_configs['rotated_channels'] = []
         for channel in self.channels:
             task_configs['rotated_channels'].append(str(channel))
         
+        #check pivot settings
         if self.other_params['pivot_type']>1 or self.other_params['pivot_type']<0:
             logging.critical(f"Parameter 'pivot_type' set to unknown pivot type, select 0 for single pivot, and 1 for rolling pivot.")
 
+        #check plotting settings
         if not self.other_params['create_pdfs'] and not self.other_params['create_pickles'] and not self.other_params['create_summary']:
             self.other_params['plot'] = False
         
@@ -171,7 +173,7 @@ class SigmondRotateCorrs:
             yaml.dump({"general":general_configs, task_name: task_configs}, log_file)
 
     def run( self ):
-        #split for parallel jobs
+        #set up rotate task input for sigmond
         task_input = sigmond_input.SigmondInput(
             os.path.basename(self.project_handler.project_info.project_dir),
             self.project_handler.project_info.bins_info,
@@ -191,8 +193,9 @@ class SigmondRotateCorrs:
         file_created = False
         self.nlevels = {}
         skip_channels = []
+        
+        #loop through channels, set up sigmond input
         for channel in tqdm.tqdm(self.channels):
-
             if self.other_params['tmax']==None and self.other_params['tmin']==None:
                 self.other_params['tmin'], self.other_params['tmax'] = self.data_handler.getChannelsLargestTRange(channel)
             elif self.other_params['tmax']==None:
@@ -206,7 +209,7 @@ class SigmondRotateCorrs:
             else:
                 wmode = sigmond.WriteMode.Overwrite
                 overwrite = True
-            operators = set([op.operator_info for op in self.data_handler.getChannelOperators(channel)])
+            operators = [op.operator_info for op in self.data_handler.getChannelOperators(channel)]
             self.nlevels[channel] = len(operators)
             if len(operators)<2:
                 logging.info(f"Skipping {str(channel)} because there is an insufficient number of operators.")
@@ -232,9 +235,11 @@ class SigmondRotateCorrs:
             )
             file_created = True
 
+        #remove channels with less than two operators
         for channel in skip_channels:
             self.channels.remove(channel)
 
+        #finalize sigmond task inputs
         setuptaskhandler = sigmond.XMLHandler()
         setuptaskhandler.set_from_string(task_input.to_str())
 
@@ -242,10 +247,12 @@ class SigmondRotateCorrs:
             f.write(setuptaskhandler.output(1))
         logging.info(f"Sigmond input file written to {os.path.join(self.proj_file_handler.log_dir(),'sigmond_rotation_input.xml')}")
 
+        #do the rotations
         taskhandler = sigmond.TaskHandler(setuptaskhandler)
         taskhandler.do_batch_tasks(setuptaskhandler)
         del taskhandler
 
+        #check that output files were generated
         if os.path.isfile(self.pivot_file()):
             logging.info(f"Pivot matrix written to {self.pivot_file()}.") #add FAIR
         if os.path.isfile(self.rotated_corrs_file(not self.other_params['rotate_by_samplings'])):
@@ -254,6 +261,7 @@ class SigmondRotateCorrs:
             self.other_params['plot'] = False
         logging.info(f"Log file written to {os.path.join(self.proj_file_handler.log_dir(),'sigmond_rotation_log.xml')}")
 
+        #generate estimates for writing to file and/or plotting
         if os.path.isfile(self.rotated_corrs_file(not self.other_params['rotate_by_samplings'])):
             if self.other_params['plot'] or self.other_params['generate_estimates']:
                 self.project_handler.add_rotated_data([self.rotated_corrs_file(not self.other_params['rotate_by_samplings'])])
@@ -312,12 +320,13 @@ class SigmondRotateCorrs:
             logging.info(f"No plots requested.")
             return
         
+        #set up plotting handler
         plh = ph.PlottingHandler()
         plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
         if self.other_params['create_summary']:
             plh.create_summary_doc("Rotated Correlators")
         
-
+        #generate plots and/or summary
         for channel in self.channels:
             logging.info(f"\tGenerating plots for channel {str(channel)}...")
             if self.other_params['create_summary']:
@@ -377,6 +386,7 @@ class SigmondRotateCorrs:
                     plh.add_correlator_subsection(corr_title,self.proj_file_handler.corr_plot_file( corr_name, "pdf"),
                                                     self.proj_file_handler.effen_plot_file( corr_name, "pdf"))
                         
+        #compile summary file
         if self.other_params['create_summary']:
             plh.compile_pdf(self.proj_file_handler.summary_file()) 
             logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.")

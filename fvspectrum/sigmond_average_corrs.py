@@ -56,11 +56,8 @@ class SigmondAverageCorrs:
     def info(self):
         return doc
     
-    # @property
-    # def summary_file(self):
-    #     return os.path.join(self.proj_file_handler.plot_dir(), f"{self.task_name}_summary{self.other_params['task_tag']}") #add channel? project name?
-    
-    def averaged_file( self, binned, mom=None, channel = None ): #add average info
+    #final samplings file for averaged data
+    def averaged_file( self, binned, mom=None, channel = None ): 
         if self.project_handler.project_info.sampling_info.isJackknifeMode():
             sampling_mode = 'J'
         else:
@@ -68,31 +65,12 @@ class SigmondAverageCorrs:
         return self.proj_file_handler.samplings_file(binned, channel, mom, 
                                                      self.project_handler.project_info.bins_info.getRebinFactor(),
                                                      sampling_mode)
-        # if binned:
-        #     subdir = 'bins'
-        # else:
-        #     subdir = 'samples'
-        # if channel:
-        #     return os.path.join(self.proj_file_handler.data_dir(subdir),f"averaged_corrs{self.other_params['task_tag']}.hdf5[{channel}]")
-        # else:
-        #     return os.path.join(self.proj_file_handler.data_dir(subdir),f"averaged_corrs{self.other_params['task_tag']}.hdf5")
-        
-    # def corr_data_file(self,corr):
-    #     return os.path.join(self.proj_file_handler.data_dir("estimates"), f"{corr}_correlator_estimates.csv")
-
-    # def effen_data_file(self,corr):
-    #     return os.path.join(self.proj_file_handler.data_dir("estimates"), f"{corr}_effenergy_estimates.csv")
-    
-    # def corr_plot_file(self,corr, ptype):
-    #     return os.path.join(self.proj_file_handler.plot_dir(f"{ptype}s"), f"{corr}_correlator.{ptype}")
-
-    # def effen_plot_file(self,corr, ptype):
-    #     return os.path.join(self.proj_file_handler.plot_dir(f"{ptype}s"), f"{corr}_effenergy.{ptype}")
 
     def __init__( self, task_name, proj_file_handler, general_configs, task_configs, sph ):
+        #set up fundamental project objects
         self.task_name = task_name
         self.proj_file_handler= proj_file_handler
-        #initialize your task, store default input in self.proj_file_handler.log_dir() (basically, throw the full possible input with all parameters where all the assumed parameters have been filled in in there)
+        self.project_handler = sph
         
         if not task_configs:
             logging.critical(f"No directory to view. Add 'raw_data_files' to '{task_name}' task parameters.")
@@ -103,51 +81,7 @@ class SigmondAverageCorrs:
             raw_data_files = task_configs['raw_data_files']
         raw_data_files = sigmond_util.check_raw_data_files(raw_data_files, general_configs['project_dir'])
 
-        #these wont change, all correlators can and should be considered hermetian, 
-        #       and time separation is a cosmetic parameter
-        # self.hermitian = True
-        # self.time_separation = 1
-
-        # #these can and will matter but only for special cases. Will need extra care when coding up. 
-        # #only coding up if we come across an instance of needing such
-        # self.subtract_vev = False
-        # self.vev_const = 0.0
-        # self.effective_energy_type = 0 #0=TimeForward, 1=TimeSymmetric, 2=TimeBackward?
-
-        self.project_handler = sph
-        # self.project_info = sigmond_util.setup_project(general_configs,raw_data_files)
-        
-        #check that raw data files match what's in the data handler currently, get list of files in datahandler. 
-        # this_data_handler = data_handler.DataHandler(self.project_info)
-        # present_files = list(this_data_handler.raw_data_files.bl_corr_files)+list(this_data_handler.raw_data_files.bl_vev_files)
-        # present_files += list(this_data_handler.raw_data_files.bin_files)+list(this_data_handler.raw_data_files.sampling_files)
-        # if set(present_files)<=set(raw_data_files): #raw_data_files could be directory
-        #     needed_files = raw_data_files[:]
-        #     [needed_files.remove(file) for file in present_files]
-
-        #     data_files = DataFiles()
-        #     for data_dir in needed_files:
-        #         data_files += data_handler._find_data_files(data_dir)
-        #     logging.info("Searching through found raw data files...")
-        #     this_data_handler._raw_data += this_data_handler._findLaphData(data_files)
-        #     if data_files.bin_files:
-        #         logging.info("Reading bin data")
-        #         for bin_file in tqdm.tqdm(data_files.bin_files):
-        #             this_data_handler._raw_data += this_data_handler._findSigmondData(bin_file, sigmond.FileType.Bins)
-
-        #     if data_files.sampling_files:
-        #         logging.info("Reading sampling data")
-        #         for smp_file in tqdm.tqdm(data_files.sampling_files):
-        #             this_data_handler._raw_data += this_data_handler._findSigmondData(smp_file, sigmond.FileType.Samplings)
-
-        #     this_data_handler.raw_data_files += data_files
-        # else:
-        #     # del this_data_handler
-        #     this_data_handler.project_info = self.project_info
-        #     data_files = DataFiles()
-        #     this_data_handler.raw_data_files = data_files
-        #     this_data_handler._raw_data = CorrelatorData()
-        #     this_data_handler._findRawData()
+        #retrieve data
         self.project_handler.add_raw_data(raw_data_files)
         self.data_handler = self.project_handler.data_handler
         
@@ -177,28 +111,29 @@ class SigmondAverageCorrs:
         if not self.other_params['create_pdfs'] and not self.other_params['create_pickles'] and not self.other_params['create_summary']:
             self.other_params['plot'] = False
 
-        
+        #filter channels
         self.channels = self.data_handler.raw_channels[:]
         final_channels = sigmond_util.filter_channels(task_configs, self.channels)
         remove_channels = set(self.channels)-set(final_channels)
         self.project_handler.remove_raw_data_channels(remove_channels)
         self.channels = final_channels
 
-        #actually remove channels
-
         #make yaml output
         logging.info(f"Full input written to '{os.path.join(proj_file_handler.log_dir(), 'full_input.yml')}'.")
         with open( os.path.join(proj_file_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs, task_name: task_configs}, log_file)
 
-        if self.other_params['task_tag']:
-            self.other_params['task_tag'] = "-"+self.other_params['task_tag']
+
+        # if self.other_params['task_tag']:
+        #     self.other_params['task_tag'] = "-"+self.other_params['task_tag']
 
     def run( self ):
+        #get sigmond data handler
         mcobs_handler, mcobs_get_handler = sigmond_util.get_mcobs_handlers(self.data_handler,self.project_handler.project_info)
         averaged_channels = dict()
         log_output = dict()
 
+        #check for already averaged channels, split channels in sets to be averaged
         for channel in self.channels:
             if channel.is_averaged:
                 logging.warning(f"Channel {str(channel)} is averaged already.")
@@ -213,11 +148,13 @@ class SigmondAverageCorrs:
             averaged_channels[averaged_channel].append(channel)
             log_output[str(averaged_channel)].append(str(channel))
 
+        #put channel averaged info into log 
         log_path = os.path.join(self.proj_file_handler.log_dir(), 'channels_combined_log.yml')
         logging.info(f"List of averaged channels written to '{log_path}'.")
         with open(log_path, 'w+') as log_file:
             yaml.dump(log_output, log_file)
 
+        #generate the lists of operators to average together
         self.averaged_operators = {}
         log_output = dict()
         for avchannel, rawchannels in averaged_channels.items():
@@ -239,20 +176,25 @@ class SigmondAverageCorrs:
                         self.averaged_operators[avchannel][avop].append(rawops)
                         log_output[str(avchannel)][str(avop)].append(str(rawops))
 
+        #put list of operators averaged into logfile
         log_path = os.path.join(self.proj_file_handler.log_dir(), 'operators_combined_log.yml')
         logging.info(f"List of averaged operators written to '{log_path}'.")
         with open(log_path, 'w+') as log_file:
             yaml.dump(log_output, log_file)
 
+        #determine if save data internally
         save_to_self = not self.other_params['generate_estimates'] and self.other_params['plot']
         if save_to_self:
             self.data = {}
 
+        #for organizing momentum separated data files
         if self.other_params['separate_mom']:
             file_created = [False, False, False, False, False, False, False, False, False, False]
         else:
             file_created = [False]
 
+
+        #do the averaging
         index = 0
         mom_key = None
         self.moms = []
@@ -260,13 +202,12 @@ class SigmondAverageCorrs:
             logging.info(f"Saving averaged correlators to {self.averaged_file(self.other_params['average_by_bins'],'*')}...")
         else:
             logging.info(f"Saving averaged correlators to {self.averaged_file(self.other_params['average_by_bins'])}...")
-        #sort by mom #separate into different tasks
         for avchannel in tqdm.tqdm(self.averaged_operators):
             if self.other_params['separate_mom']:
                 index = avchannel.momentum_squared
                 mom_key = index
                 self.moms.append(index)
-                self.other_params['task_tag'] = self.other_params['task_tag'][:-1]+str(index)
+                # self.other_params['task_tag'] = self.other_params['task_tag'][:-1]+str(index)
             if file_created[index]:
                 wmode = sigmond.WriteMode.Update
             else:
@@ -295,6 +236,7 @@ class SigmondAverageCorrs:
                 mcobs_handler.writeSamplingValuesToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],mom_key,repr(avchannel)),decoy,wmode, 'H')
             file_created[index] = True
             
+            #generate estimates for writing to file or plotting
             if save_to_self or self.other_params['generate_estimates']:
                 for avop1,avop2 in itertools.product(self.averaged_operators[avchannel],self.averaged_operators[avchannel]):
                     corr = sigmond.CorrelatorInfo(avop1.operator_info,avop2.operator_info)
@@ -323,13 +265,14 @@ class SigmondAverageCorrs:
             logging.info(f"Estimates generated in directory {self.proj_file_handler.data_dir('estimates')}.")
             
     def plot( self ):
-        #make plot for each correlator -> save to pickle and pdf
+        #determine if plots requested
         if self.other_params['plot']:
             logging.info(f"Saving plots to directory {self.proj_file_handler.plot_dir()}...")
         else:
             logging.info(f"No plots requested.")
             return
         
+        #set up plotting handler
         plh = ph.PlottingHandler()
         self.moms = list(set(self.moms))
 
@@ -338,47 +281,13 @@ class SigmondAverageCorrs:
         
         #loop through same channels #make loading bar
         if not self.other_params['generate_estimates'] and self.other_params['plot']:
-            # pqdm doesn't make all plots. Don't know why. Figure out error code
-            # pqdm([[channel, plh] for channel in self.averaged_operators], self.write_channel_plots_data, n_jobs=self.project_handler.nodes, argument_type='args')
             for channel in tqdm.tqdm(self.averaged_operators):
                 self.write_channel_plots_data(channel, plh)
         else:
-            # pqdm([[channel, plh] for channel in self.averaged_operators], self.write_channel_plots, n_jobs=self.project_handler.nodes, argument_type='args')
             for channel in tqdm.tqdm(self.averaged_operators):
-                self.write_channel_plots(channel, plh)
-        # for channel in tqdm.tqdm(self.averaged_operators):
-        #     for avop1,avop2 in itertools.product(self.averaged_operators[channel],self.averaged_operators[channel]):
-        #         corr = sigmond.CorrelatorInfo(avop1.operator_info,avop2.operator_info)
-        #         corr_name = repr(corr).replace(" ","-")
-        #         if not self.other_params['generate_estimates'] and self.other_params['plot']:
-        #             df = self.data[channel][corr]["corr"]
-        #         else:
-        #             df = pd.read_csv(self.proj_file_handler.corr_estimates_file(corr_name))
-
-        #         plh.clf()
-        #         plh.correlator_plot(df, 0, avop1, avop2) #0 for regular corr plot
-
-        #         if self.other_params['create_pickles']:
-        #             plh.save_pickle(self.proj_file_handler.corr_plot_file( corr_name, "pickle"))
-        #         if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-        #             plh.save_pdf(self.proj_file_handler.corr_plot_file( corr_name, "pdf"))
-
-        #         if not self.other_params['generate_estimates'] and self.other_params['plot']:
-        #             df = self.data[channel][corr]["effen"]
-        #         else:
-        #             df = pd.read_csv(self.proj_file_handler.effen_estimates_file(corr_name))
-        #         if df.empty:
-        #             continue
-
-        #         plh.clf()
-        #         plh.correlator_plot(df, 1, avop1, avop2) #1 for effective energy plot
-
-        #         if self.other_params['create_pickles']:
-        #             plh.save_pickle(self.proj_file_handler.effen_plot_file( corr_name, "pickle"))
-        #         if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-        #             plh.save_pdf( self.proj_file_handler.effen_plot_file(corr_name, "pdf")) 
-
+                self.write_channel_plots(channel, plh) 
         
+        #put all plots into summary doc
         if self.other_params['create_summary']:
             if self.other_params['separate_mom']:
                 for i in self.moms:
@@ -402,17 +311,18 @@ class SigmondAverageCorrs:
                 logging.getLogger().setLevel(logging.WARNING)
                 pqdm([[self.proj_file_handler.summary_file(psq), i] for i,psq in enumerate(self.moms)], plh.compile_pdf, n_jobs=self.project_handler.nodes, argument_type="args")
                 logging.getLogger().setLevel(loglevel)
-                # for i,psq in tqdm.tqdm(enumerate(self.moms)):
-                #     plh.compile_pdf(self.proj_file_handler.summary_file(psq), i) 
                 logging.info(f"Summary file saved to {self.proj_file_handler.summary_file('*')}.pdf.")
             else:
                 plh.compile_pdf(self.proj_file_handler.summary_file()) 
                 logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.pdf.")
          
+    #use class data to generate the channel plots
     def write_channel_plots_data(self, channel, plh):
         sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
                             self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler,
                             self.data[channel])
+        
+    #use estimates file to generate channel plots
     def write_channel_plots(self, channel, plh):
         sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
                             self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler)

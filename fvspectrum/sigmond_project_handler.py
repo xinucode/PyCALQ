@@ -16,7 +16,7 @@ dependencies = {
     tm.Task.average_corrs: [],
     tm.Task.rotate_corrs: [tm.Task.average_corrs],
     tm.Task.fit_spectrum: [tm.Task.average_corrs, tm.Task.rotate_corrs],
-    # tm.Task.toy_corrs: [tm.Task.average_corrs]
+    tm.Task.toy_corrs: [tm.Task.average_corrs]
 }
 raw_data_dependence = [tm.Task.preview_corrs, tm.Task.average_corrs]
 
@@ -54,7 +54,13 @@ class SigmondProjectHandler:
         self.contains_raw_data = False
         self.contains_averaged_data = False
         self.contains_rotated_data = False
-        self.nodes = general_configs.pop('nnodes', 1)
+
+        default_nodes = nodes=os.cpu_count()
+        if shared:
+            default_nodes /= 2
+            default_nodes = int(default_nodes)
+            default_nodes = min(default_nodes,8)
+        self.nodes = general_configs.pop('nnodes', default_nodes)
         general_configs['nnodes'] = self.nodes
 
         #these wont change, all correlators can and should be considered hermetian, 

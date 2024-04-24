@@ -13,13 +13,16 @@ class ConfigHandler:
     def init( self, input ):
         if type(input)==str:
             yaml_file = False; json_file = False; xml_file = False
-            try: #tested
+
+            #try to input as yaml file
+            try: 
                 with open(input, 'r') as f:
                     config_info = yaml.safe_load(f)
                     yaml_file = True
             except:
                 logging.warning(f"{input} is not a YAML file")
                 
+            #try to input as json file
             if not yaml_file: #tested
                 try:
                     with open(input, 'r') as f:
@@ -28,6 +31,7 @@ class ConfigHandler:
                 except:
                     logging.warning(f"{input} is not a JSON file")
                     
+            #try to input as xml file #problems
             if not yaml_file and not json_file: #tested
                 try:
                     with open(input, 'r') as f:
@@ -45,6 +49,7 @@ class ConfigHandler:
             if not yaml_file and not json_file and not xml_file:
                 logging.error("Configs cannot be handled at this time.")
                 
+            #extract task name (root) and organize config info accordingly
             root = list(config_info.keys())[0]
             if type(config_info[root])==list:
                 if root not in self.configs:
@@ -62,6 +67,7 @@ class ConfigHandler:
         else:
             logging.error("Configs cannot be handled at this time.")
 
+    #perform basic checks as well as check for requirements
     def check(self, root, requirements ):
 
         #check that root is singular and that is the set one

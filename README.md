@@ -3,19 +3,10 @@ Correlator Analysis and Luscher Quantization Condition.
 
 Full analysis chain of the finite volume spectrum from two-point correlators to phase-shifts and other infinite-volume observables using the Lüscher formalism
 
-Pipeline:
-- first we pick operators to fit correlation functions
-- use Luescher formalism to fit energy data from correlation functions to s-wave scattering phase shift
-
-
-Questions
-- what is a data handler? 
-- Best tasks for both data handling and analysis
-- Exact steps for analyzing correlator data?
-
 ## Prerequisites
 
 [sigmond pybindings (pip branch)](https://github.com/andrewhanlon/sigmond/tree/pip)
+
 [sigmond scripts pybindings (pip branch)](https://github.com/andrewhanlon/sigmond_scripts/tree/pip)
 
 ## Setup
@@ -37,6 +28,29 @@ options:
   -t TASKS [TASKS ...], --tasks TASKS [TASKS ...]
                         task(s) configuration file(s)
 ```
+
+## Tasks
+
+general setup => general configs
+
+### View Correlators
+info
+
+### Average Correlators
+info
+
+### Rotate Correlators
+info
+
+### Fit Correlators
+info
+
+### Compare Spectrums
+info
+
+### Single Channel Fit
+info
+
 
 ## Skeleton Task Class
 ```

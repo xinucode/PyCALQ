@@ -29,11 +29,12 @@ tasks:
   #     plot: False
   #     generate_estimates: False
   #     # only:
-  #     #   - psq=0
+  #       # - psq=0
   # - rotate_corrs:
   #     t0: 5
   #     tN: 5
   #     tD: 10
+  #     pivot_type: 1
   #     plot: False
   #     generate_estimates: False
   #     # only:
@@ -50,6 +51,23 @@ tasks:
   #     t0: 6
   #     tN: 6
   #     tD: 12
+  #     pivot_type: 1
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 6
+  #     tN: 6
+  #     tD: 14
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 7
+  #     tN: 7
+  #     tD: 14
   #     plot: False
   #     generate_estimates: False
   #     # only:
@@ -57,25 +75,69 @@ tasks:
 
 
   - compare_spectrums:
+      max_level: 3
       compare_plots:
       - compare_gevp:
           gevp_values:
-          - tN: 4
-            t0: 4
-            tD: 8
-          - tN: 4
-            t0: 4
-            tD: 10
+          # - tN: 4
+          #   t0: 4
+          #   tD: 8
+          # - tN: 4
+          #   t0: 4
+          #   tD: 10
           - tN: 5
             t0: 5
             tD: 10
+            pivot_type: 0
+          # - tN: 5
+          #   t0: 5
+          #   tD: 10
+            # pivot_type: 1
           - tN: 5
             t0: 5
             tD: 12
           - tN: 6
             t0: 6
             tD: 12
+            pivot_type: 0
+          - tN: 6
+            t0: 6
+            tD: 12
+            pivot_type: 1
+          - t0: 6
+            tN: 6
+            tD: 14
+          - t0: 7
+            tN: 7
+            tD: 14
           
           sampling_mode: 'B'
-          rebin: 5
+          rebin: 4
           run_tag: 6Ntmin
+      - compare_rebin:
+          rebin_values: [1,2,4,5]
+          tN: 5
+          t0: 5
+          tD: 10
+          sampling_mode: 'B'
+          run_tag: 6Ntmin
+      # - compare_rebin:
+      #     reference_particle: N
+      #     rebin_values: [1,2,5,6,8,10]
+      #     tN: 5
+      #     t0: 5
+      #     tD: 10
+      #     sampling_mode: 'B'
+      #     run_tag: 6Ntmin
+      # reference_particle: N
+
+      - compare_tags:
+          filetags:
+          - 5Ntmin
+          - 6Ntmin
+          - 7Ntmin
+          tN: 6
+          t0: 6
+          tD: 12
+          sampling_mode: 'B'
+          rebin: 4
