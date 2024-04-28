@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib
 import pickle
 import pylatex
 import os
@@ -10,8 +11,8 @@ import numpy as np
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
-from sigmond_scripts.analysis.utils import util as utils
-from sigmond_scripts.analysis.sigmond_info import fit_info
+from sigmond_scripts import util as utils
+from sigmond_scripts import fit_info
 
 #where source and sink labels go on plot
 ctext_x = 0.3
@@ -77,14 +78,27 @@ def shift_levels( indexes, vals, errors, shifted_array=np.array([]), index=0 ):
     return 0.0
 
 class PlottingHandler:
+    # Flag to check if LaTeX is available for plot labels
+    latex = True
+    #checks if latex compler is present, if not sets this variable to false
+            #use this for latex labels, and make an option for non-latex labels.
+    latex = sigmond_util.set_latex_in_plots(plt.style)
+
+    #does a quick test to see if necessary latex libraries are present
+    x = np.linspace(0,10,10)
+    plt.plot(x,x)
+    try:
+        plt.tight_layout()
+
+    except RuntimeError as err:
+        print("Not all libraries are available for matplotlib latex plots. Latex will not be used for plots.")
+        print(f"\t message: {err}")
+        latex = False
+        matplotlib.rcParams['text.usetex'] = False
+ 
+    plt.clf()
 
     def __init__(self):
-
-        # Flag to check if LaTeX is available for plot labels
-        self.latex = True
-        #checks if latex compler is present, if not sets this variable to false
-            #use this for latex labels, and make an option for non-latex labels.
-        self.latex = sigmond_util.set_latex_in_plots(plt.style)
         self.doc = []
 
     #############################

@@ -6,9 +6,9 @@ import tqdm
 import sigmond
 import general.task_manager as tm
 import fvspectrum.sigmond_util as sigmond_util
-from sigmond_scripts.analysis.data_handling import data_handler
-from sigmond_scripts.analysis.data_handling.data_files import DataFiles
-from sigmond_scripts.analysis.data_handling.correlator_data import CorrelatorData
+from sigmond_scripts import data_handler
+from sigmond_scripts.data_files import DataFiles
+from sigmond_scripts.correlator_data import CorrelatorData
 
 # states the data dependence of all sigmond tasks
 dependencies = {

@@ -12,9 +12,9 @@ import time
 from threading import Thread
 
 import sigmond
-from sigmond_scripts.analysis.data_handling import data_files, data_handler
-from sigmond_scripts.analysis.sigmond_info import fit_info, sigmond_info
-from sigmond_scripts.analysis.operator_info import channel
+from sigmond_scripts import data_files, data_handler
+from sigmond_scripts import fit_info, sigmond_info
+from sigmond_scripts import channel
 
 #project info class drew designed for keeping all
     #important information for correlator analysis

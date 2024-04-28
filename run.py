@@ -4,8 +4,8 @@ import pycalq
 #pick up the general and any task config files passed in arguments
 def pickup_configs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', "--general", help="general configuration file")
-    parser.add_argument('-t', "--tasks", nargs='+', help="task(s) configuration file(s)", required=False)
+    parser.add_argument('-g', "--general", help="general configuration file", required=True)
+    parser.add_argument('-t', "--tasks", nargs='+', help="task(s) configuration file(s)", required=True)
     args = parser.parse_args()
     config_file = args.general
     task_configs = args.tasks

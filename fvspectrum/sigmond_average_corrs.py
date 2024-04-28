@@ -4,16 +4,14 @@ import os
 import pandas as pd
 import itertools
 import tqdm
-from pqdm.processes import pqdm
-
 
 import sigmond
 import general.plotting_handler as ph
 import fvspectrum.sigmond_util as sigmond_util
-from sigmond_scripts.analysis.operator_info import operator as operator_lib
-from sigmond_scripts.analysis.data_handling import data_handler
-from sigmond_scripts.analysis.data_handling.data_files import DataFiles
-from sigmond_scripts.analysis.data_handling.correlator_data import CorrelatorData
+from sigmond_scripts import operator as operator_lib
+from sigmond_scripts import data_handler
+from sigmond_scripts.data_files import DataFiles
+from sigmond_scripts.correlator_data import CorrelatorData
 
 doc = '''
 average_corrs - a task a read in and automatically average over any Lattice QCD temporal correlator data files 
@@ -216,25 +214,28 @@ class SigmondAverageCorrs:
             input_ops = list()
             if save_to_self:
                 self.data[avchannel] = {}
-            for i in range(len(list(self.averaged_operators[avchannel].values())[0])):
-                an_item = list()
-                for op2 in self.averaged_operators[avchannel]:
-                    an_item.append( (self.averaged_operators[avchannel][op2][i].operator_info,1.0))
-                input_ops.append(an_item)
 
-            if self.other_params['average_by_bins']:
-                result_obs = sigmond.doCorrelatorMatrixSuperpositionByBins(mcobs_handler, input_ops, result_ops, self.project_handler.hermitian, self.other_params['tmin'],
+            if self.averaged_operators[avchannel]:
+                for i in range(len(list(self.averaged_operators[avchannel].values())[0])):
+                    an_item = list()
+                    for op2 in self.averaged_operators[avchannel]:
+                        an_item.append( (self.averaged_operators[avchannel][op2][i].operator_info,1.0))
+                    input_ops.append(an_item)
+
+            if input_ops:
+                if self.other_params['average_by_bins']:
+                    result_obs = sigmond.doCorrelatorMatrixSuperpositionByBins(mcobs_handler, input_ops, result_ops, self.project_handler.hermitian, self.other_params['tmin'],
                                                             self.other_params['tmax'], self.other_params['erase_original_matrix_from_memory'],
                                                             self.other_params['ignore_missing_correlators'])
-                decoy = sigmond.XMLHandler()
-                mcobs_handler.writeBinsToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],mom_key,repr(avchannel)),decoy,wmode, 'H')
-            else:
-                result_obs = sigmond.doCorrelatorMatrixSuperpositionBySamplings(mcobs_handler, input_ops, result_ops, self.project_handler.hermitian, self.other_params['tmin'],
+                    decoy = sigmond.XMLHandler()
+                    mcobs_handler.writeBinsToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],mom_key,repr(avchannel)),decoy,wmode, 'H')
+                else:
+                    result_obs = sigmond.doCorrelatorMatrixSuperpositionBySamplings(mcobs_handler, input_ops, result_ops, self.project_handler.hermitian, self.other_params['tmin'],
                                                             self.other_params['tmax'], self.other_params['erase_original_matrix_from_memory'],
                                                             self.other_params['ignore_missing_correlators'])
-                decoy = sigmond.XMLHandler()
-                mcobs_handler.writeSamplingValuesToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],mom_key,repr(avchannel)),decoy,wmode, 'H')
-            file_created[index] = True
+                    decoy = sigmond.XMLHandler()
+                    mcobs_handler.writeSamplingValuesToFile(result_obs,self.averaged_file(self.other_params['average_by_bins'],mom_key,repr(avchannel)),decoy,wmode, 'H')
+                file_created[index] = True
             
             #generate estimates for writing to file or plotting
             if save_to_self or self.other_params['generate_estimates']:
@@ -296,25 +297,28 @@ class SigmondAverageCorrs:
                 plh.create_summary_doc("Average Data")
         
             index = 0
-            for channel in self.averaged_operators:
-                index = self.moms.index(channel.momentum_squared)
-                plh.append_section(str(channel), index)
-                for avop1,avop2 in itertools.product(self.averaged_operators[channel],self.averaged_operators[channel]):
-                    corr = sigmond.CorrelatorInfo(avop1.operator_info,avop2.operator_info)
-                    corr_name = repr(corr).replace(" ","-")
-                    plh.add_correlator_subsection(repr(corr),self.proj_file_handler.corr_plot_file( corr_name, "pdf"),
+            if self.moms:
+                for channel in self.averaged_operators:
+                    index = self.moms.index(channel.momentum_squared)
+                    plh.append_section(str(channel), index)
+                    for avop1,avop2 in itertools.product(self.averaged_operators[channel],self.averaged_operators[channel]):
+                        corr = sigmond.CorrelatorInfo(avop1.operator_info,avop2.operator_info)
+                        corr_name = repr(corr).replace(" ","-")
+                        plh.add_correlator_subsection(repr(corr),self.proj_file_handler.corr_plot_file( corr_name, "pdf"),
                                                 self.proj_file_handler.effen_plot_file( corr_name, "pdf"), index)
 
-            self.proj_file_handler.remove_summary_files()
-            if self.other_params['separate_mom']:
-                loglevel = logging.getLogger().getEffectiveLevel()
-                logging.getLogger().setLevel(logging.WARNING)
-                pqdm([[self.proj_file_handler.summary_file(psq), i] for i,psq in enumerate(self.moms)], plh.compile_pdf, n_jobs=self.project_handler.nodes, argument_type="args")
-                logging.getLogger().setLevel(loglevel)
-                logging.info(f"Summary file saved to {self.proj_file_handler.summary_file('*')}.pdf.")
-            else:
-                plh.compile_pdf(self.proj_file_handler.summary_file()) 
-                logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.pdf.")
+                self.proj_file_handler.remove_summary_files()
+                if self.other_params['separate_mom']:
+                    loglevel = logging.getLogger().getEffectiveLevel()
+                    logging.getLogger().setLevel(logging.WARNING)
+                    #pqdm([[self.proj_file_handler.summary_file(psq), i] for i,psq in enumerate(self.moms)], plh.compile_pdf, n_jobs=self.project_handler.nodes, argument_type="args")
+                    for i,psq in enumerate(self.moms):
+                        plh.compile_pdf(self.proj_file_handler.summary_file(psq),i)
+                    logging.getLogger().setLevel(loglevel)
+                    logging.info(f"Summary file saved to {self.proj_file_handler.summary_file('*')}.pdf.")
+                else:
+                    plh.compile_pdf(self.proj_file_handler.summary_file()) 
+                    logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.pdf.")
          
     #use class data to generate the channel plots
     def write_channel_plots_data(self, channel, plh):
@@ -335,6 +339,8 @@ def _getOperatorsMap(operators, averaged_channel, get_had_spat=False, get_had_ir
         averaged_op = _getAveragedOperator(operator, averaged_channel, get_had_spat, get_had_irrep)
         if averaged_op in op_map:
             logging.critical(f"Conflicting operators {operator} and {op_map[averaged_op]}")
+        elif averaged_op ==None:
+            continue
 
         op_map[averaged_op] = operator
 
@@ -342,7 +348,8 @@ def _getOperatorsMap(operators, averaged_channel, get_had_spat=False, get_had_ir
 
 def _getAveragedOperator(operator, averaged_channel, get_had_spat=False, get_had_irrep=False):
     if operator.operator_type is sigmond.OpKind.GenIrrep:
-        logging.critical("Averaging of GIOperators not currently supported")
+        logging.warning("Averaging of GIOperators not currently supported.")
+        return None
 
     op_info = operator.operator_info.getBasicLapH()
     if op_info.getNumberOfHadrons() == 1:

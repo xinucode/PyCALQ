@@ -6,6 +6,6 @@ class Task(Enum): #encode tasks into enum
     average_corrs = 1
     rotate_corrs = 2
     fit_spectrum = 3
-    # toy_corrs = 4
+    toy_corrs = 4
     compare_spectrums = 5
 

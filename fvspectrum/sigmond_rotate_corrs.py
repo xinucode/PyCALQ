@@ -3,15 +3,14 @@ import os
 import yaml
 import pandas as pd
 import tqdm
-from pqdm.processes import pqdm
 
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import general.plotting_handler as ph
-from sigmond_scripts.analysis.sigmond_info import sigmond_info, sigmond_input
-from sigmond_scripts.analysis.operator_info import operator
-from sigmond_scripts.analysis.data_handling import data_handler
-from sigmond_scripts.analysis.data_handling.correlator_data import CorrelatorData
+from sigmond_scripts import sigmond_info, sigmond_input
+from sigmond_scripts import operator
+from sigmond_scripts import data_handler
+from sigmond_scripts.correlator_data import CorrelatorData
 
 doc = '''
 general:
@@ -289,10 +288,10 @@ class SigmondRotateCorrs:
                                                                 self.project_handler.project_info.sampling_info.getSamplingMode())
                             if self.other_params['generate_estimates']:
                                 if estimates:
-                                    sigmond_util.estimates_to_csv(estimates, self.rotated_correstimates_file(corr_name) )
+                                    sigmond_util.estimates_to_csv(estimates, self.proj_file_handler.corr_estimates_file(corr_name) )
                                 else:
-                                    if os.path.exists(self.rotated_correstimates_file(corr_name)):
-                                        os.remove(self.rotated_correstimates_file(corr_name))
+                                    if os.path.exists(self.proj_file_handler.corr_estimates_file(corr_name)):
+                                        os.remove(self.proj_file_handler.corr_estimates_file(corr_name))
                             elif self.other_params['plot']:
                                 self.rotated_estimates[str(channel)][corr]["corr"] = sigmond_util.estimates_to_df(estimates)
                             if not estimates:
@@ -305,10 +304,10 @@ class SigmondRotateCorrs:
                                                             self.project_handler.vev_const)
                             if self.other_params['generate_estimates']:
                                 if estimates:
-                                    sigmond_util.estimates_to_csv(estimates, self.rotated_effestimates_file(corr_name) )
+                                    sigmond_util.estimates_to_csv(estimates, self.proj_file_handler.effen_estimates_file(corr_name) )
                                 else:
-                                    if os.path.exists(self.rotated_effestimates_file(corr_name)):
-                                        os.remove(self.rotated_effestimates_file(corr_name))
+                                    if os.path.exists(self.proj_file_handler.effen_estimates_file(corr_name)):
+                                        os.remove(self.proj_file_handler.effen_estimates_file(corr_name))
                             elif self.other_params['plot']:
                                 self.rotated_estimates[str(channel)][corr]["effen"] = sigmond_util.estimates_to_df(estimates)
 
@@ -347,13 +346,13 @@ class SigmondRotateCorrs:
                     if df.empty:
                         continue
                 else:
-                    if os.path.exists(self.rotated_correstimates_file(corr_name)):
-                        df = pd.read_csv(self.rotated_correstimates_file(corr_name))
+                    if os.path.exists(self.proj_file_handler.corr_estimates_file(corr_name)):
+                        df = pd.read_csv(self.proj_file_handler.corr_estimates_file(corr_name))
                     else: 
                         continue
                 
                 plh.clf()
-                plh.correlator_plot(df, 0, rop1, rop2) #0 for regular corr plot
+                plh.correlator_plot(df, 0 ) #, rop1, rop2) #0 for regular corr plot
 
                 if self.other_params['create_pickles']:
                     plh.save_pickle(self.proj_file_handler.corr_plot_file( corr_name, "pickle"))
@@ -364,10 +363,10 @@ class SigmondRotateCorrs:
                     if not self.other_params['generate_estimates']:
                         df = self.rotated_estimates[str(channel)][corr]["effen"]
                     else:
-                        df = pd.read_csv(self.rotated_effestimates_file(corr_name))
+                        df = pd.read_csv(self.proj_file_handler.effen_estimates_file(corr_name))
 
                     plh.clf()
-                    plh.correlator_plot(df, 1, rop1, rop2) #1 for effective energy plot
+                    plh.correlator_plot(df, 1) #, rop1, rop2) #1 for effective energy plot
 
                     if self.other_params['create_pickles']:
                         plh.save_pickle(self.proj_file_handler.effen_plot_file( corr_name, "pickle"))

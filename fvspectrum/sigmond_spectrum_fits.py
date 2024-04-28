@@ -14,12 +14,12 @@ import tqdm
 import sigmond
 import general.plotting_handler as ph
 import fvspectrum.sigmond_util as sigmond_util
-from sigmond_scripts.analysis.utils import util as utils
-from sigmond_scripts.analysis.operator_info import operator
-from sigmond_scripts.analysis.data_handling import data_handler
-from sigmond_scripts.analysis.data_handling.data_files import DataFiles
-from sigmond_scripts.analysis.data_handling.correlator_data import CorrelatorData
-from sigmond_scripts.analysis.sigmond_info import fit_info, sigmond_info, sigmond_input
+from sigmond_scripts import util as utils
+from sigmond_scripts import operator
+from sigmond_scripts import data_handler
+from sigmond_scripts.data_files import DataFiles
+from sigmond_scripts.correlator_data import CorrelatorData
+from sigmond_scripts import fit_info, sigmond_info, sigmond_input
 
 doc = '''
 fit_spectrum - task for fitting the single hadron and/or rotated correlators in order to determine
@@ -1069,7 +1069,7 @@ class SigmondSpectrumFits:
                         df = sigmond_util.estimates_to_df(estimates)
 
                         plh.clf()
-                        plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 0, this_op) #0 for regular corr plot
+                        plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 0) #, this_op) #0 for regular corr plot
 
                         if self.other_params['create_pickles']:
                             plh.save_pickle(self.proj_files_handler.corr_plot_file( op_name, "pickle"))
