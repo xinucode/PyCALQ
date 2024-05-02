@@ -6,6 +6,7 @@ import yaml
 
 import general.task_manager as tm
 import general.plotting_handler as ph
+import general.particles
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
 
@@ -38,11 +39,6 @@ compare_spectrums:              #required
 '''
 
 #basic information about the rest mass particles (momentum is assumed zero)
-reference_particle_data = {
-    'K': {"isospin": "doublet","strangeness": 1},
-    'N': {"isospin": "doublet","strangeness": 0},
-    'pi': {"isospin": "triplet", "strangeness": 0},
-}
 
 class CompareLevels:
     @property
@@ -222,8 +218,8 @@ class CompareLevels:
                 study_particle=False
                 error_analysis={}
                 if self.other_params['reference_particle']:
-                    if particle[0]==reference_particle_data[self.other_params['reference_particle']]["isospin"]:
-                        if particle[1]==reference_particle_data[self.other_params['reference_particle']]["strangeness"]:
+                    if particle[0]==general.particles.data[self.other_params['reference_particle']]["isospin"]:
+                        if particle[1]==general.particles.data[self.other_params['reference_particle']]["strangeness"]:
                             study_particle=True
                             error_analysis["x"] = []
                             error_analysis["val"] = []
