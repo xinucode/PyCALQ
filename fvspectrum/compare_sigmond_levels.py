@@ -41,6 +41,7 @@ compare_spectrums:              #required
 reference_particle_data = {
     'K': {"isospin": "doublet","strangeness": 1},
     'N': {"isospin": "doublet","strangeness": 0},
+    'pi': {"isospin": "triplet", "strangeness": 0},
 }
 
 class CompareLevels:
@@ -89,7 +90,7 @@ class CompareLevels:
             if root=='compare_files':
                 self.compare_plots.append(plot_configs)
 
-            #compare spectrums of varying rebin values. If reference_particle is defined,
+                #compare spectrums of varying rebin values. If reference_particle is defined,
                 # will plot relative error and chisqr of reference particle.
             elif root=='compare_rebin':
                 for rebin in plot_configs['rebin_values']:
@@ -104,15 +105,15 @@ class CompareLevels:
                     if 'pivot_type' in plot_configs:
                         if plot_configs['pivot_type']:
                             rotate_type = 'RP'
-                    sampling_mode = plot_configs['sampling_mode']+"-samplings"
-                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode, rotate_type, tN, t0, tD, file_tag)
+                    sampling_mode = plot_configs['sampling_mode'] #+"-samplings"
+                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode+"-samplings", rotate_type, tN, t0, tD, file_tag)
                     file = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].estimates_file(key)
                     if os.path.isfile(file):
                         plot[dataset_key] = file
                     else:
                         file2 = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].samplings_file( False, None, None, rebin, sampling_mode, 
-                                                                                                    rotate_type, tN, t0, tD, file_tag)
-                        if os.path.isfile(file):
+                                                                                                    rotate_type, tN, t0, tD, 'levels'+file_tag)
+                        if os.path.isfile(file2):
                             plot[dataset_key] = file2
                         else:
                             logging.warning(f"Could not find either '{file}' or '{file2}' for Nbin={rebin}.")
@@ -128,31 +129,30 @@ class CompareLevels:
                         if pivot_set['pivot_type']:
                             rotate_type = 'RP'
                     dataset_key = f"{rotate_type}({tN},{t0},{tD})"
-                    file_tag='' #???
+                    file_tag=''
                     if plot_configs['run_tag']:
                         file_tag='-'+plot_configs['run_tag']
-                    sampling_mode = plot_configs['sampling_mode']+"-samplings"
+                    sampling_mode = plot_configs['sampling_mode'] #+"-samplings"
                     rebin = plot_configs['rebin']
-                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode, rotate_type, tN, t0, tD, file_tag)
+                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode+"-samplings", rotate_type, tN, t0, tD, file_tag)
                     file = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].estimates_file(key)
                     if os.path.isfile(file):
                         plot[dataset_key] = file
                     else:
                         file2 = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].samplings_file( False, None, None, rebin, sampling_mode, 
-                                                                                                    rotate_type, tN, t0, tD, file_tag)
-                        if os.path.isfile(file):
+                                                                                                    rotate_type, tN, t0, tD, 'levels'+file_tag)
+                        if os.path.isfile(file2):
                             plot[dataset_key] = file2
                         else:
-                            logging.warning(f"Could not find either '{file}' or '{file2}' for Nbin={rebin}.")
+                            logging.warning(f"Could not find either '{file}' or '{file2}' for pivot_set={dataset_key}.")
 
             #compare spectrums with different user defined tags. For those unexpected comparison, user-defined 
                 #filetags are allowed in the spectrum task and then different tags can be compared here
-            if root=='compare_tags':
+            elif root=='compare_tags':
                 for file_tag in plot_configs['filetags']:
                     dataset_key = file_tag
                     # file_tag=''
-                    if file_tag:
-                        file_tag='-'+file_tag
+                    # file_tag=file_tag
                     tN = plot_configs['tN']
                     t0 = plot_configs['t0']
                     tD = plot_configs['tD']
@@ -161,16 +161,16 @@ class CompareLevels:
                         if plot_configs['pivot_type']:
                             rotate_type = 'RP'
                     sampling_mode = plot_configs['sampling_mode']
-                    sampling_mode = sampling_mode+"-samplings"
+                    # sampling_mode = sampling_mode+"-samplings"
                     rebin = plot_configs['rebin']
-                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode, rotate_type, tN, t0, tD, file_tag)
+                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode+"-samplings", rotate_type, tN, t0, tD, file_tag)
                     file = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].estimates_file(key)
                     if os.path.isfile(file):
                         plot[dataset_key] = file
                     else:
                         file2 = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].samplings_file( False, None, None, rebin, sampling_mode, 
-                                                                                                    rotate_type, tN, t0, tD, file_tag)
-                        if os.path.isfile(file):
+                                                                                                    rotate_type, tN, t0, tD, 'levels-'+file_tag)
+                        if os.path.isfile(file2):
                             plot[dataset_key] = file2
                         else:
                             logging.warning(f"Could not find either '{file}' or '{file2}' for run_tag={file_tag}.")
@@ -178,7 +178,7 @@ class CompareLevels:
             if plot:
                 self.compare_plots.append(plot)
             else:
-                logging.warning(f"Could not generate rebin comparison for rebin values: {plot_configs['rebin_values']}.")
+                logging.warning(f"Could not generate {root} plot.")
         
         #make yaml output
         logging.info(f"Full input written to '{os.path.join(proj_files_handler.log_dir(), 'full_input.yml')}'.")
@@ -195,21 +195,22 @@ class CompareLevels:
         plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
         plh.create_summary_doc("Compare Spectrums")
 
+
         datasets = {}
         #make the plots
         for iplot,plot in enumerate(self.compare_plots):
-
             #collect particles/channels involved
+            particles = []
             for dataset in plot:
                 if plot[dataset].endswith(".csv"):
                     if plot[dataset] not in datasets:
                         datasets[plot[dataset]] = pd.read_csv(plot[dataset])
-                    particles = []
 
                     #get channels
                     for i, row in datasets[plot[dataset]].iterrows():
                         particle = (row['isospin'], row['strangeness'])
                         particles.append(particle)
+
             particles = list(set(particles))
 
             #plot each channels on own graph, begin with summary plots

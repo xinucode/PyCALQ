@@ -7,8 +7,9 @@ import pylatex
 import os
 import logging
 import numpy as np
+import copy
 
-import sigmond
+# import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
 from sigmond_scripts import util as utils
@@ -151,6 +152,16 @@ class PlottingHandler:
             self.moving_textbox(labels)
 
         plt.tight_layout()
+
+    def sigmond_corrfit_plot_and_save(self,df, fit_result_info, Nt, ptype=0, op1=None, save_pickle = "", save_pdf = "", 
+                                      sh_index = 0, color_index = 0, new_trange = None):
+        """runs sigmond_corrfit_plot and saves to pickle and/or pdf as desired, 
+            if save_pdf or save_pickle are empty, then does not save"""
+        self.sigmond_corrfit_plot(df, fit_result_info, Nt, ptype, op1, sh_index, color_index, new_trange)
+        if save_pickle:
+            self.save_pickle(save_pickle)
+        if save_pdf:
+            self.save_pdf(save_pdf)
 
     def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, sh_index = 0, color_index = 0, new_trange = None):
         """Generate a correlator plot with fit using Matplotlib."""

@@ -1,17 +1,14 @@
 import logging
 import yaml
 import os
-import pandas as pd
 import itertools
 import tqdm
+from multiprocessing import Process
 
 import sigmond
 import general.plotting_handler as ph
 import fvspectrum.sigmond_util as sigmond_util
 from sigmond_scripts import operator as operator_lib
-from sigmond_scripts import data_handler
-from sigmond_scripts.data_files import DataFiles
-from sigmond_scripts.correlator_data import CorrelatorData
 
 doc = '''
 average_corrs - a task a read in and automatically average over any Lattice QCD temporal correlator data files 
@@ -121,9 +118,6 @@ class SigmondAverageCorrs:
         with open( os.path.join(proj_file_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs, task_name: task_configs}, log_file)
 
-
-        # if self.other_params['task_tag']:
-        #     self.other_params['task_tag'] = "-"+self.other_params['task_tag']
 
     def run( self ):
         #get sigmond data handler
@@ -280,13 +274,33 @@ class SigmondAverageCorrs:
         #set up fig object to reuse
         plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
         
-        #loop through same channels #make loading bar
+        #loop through same channels 
+        avchannels = list(self.averaged_operators.keys())
+        if self.project_handler.nodes:
+            chunk_size = int(len(avchannels)/self.project_handler.nodes)+1
+            channels_per_node = [avchannels[i:i + chunk_size] for i in range(0, len(avchannels), chunk_size)]
         if not self.other_params['generate_estimates'] and self.other_params['plot']:
-            for channel in tqdm.tqdm(self.averaged_operators):
-                self.write_channel_plots_data(channel, plh)
+            if self.project_handler.nodes:
+                processes = []
+                for channels in channels_per_node:
+                    processes.append(Process(target=self.write_channel_plots_data,args=(channels, plh,)))
+                    processes[-1].start()
+                for process in processes:
+                    process.join()
+            else:
+                for channel in tqdm.tqdm(avchannels):
+                    self.write_channel_plots_data(channel, plh)
         else:
-            for channel in tqdm.tqdm(self.averaged_operators):
-                self.write_channel_plots(channel, plh) 
+            if self.project_handler.nodes:  
+                processes = []
+                for channels in channels_per_node:
+                    processes.append(Process(target=self.write_channel_plots,args=(channels, plh,)))
+                    processes[-1].start()
+                for process in processes:
+                    process.join()
+            else:
+                for channel in tqdm.tqdm(avchannels):
+                    self.write_channel_plots(channel, plh)
         
         #put all plots into summary doc
         if self.other_params['create_summary']:
@@ -309,26 +323,55 @@ class SigmondAverageCorrs:
 
                 self.proj_file_handler.remove_summary_files()
                 if self.other_params['separate_mom']:
-                    loglevel = logging.getLogger().getEffectiveLevel()
-                    logging.getLogger().setLevel(logging.WARNING)
-                    #pqdm([[self.proj_file_handler.summary_file(psq), i] for i,psq in enumerate(self.moms)], plh.compile_pdf, n_jobs=self.project_handler.nodes, argument_type="args")
-                    for i,psq in enumerate(self.moms):
-                        plh.compile_pdf(self.proj_file_handler.summary_file(psq),i)
-                    logging.getLogger().setLevel(loglevel)
-                    logging.info(f"Summary file saved to {self.proj_file_handler.summary_file('*')}.pdf.")
+                    if self.project_handler.nodes:
+                        processes = []
+                        ip = 0
+                        for i,psq in enumerate(self.moms):
+                            if len(processes)==i:
+                                processes.append(Process(target=plh.compile_pdf,args=(self.proj_file_handler.summary_file(psq),i,)))
+                                processes[-1].start()
+                            else:
+                                processes[ip].join()
+                                processes[ip] = Process(target=plh.compile_pdf,args=(self.proj_file_handler.summary_file(psq),i,))
+                                processes[ip].start()
+                            ip += 1
+                            ip = ip%self.project_handler.nodes
+                        for process in processes:
+                            process.join()
+
+                    else:
+                        loglevel = logging.getLogger().getEffectiveLevel()
+                        logging.getLogger().setLevel(logging.WARNING)
+                        for i,psq in enumerate(self.moms):
+                            plh.compile_pdf(self.proj_file_handler.summary_file(psq),i) 
+                        logging.getLogger().setLevel(loglevel)
+                    logging.info(f"Summary files saved to {self.proj_file_handler.summary_file('*')}.pdf.")
                 else:
                     plh.compile_pdf(self.proj_file_handler.summary_file()) 
                     logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.pdf.")
          
     #use class data to generate the channel plots
-    def write_channel_plots_data(self, channel, plh):
-        sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
+    def write_channel_plots_data(self, channels, plh):
+        if type(channels)==list:
+            for channel in channels:
+                sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
+                            self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler,
+                            self.data[channel])
+        else:
+            channel = channels
+            sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
                             self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler,
                             self.data[channel])
         
     #use estimates file to generate channel plots
-    def write_channel_plots(self, channel, plh):
-        sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
+    def write_channel_plots(self, channels, plh):
+        if type(channels)==list:
+            for channel in channels:
+                sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
+                            self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler)
+        else:
+            channel = channels
+            sigmond_util.write_channel_plots(self.averaged_operators[channel], plh, self.other_params['create_pickles'],
                             self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler)
 
 

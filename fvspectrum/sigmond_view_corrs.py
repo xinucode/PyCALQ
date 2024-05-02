@@ -1,16 +1,12 @@
-import numpy as np
 import logging
-from typing import NamedTuple
 import os, glob
 import yaml
-import xml.etree.ElementTree as ET
-import pandas as pd
 import tqdm
+from multiprocessing import Process
 
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import general.plotting_handler as ph
-from sigmond_scripts import data_handler
 
 doc = '''
 preview_corrs - a task a read in and estimate/plot any Lattice QCD temporal correlator data files given
@@ -155,14 +151,31 @@ class SigmondPreviewCorrs:
         plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
         
         #loop through same channels #make loading bar
+        if self.project_handler.nodes:
+            chunk_size = int(len(self.channels)/self.project_handler.nodes)+1
+            channels_per_node = [self.channels[i:i + chunk_size] for i in range(0, len(self.channels), chunk_size)]
         if not self.other_params['generate_estimates'] and self.other_params['plot']:
-            #pqdm([[channel, plh] for channel in self.channels], self.write_channel_plots_data, n_jobs=self.project_handler.nodes, argument_type='args')
-            for channel in tqdm.tqdm(self.channels):
-                self.write_channel_plots_data(channel, plh)
+            if self.project_handler.nodes:
+                processes = []
+                for channels in channels_per_node:
+                    processes.append(Process(target=self.write_channel_plots_data,args=(channels, plh,)))
+                    processes[-1].start()
+                for process in processes:
+                    process.join()
+            else:
+                for channel in tqdm.tqdm(self.channels):
+                    self.write_channel_plots_data(channel, plh)
         else:
-            #pqdm([[channel, plh] for channel in self.channels], self.write_channel_plots, n_jobs=self.project_handler.nodes, argument_type='args')
-            for channel in tqdm.tqdm(self.channels):
-                self.write_channel_plots(channel, plh)
+            if self.project_handler.nodes:  
+                processes = []
+                for channels in channels_per_node:
+                    processes.append(Process(target=self.write_channel_plots,args=(channels, plh,)))
+                    processes[-1].start()
+                for process in processes:
+                    process.join()
+            else:
+                for channel in tqdm.tqdm(self.channels):
+                    self.write_channel_plots(channel, plh)
 
         if self.other_params['create_summary']:
             plh.create_summary_doc("Preview Data")
@@ -188,22 +201,52 @@ class SigmondPreviewCorrs:
             for f in glob.glob(self.proj_file_handler.summary_file()+".*"):
                 os.remove(f)
             if self.other_params['separate_mom']:
-                loglevel = logging.getLogger().getEffectiveLevel()
-                logging.getLogger().setLevel(logging.WARNING)
-                #pqdm([[self.proj_file_handler.summary_file(psq),i] for i,psq in enumerate(self.moms)],plh.compile_pdf, n_jobs=self.nodes, argument_type='args' )
-                logging.getLogger().setLevel(loglevel)
-                for i,psq in enumerate(self.moms):
-                    plh.compile_pdf(self.proj_file_handler.summary_file(psq),i) 
-                logging.info(f"Summary file saved to {self.proj_file_handler.summary_file('*')}.pdf.")
+                if self.project_handler.nodes:
+                    processes = []
+                    ip = 0
+                    for i,psq in enumerate(self.moms):
+                        if len(processes)==i:
+                            processes.append(Process(target=plh.compile_pdf,args=(self.proj_file_handler.summary_file(psq),i,)))
+                            processes[-1].start()
+                        else:
+                            processes[ip].join()
+                            processes[ip] = Process(target=plh.compile_pdf,args=(self.proj_file_handler.summary_file(psq),i,))
+                            processes[ip].start()
+                        ip += 1
+                        ip = ip%self.project_handler.nodes
+                    for process in processes:
+                        process.join()
+
+                else:
+                    loglevel = logging.getLogger().getEffectiveLevel()
+                    logging.getLogger().setLevel(logging.WARNING)
+                    for i,psq in enumerate(self.moms):
+                        plh.compile_pdf(self.proj_file_handler.summary_file(psq),i) 
+                    logging.getLogger().setLevel(loglevel)
+                logging.info(f"Summary files saved to {self.proj_file_handler.summary_file('*')}.pdf.")
             else:
                 plh.compile_pdf(self.proj_file_handler.summary_file()) 
                 logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.pdf.")
 
-    def write_channel_plots_data(self, channel, plh):
-        sigmond_util.write_channel_plots(self.data_handler.getChannelOperators(channel), plh, self.other_params['create_pickles'],
+    def write_channel_plots_data(self, channels, plh):
+        if type(channels)==list:
+            for channel in channels:
+                sigmond_util.write_channel_plots(self.data_handler.getChannelOperators(channel), plh, self.other_params['create_pickles'],
                             self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler,
                             self.data[channel])
-    def write_channel_plots(self, channel, plh):
-        sigmond_util.write_channel_plots(self.data_handler.getChannelOperators(channel), plh, self.other_params['create_pickles'],
+        else:
+            channel = channels
+            sigmond_util.write_channel_plots(self.data_handler.getChannelOperators(channel), plh, self.other_params['create_pickles'],
+                            self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler,
+                            self.data[channel])
+            
+    def write_channel_plots(self, channels, plh):
+        if type(channels)==list:
+            for channel in channels:
+                sigmond_util.write_channel_plots(self.data_handler.getChannelOperators(channel), plh, self.other_params['create_pickles'],
+                            self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler)
+        else:
+            channel = channels
+            sigmond_util.write_channel_plots(self.data_handler.getChannelOperators(channel), plh, self.other_params['create_pickles'],
                             self.other_params['create_pdfs'] or self.other_params['create_summary'],self.proj_file_handler)
 

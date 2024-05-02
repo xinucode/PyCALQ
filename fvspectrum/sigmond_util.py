@@ -13,7 +13,7 @@ from threading import Thread
 
 import sigmond
 from sigmond_scripts import data_files, data_handler
-from sigmond_scripts import fit_info, sigmond_info
+from sigmond_scripts import fit_info, sigmond_info, sigmond_log
 from sigmond_scripts import channel
 
 #project info class drew designed for keeping all
@@ -211,6 +211,24 @@ def estimates_to_df( estimates ):
         } for key in estimates ]
     df = pd.DataFrame.from_dict(pestimates) 
     return df
+
+#after rotation task is completed, takes the list of log files and retrieves the 
+    #pivot quality information
+def get_pivot_info(log_list):
+    all_pivot_info = {}
+    for file in log_list:
+        if os.path.exists(file):
+            rotation_log = sigmond_log.RotationLog(file)
+            for i in range(rotation_log.num_rotations):
+                pivot_info = {}
+                pivot_info["metric null space check"] = rotation_log.metric_null_space_message(i)
+                pivot_info["metric cond. init."] = rotation_log.metric_condition(i,False)
+                pivot_info["metric cond. init."] = rotation_log.metric_condition(i)
+                pivot_info["matrix cond. init."] = rotation_log.matrix_condition(i,False)
+                pivot_info["matrix cond. init."] = rotation_log.matrix_condition(i)
+                all_pivot_info[rotation_log.channel(i)] = pivot_info
+    
+    return all_pivot_info
 
 #use the minimizer lmder in sigmond for fitting; very fast
 def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs, 
@@ -827,7 +845,7 @@ def filter_channels( task_configs, channel_list):
                 logging.info(f'Channel {str(channel)} omitted due to "omit" setting.')
             else:
                 final_channels.append(channel)
-        final_moms = list(set(range(10))-set(omit_moms))
+        # final_moms = list(set(range(10))-set(omit_moms))
     else: 
         final_channels = channel_list[:]
     return final_channels
@@ -841,6 +859,16 @@ def write_channel_plots(operators, plh, create_pickles, create_pdfs, pdh, data=N
             corr = sigmond.CorrelatorInfo(op1.operator_info,op2.operator_info)
             corr_name = repr(corr).replace(" ","-")
 
+            plot_files = [
+                pdh.corr_plot_file( corr_name, "pickle"),
+                pdh.corr_plot_file( corr_name, "pdf"),
+                pdh.effen_plot_file( corr_name, "pickle"),
+                pdh.effen_plot_file(corr_name, "pdf"),
+            ]
+            for plot_file in plot_files:
+                if os.path.isfile(plot_file):
+                    os.remove(plot_file)
+
             try:
                 if saved_to_self:
                     df = data[op1][op2]["corr"]
@@ -850,7 +878,12 @@ def write_channel_plots(operators, plh, create_pickles, create_pdfs, pdh, data=N
                 logging.warning(f"pandas.errors.EmptyDataError: {err} for correlator {corr_name}.")
 
             plh.clf()
-            plh.correlator_plot(df, 0) #, op1, op2) #0 for regular corr plot
+            try:
+                plh.correlator_plot(df, 0) #, op1, op2) #0 for regular corr plot
+            except KeyError as err:
+                logging.warning(f"No correlator estimates could be optained for {corr_name}.")
+                continue
+
 
             if create_pickles:
                 plh.save_pickle(pdh.corr_plot_file( corr_name, "pickle"))
@@ -871,10 +904,19 @@ def write_channel_plots(operators, plh, create_pickles, create_pdfs, pdh, data=N
                 if create_pdfs:
                     plh.save_pdf( pdh.effen_plot_file(corr_name, "pdf")) 
             except pd.errors.EmptyDataError as err:
+                # logging.warning(f"No effective energy estimates could be optained for {corr_name}.")
+                pass
+            except KeyError as err:
+                # logging.warning(f"No effective energy estimates could be optained for {corr_name}.")
                 pass
             
 #sort channel based on isospin-strangeness-momentum
 def channel_sort(item):
     return f"{item.isospin}{item.strangeness}{item.psq}"
 
-
+#for processes, updates the iteration of the process index
+    #such that the index ip is always less that nnodes
+def update_process_index(ip,nnodes):
+    ip += 1
+    ip = ip%nnodes
+    return ip

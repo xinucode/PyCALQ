@@ -10,6 +10,8 @@ from ordered_set import OrderedSet
 import general.task_manager as tm
 import regex
 import tqdm
+import time
+from multiprocessing import Process
 
 import sigmond
 import general.plotting_handler as ph
@@ -926,38 +928,204 @@ class SigmondSpectrumFits:
         plh = ph.PlottingHandler()
         plh.create_fig(15,8) #self.other_params['figwidth'], self.other_params['figheight'])
 
-        #summary spectrum plot
-        all_levels = []; all_errs = []; all_indexes = []; xticks = []
-        if self.other_params['reference_particle']:
-            if f"{self.other_params['reference_particle']}(0)" in self.single_hadron_info:
-                energy_key = "ecm_ref"
-            else:
-                energy_key = "ecm"
+        # self.project_handler.nodes = 0
+        start_time = time.time()
+        if self.project_handler.nodes:
+            processes = []
+            ip = 0
+
+        if self.project_handler.nodes:
+            processes.append(Process(target=self.summary_spectrum_plot,args=(plh,)))
+            processes[-1].start()
+            ip += 1
         else:
-            energy_key = "ecm"
-        for i,channel in enumerate(self.interacting_channels):
-            levels = []; errs = []
-            for op in self.results[channel]:
-                if self.results[channel][op]["success"]:
-                    levels.append(self.results[channel][op][energy_key].getFullEstimate())
-                    errs.append(self.results[channel][op][energy_key].getSymmetricError())
-            index = [i]*len(levels)
-            all_levels+=levels; all_errs+=errs; all_indexes+=index
-            xticks+=[(channel.irrep,channel.psq)]
-
-        thresholds = []
-        for line in self.other_params["thresholds"]:
-            value = 0.0
-            for particle in line:
-                value+=self.single_hadron_info[particle+"(0)"][energy_key]
-            thresholds.append((line, value))
-
-        plh.summary_plot(all_indexes,all_levels,all_errs,xticks,self.other_params['reference_particle'],thresholds)
-        if self.other_params['create_pickles']:
-            plh.save_pickle(self.proj_files_handler.summary_plot_file("pickle"))
-        if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-            plh.save_pdf(self.proj_files_handler.summary_plot_file("pdf"))
+            self.summary_spectrum_plot(plh)
         
+        all_sim_fit_plots = {}
+        # all_op_overlap_plots = {}
+
+        #fit plots
+        plh.set_figsize(self.other_params['figwidth'], self.other_params['figheight'])
+        for channel in self.single_hadron_channels+self.interacting_channels:
+            results = {}
+            if channel in self.results:
+                results.update(self.results[channel])
+            if channel in self.single_hadron_results:
+                results.update(self.single_hadron_results[channel])
+            if results:
+                all_sim_fit_plots[channel] = {}
+                logging.info(f"\tGenerating plots for channel {str(channel)}...")
+                # if self.other_params['create_summary']:
+                    # if not entered_interacting_section and channel in self.interacting_channels:
+                    #     plh.append_section(str("Interacting Levels"))
+                    #     entered_interacting_section = True
+                    # plh.append_subsection(str(channel))
+
+                for op in results:
+                    #plott corr and fit 
+                    op_name = str(op).replace(" ","_")
+                    this_op = op
+                    if results[op]["success"]:
+                        if results[op]["info"].ratio:
+                            this_op = op.ratio_op
+                        corr = sigmond.CorrelatorInfo(this_op.operator_info,this_op.operator_info)
+                        estimates = sigmond.getCorrelatorEstimates(self.mcobs_handler,corr,self.project_handler.hermitian,
+                                                                   self.project_handler.subtract_vev,sigmond.ComplexArg.RealPart, 
+                                                                   self.project_handler.project_info.sampling_info.getSamplingMode())
+                        df = sigmond_util.estimates_to_df(estimates)
+
+                        plh.clf()
+                        if self.project_handler.nodes:
+                            pickle_file = ""
+                            pdf_file = ""
+                            if self.other_params['create_pickles']:
+                                pickle_file = self.proj_files_handler.corr_plot_file( op_name, "pickle")
+                            if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                                pdf_file = self.proj_files_handler.corr_plot_file( op_name, "pdf")
+
+                            if len(processes)<self.project_handler.nodes:
+                                processes.append(Process(target=plh.sigmond_corrfit_plot_and_save,
+                                                         args=(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 0, None,pickle_file, pdf_file,)))
+                                processes[-1].start()
+                            else:
+                                processes[ip].join()
+                                processes[ip] = Process(target=plh.sigmond_corrfit_plot_and_save,
+                                                        args=(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 0, None,pickle_file, pdf_file,))
+                                processes[ip].start()
+                            ip = sigmond_util.update_process_index(ip,self.project_handler.nodes)
+                        else:
+                            plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 0) #, this_op) #0 for regular corr plot
+
+                            if self.other_params['create_pickles']:
+                                plh.save_pickle(self.proj_files_handler.corr_plot_file( op_name, "pickle"))
+                            if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                                plh.save_pdf(self.proj_files_handler.corr_plot_file( op_name, "pdf"))
+
+                        estimates = sigmond.getEffectiveEnergy(self.mcobs_handler,corr,self.project_handler.hermitian,
+                                                               self.project_handler.subtract_vev,sigmond.ComplexArg.RealPart, 
+                                                               self.project_handler.project_info.sampling_info.getSamplingMode(),
+                                                               self.project_handler.time_separation,
+                                                               self.project_handler.effective_energy_type,
+                                                               self.project_handler.vev_const)
+                        df = sigmond_util.estimates_to_df(estimates)
+
+                        plh.clf()
+                        if self.project_handler.nodes:
+                            pickle_file = ""
+                            pdf_file = ""
+                            if self.other_params['create_pickles']:
+                                pickle_file = self.proj_files_handler.effen_plot_file( op_name, "pickle")
+                            if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                                pdf_file = self.proj_files_handler.effen_plot_file( op_name, "pdf")
+
+                            if len(processes)<self.project_handler.nodes:
+                                processes.append(Process(target=plh.sigmond_corrfit_plot_and_save,
+                                                         args=(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 1, this_op,pickle_file, pdf_file,)))
+                                processes[-1].start()
+                            else:
+                                processes[ip].join()
+                                processes[ip] = Process(target=plh.sigmond_corrfit_plot_and_save,
+                                                        args=(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 1, this_op,pickle_file, pdf_file,))
+                                processes[ip].start()
+                            ip = sigmond_util.update_process_index(ip,self.project_handler.nodes)
+                        else:
+                            plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 1, this_op) #0 for regular corr plot
+
+                            if self.other_params['create_pickles']:
+                                plh.save_pickle(self.proj_files_handler.effen_plot_file( op_name, "pickle"))
+                            if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                                plh.save_pdf(self.proj_files_handler.effen_plot_file( op_name, "pdf"))
+
+                        # if self.other_params['create_summary']:
+                        #     plh.add_correlator_subsection(str(op),self.proj_files_handler.corr_plot_file( op_name, "pdf"),
+                        #                                     self.proj_files_handler.effen_plot_file( op_name, "pdf"))
+                        
+                        sim_plot_files = []
+                        if results[op]["info"].sim_fit:
+                            ni_levels = self.other_params['non_interacting_levels'][str(channel)][op.level]
+                            for i,sh in enumerate(OrderedSet(ni_levels)):
+                                plh.clf()
+                                shop = self.get_sh_operator(sh)
+                                corr = sigmond.CorrelatorInfo(shop.operator_info,shop.operator_info)
+                                estimates = sigmond.getEffectiveEnergy(self.mcobs_handler,corr,self.project_handler.hermitian,
+                                                                       self.project_handler.subtract_vev,sigmond.ComplexArg.RealPart, 
+                                                                       self.project_handler.project_info.sampling_info.getSamplingMode(),
+                                                                       self.project_handler.time_separation,
+                                                                       self.project_handler.effective_energy_type,
+                                                                       self.project_handler.vev_const)
+                                shtmin = self.single_hadron_results[shop.channel][shop]["info"].tmin
+                                shtmax = self.single_hadron_results[shop.channel][shop]["info"].tmax
+                                df = sigmond_util.estimates_to_df(estimates)
+                                plh.sigmond_corrfit_plot(df, self.results[channel][op], self.ensemble_info.getLatticeTimeExtent(), 1, shop, i+1, new_trange=(shtmin,shtmax))
+                                if self.other_params['create_pickles']:
+                                    plh.save_pickle(self.proj_files_handler.effen_plot_file( f"{op_name}-{sh}", "pickle"))
+                                if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                                    plh.save_pdf(self.proj_files_handler.effen_plot_file( f"{op_name}-{sh}", "pdf"))
+                                sim_plot_files.append(self.proj_files_handler.effen_plot_file( f"{op_name}-{sh}", "pdf"))
+
+                    # else:
+                    #     plh.append_subsubsection(str(op))
+                        
+                    if channel in self.tmin_results:
+                        if op in self.tmin_results[channel]:
+                            for energy_type in ["elab","dElab"]:
+                                sim_fits = self.tmin_fit_plot(plh, energy_type, results, channel, op, op_name)
+                            # if self.other_params['create_summary'] and os.path.exists(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf", "tmin")):
+                            #     plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmin"),
+                            #                                  self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmin"))
+                            if sim_fits:
+                                for sh, sh_tmin in sim_fits.items():
+                                    sh_op = self.get_sh_operator(sh)
+                                    ind_fit = self.single_hadron_results[sh_op.channel][sh_op]
+                                    ind_fit_estimate = ind_fit["estimates"][ind_fit["info"].energy_index]
+                                    sim_plot_files.append(self.sim_tmin_plot(sh,sh_tmin, op_name, plh, ind_fit_estimate))
+                    if channel in self.tmax_results:
+                        if op in self.tmax_results[channel]:
+                            for energy_type in ["elab","dElab"]:
+                                sim_fits = self.tmin_fit_plot(plh, energy_type, results, channel, op, op_name, False)
+                            # if self.other_params['create_summary'] and os.path.exists(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax")):
+                            #     plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax"),
+                            #                                  self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmax"))
+                            if sim_fits:
+                                for sh, sh_tmin in sim_fits.items():
+                                    sh_op = self.get_sh_operator(sh)
+                                    ind_fit = self.single_hadron_results[sh_op.channel][sh_op]
+                                    ind_fit_estimate = ind_fit["estimates"][ind_fit["info"].energy_index]
+                                    sim_plot_files.append(self.sim_tmin_plot(sh,sh_tmin, op_name, plh, ind_fit_estimate, False))
+
+                    
+                    all_sim_fit_plots[channel][op] = sim_plot_files
+                    # if sim_plot_files and self.other_params['create_summary']:
+                    #     plh.add_plot_series(sim_plot_files)
+
+                #plot operator overlaps for interacting channels
+                if self.other_params["compute_overlaps"] and channel in self.interacting_channels:
+                    if channel in self.zmags:
+                        if self.project_handler.nodes:
+                            if len(processes)<self.project_handler.nodes:
+                                processes.append(Process(target=self.generate_operator_overlaps_plots, args=(channel, plh,)))
+                                processes[-1].start()
+                            else:
+                                processes[ip].join()
+                                processes[ip] = Process(target=self.generate_operator_overlaps_plots, args=(channel, plh,))
+                                processes[ip].start()
+                            ip = sigmond_util.update_process_index(ip,self.project_handler.nodes)
+                        else:
+                            self.generate_operator_overlaps_plots(channel, plh)
+
+                        # files = []
+                                # files.append(self.proj_files_handler.operator_overlaps_plot( op_name, "pdf"))
+
+                        # all_op_overlap_plots[channel] = files
+                        # if self.other_params['create_summary']:
+                        #     plh.add_operator_overlaps(files)
+
+        if self.project_handler.nodes:
+            for process in processes:
+                process.join()
+
+        print("Total plot time:", time.time()-start_time)
+
         #set up summary document, add summary plot and then tables
         if self.other_params['create_summary']:
             plh.create_summary_doc("Fitted Correlators")
@@ -999,7 +1167,6 @@ class SigmondSpectrumFits:
                     channel_data = []
 
                     new_channel = f"iso{channel.isospin} S={channel.strangeness} $d^2$={channel.psq}" #separate tables by isospin and strangeness
-                    print(channel, new_channel, old_channel)
                     if new_channel!=old_channel:
                         plh.summary_table(self.other_params['reference_particle'],headers,data,old_channel)
                         data = []
@@ -1038,155 +1205,88 @@ class SigmondSpectrumFits:
 
             plh.append_section(str("Single Hadrons"))
             
-        #fit plots
-        plh.set_figsize(self.other_params['figwidth'], self.other_params['figheight'])
-        entered_interacting_section = False
-        for channel in self.single_hadron_channels+self.interacting_channels:
-            results = {}
-            if channel in self.results:
-                results.update(self.results[channel])
-            if channel in self.single_hadron_results:
-                results.update(self.single_hadron_results[channel])
-            if results:
-                logging.info(f"\tGenerating plots for channel {str(channel)}...")
-                if self.other_params['create_summary']:
+            entered_interacting_section = False
+            for channel in self.single_hadron_channels+self.interacting_channels:
+                results = {}
+                if channel in self.results:
+                    results.update(self.results[channel])
+                if channel in self.single_hadron_results:
+                    results.update(self.single_hadron_results[channel])
+                if results:
                     if not entered_interacting_section and channel in self.interacting_channels:
                         plh.append_section(str("Interacting Levels"))
                         entered_interacting_section = True
                     plh.append_subsection(str(channel))
-
-                for op in results:
-                    #plott corr and fit 
-                    op_name = str(op).replace(" ","_")
-                    this_op = op
-                    if results[op]["success"]:
-                        if results[op]["info"].ratio:
-                            this_op = op.ratio_op
-                        corr = sigmond.CorrelatorInfo(this_op.operator_info,this_op.operator_info)
-                        estimates = sigmond.getCorrelatorEstimates(self.mcobs_handler,corr,self.project_handler.hermitian,
-                                                                   self.project_handler.subtract_vev,sigmond.ComplexArg.RealPart, 
-                                                                   self.project_handler.project_info.sampling_info.getSamplingMode())
-                        df = sigmond_util.estimates_to_df(estimates)
-
-                        plh.clf()
-                        plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 0) #, this_op) #0 for regular corr plot
-
-                        if self.other_params['create_pickles']:
-                            plh.save_pickle(self.proj_files_handler.corr_plot_file( op_name, "pickle"))
-                        if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-                            plh.save_pdf(self.proj_files_handler.corr_plot_file( op_name, "pdf"))
-
-                        estimates = sigmond.getEffectiveEnergy(self.mcobs_handler,corr,self.project_handler.hermitian,
-                                                               self.project_handler.subtract_vev,sigmond.ComplexArg.RealPart, 
-                                                               self.project_handler.project_info.sampling_info.getSamplingMode(),
-                                                               self.project_handler.time_separation,
-                                                               self.project_handler.effective_energy_type,
-                                                               self.project_handler.vev_const)
-                        df = sigmond_util.estimates_to_df(estimates)
-
-                        plh.clf()
-                        plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 1, this_op) #0 for regular corr plot
-
-                        if self.other_params['create_pickles']:
-                            plh.save_pickle(self.proj_files_handler.effen_plot_file( op_name, "pickle"))
-                        if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-                            plh.save_pdf(self.proj_files_handler.effen_plot_file( op_name, "pdf"))
-
-                        if self.other_params['create_summary']:
+                    for op in results:
+                        #plott corr and fit 
+                        op_name = str(op).replace(" ","_")
+                        this_op = op
+                        if results[op]["success"]:
                             plh.add_correlator_subsection(str(op),self.proj_files_handler.corr_plot_file( op_name, "pdf"),
                                                             self.proj_files_handler.effen_plot_file( op_name, "pdf"))
-                        
-                        sim_plot_files = []
-                        if results[op]["info"].sim_fit:
-                            ni_levels = self.other_params['non_interacting_levels'][str(channel)][op.level]
-                            for i,sh in enumerate(OrderedSet(ni_levels)):
-                                plh.clf()
-                                shop = self.get_sh_operator(sh)
-                                corr = sigmond.CorrelatorInfo(shop.operator_info,shop.operator_info)
-                                estimates = sigmond.getEffectiveEnergy(self.mcobs_handler,corr,self.project_handler.hermitian,
-                                                                       self.project_handler.subtract_vev,sigmond.ComplexArg.RealPart, 
-                                                                       self.project_handler.project_info.sampling_info.getSamplingMode(),
-                                                                       self.project_handler.time_separation,
-                                                                       self.project_handler.effective_energy_type,
-                                                                       self.project_handler.vev_const)
-                                shtmin = self.single_hadron_results[shop.channel][shop]["info"].tmin
-                                shtmax = self.single_hadron_results[shop.channel][shop]["info"].tmax
-                                df = sigmond_util.estimates_to_df(estimates)
-                                plh.sigmond_corrfit_plot(df, self.results[channel][op], self.ensemble_info.getLatticeTimeExtent(), 1, shop, i+1, new_trange=(shtmin,shtmax))
-                                if self.other_params['create_pickles']:
-                                    plh.save_pickle(self.proj_files_handler.effen_plot_file( f"{op_name}-{sh}", "pickle"))
-                                if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-                                    plh.save_pdf(self.proj_files_handler.effen_plot_file( f"{op_name}-{sh}", "pdf"))
-                                sim_plot_files.append(self.proj_files_handler.effen_plot_file( f"{op_name}-{sh}", "pdf"))
-                    else:
-                        plh.append_subsubsection(str(op))
+                        else:
+                            plh.append_subsubsection(str(op))
 
-                        
-                    if channel in self.tmin_results:
-                        if op in self.tmin_results[channel]:
-                            for energy_type in ["elab","dElab"]:
-                                sim_fits = self.tmin_fit_plot(plh, energy_type, results, channel, op, op_name)
-                            if self.other_params['create_summary'] and os.path.exists(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf", "tmin")):
-                                plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmin"),
-                                                             self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmin"))
-                            if sim_fits:
-                                for sh, sh_tmin in sim_fits.items():
-                                    sh_op = self.get_sh_operator(sh)
-                                    ind_fit = self.single_hadron_results[sh_op.channel][sh_op]
-                                    ind_fit_estimate = ind_fit["estimates"][ind_fit["info"].energy_index]
-                                    sim_plot_files.append(self.sim_tmin_plot(sh,sh_tmin, op_name, plh, ind_fit_estimate))
-                    if channel in self.tmax_results:
-                        if op in self.tmax_results[channel]:
-                            for energy_type in ["elab","dElab"]:
-                                sim_fits = self.tmin_fit_plot(plh, energy_type, results, channel, op, op_name, False)
-                            if self.other_params['create_summary'] and os.path.exists(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax")):
-                                plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax"),
-                                                             self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmax"))
-                            if sim_fits:
-                                for sh, sh_tmin in sim_fits.items():
-                                    sh_op = self.get_sh_operator(sh)
-                                    ind_fit = self.single_hadron_results[sh_op.channel][sh_op]
-                                    ind_fit_estimate = ind_fit["estimates"][ind_fit["info"].energy_index]
-                                    sim_plot_files.append(self.sim_tmin_plot(sh,sh_tmin, op_name, plh, ind_fit_estimate, False))
-                                # plh.add_plot_series(sim_plot_files)
+                        if channel in self.tmin_results:
+                            if op in self.tmin_results[channel]:
+                                if os.path.exists(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf", "tmin")):
+                                    plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmin"),
+                                                                self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmin"))
+                        if channel in self.tmax_results:
+                            if op in self.tmax_results[channel]:
+                                if os.path.exists(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax")):
+                                    plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax"),
+                                                                self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmax"))
 
-                    
-                    if sim_plot_files and self.other_params['create_summary']:
-                        plh.add_plot_series(sim_plot_files)
-
-                #plot operator overlaps for interacting channels
-                if self.other_params["compute_overlaps"] and channel in self.interacting_channels:
-                    files = []
-                    if channel in self.zmags:
-                        for i,op in enumerate(self.zmags[channel]["ops"]):
-                            op_name = str(op).replace(" ","_")
-                            if op.isBasicLapH():
-                                oppiece = op.getBasicLapH().getIDName()
-                            else:
-                                oppiece = op.getGenIrrep().getIDName()
-                            estimates = []
-                            errors = []
-                            for j in range(self.zmags[channel]["nlevels"]):
-                                zmag = self.zmags[channel]["zmags"].get(i,j)
-                                estimates.append(zmag.getFullEstimate())
-                                errors.append(zmag.getSymmetricError())
-                            plh.clf()
+                        if all_sim_fit_plots[channel][op]:
+                            plh.add_plot_series(all_sim_fit_plots[channel][op])
                             
-                            plh.plot_operator_overlaps(estimates,errors,oppiece)
-                            if self.other_params['create_pickles']:
-                                plh.save_pickle(self.proj_files_handler.operator_overlaps_plot( op_name, "pickle"))
-                            if self.other_params['create_pdfs'] or self.other_params['create_summary']:
-                                plh.save_pdf(self.proj_files_handler.operator_overlaps_plot( op_name, "pdf"))
+                    if self.other_params["compute_overlaps"] and channel in self.interacting_channels:
+                        if channel in self.zmags:
+                            files = []
+                            for i,op in enumerate(self.zmags[channel]["ops"]):
+                                op_name = str(op).replace(" ","_")
                                 files.append(self.proj_files_handler.operator_overlaps_plot( op_name, "pdf"))
+                            # if all_op_overlap_plots[channel]:
+                            plh.add_operator_overlaps(files)
 
-                    if self.other_params['create_summary']:
-                        plh.add_operator_overlaps(files)
-
-        #finalize summary plot
-        if self.other_params['create_summary']:
+            #finalize summary plot
             plh.compile_pdf(self.proj_files_handler.summary_file()) 
             logging.info(f"Summary file saved to {self.proj_files_handler.summary_file()}.pdf")
             
+    #summary spectrum plot
+    def summary_spectrum_plot(self,plh):
+        all_levels = []; all_errs = []; all_indexes = []; xticks = []
+        if self.other_params['reference_particle']:
+            if f"{self.other_params['reference_particle']}(0)" in self.single_hadron_info:
+                energy_key = "ecm_ref"
+            else:
+                energy_key = "ecm"
+        else:
+            energy_key = "ecm"
+        for i,channel in enumerate(self.interacting_channels):
+            levels = []; errs = []
+            for op in self.results[channel]:
+                if self.results[channel][op]["success"]:
+                    levels.append(self.results[channel][op][energy_key].getFullEstimate())
+                    errs.append(self.results[channel][op][energy_key].getSymmetricError())
+            index = [i]*len(levels)
+            all_levels+=levels; all_errs+=errs; all_indexes+=index
+            xticks+=[(channel.irrep,channel.psq)]
+
+        thresholds = []
+        for line in self.other_params["thresholds"]:
+            value = 0.0
+            for particle in line:
+                value+=self.single_hadron_info[particle+"(0)"][energy_key]
+            thresholds.append((line, value))
+
+        plh.summary_plot(all_indexes,all_levels,all_errs,xticks,self.other_params['reference_particle'],thresholds)
+        if self.other_params['create_pickles']:
+            plh.save_pickle(self.proj_files_handler.summary_plot_file("pickle"))
+        if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+            plh.save_pdf(self.proj_files_handler.summary_plot_file("pdf"))
+
     #generates the tmin or tmax plot for any given operator op
     def tmin_fit_plot(self, plh, energy_type, results, channel, op, op_name, tmin_plot=True):
         plh.clf()
@@ -1306,6 +1406,33 @@ class SigmondSpectrumFits:
             plh.save_pdf(self.proj_files_handler.corr_fit_series_plot_file( f"{op_name}-{sh}", "dElab", "pdf",'t'+series_type))
             # logging.info("Generated sim tmin plot: "+self.corr_fit_series_plot_file( f"{op_name}-{sh}", "dElab", "pdf"))
         return(self.proj_files_handler.corr_fit_series_plot_file( f"{op_name}-{sh}", "dElab", "pdf",'t'+series_type))
+    
+    #for a given channel, generate all the operator overlap plots
+    def generate_operator_overlaps_plots(self, channel, plh):
+        for i,op in enumerate(self.zmags[channel]["ops"]):
+            op_name = str(op).replace(" ","_")
+            if op.isBasicLapH():
+                oppiece = op.getBasicLapH().getIDName()
+            else:
+                oppiece = op.getGenIrrep().getIDName()
+            estimates = []
+            errors = []
+            for j in range(self.zmags[channel]["nlevels"]):
+                zmag = self.zmags[channel]["zmags"].get(i,j)
+                estimates.append(zmag.getFullEstimate())
+                errors.append(zmag.getSymmetricError())
+            plh.clf()
+            
+            plh.plot_operator_overlaps(estimates,errors,oppiece)
+            if self.other_params['create_pdfs'] or self.other_params['create_summary']:
+                plh.save_pdf(self.proj_files_handler.operator_overlaps_plot( op_name, "pdf"))
+            if self.other_params['create_pickles']:
+                for i in range(10):
+                    try:
+                        plh.save_pickle(self.proj_files_handler.operator_overlaps_plot( op_name, "pickle"))
+                        break
+                    except RuntimeError as err:
+                        logging.warning(f"Runtime error when saving pickle of overlaps: {err}.")
 
     #for a given operator, complete the fit and tmin variation fits and store relevant info into memory
     def do_fits( self, results, channel, intop, this_fit_input, wmode, param_file, hadrons, tmin_results, tmax_results):
