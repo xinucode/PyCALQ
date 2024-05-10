@@ -1,7 +1,7 @@
 import logging
 import os
 import yaml
-import xml.etree.ElementTree as ET
+# import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
 import h5py
@@ -18,9 +18,9 @@ import general.plotting_handler as ph
 import fvspectrum.sigmond_util as sigmond_util
 from sigmond_scripts import util as utils
 from sigmond_scripts import operator
-from sigmond_scripts import data_handler
-from sigmond_scripts.data_files import DataFiles
-from sigmond_scripts.correlator_data import CorrelatorData
+# from sigmond_scripts import data_handler
+# from sigmond_scripts.data_files import DataFiles
+# from sigmond_scripts.correlator_data import CorrelatorData
 from sigmond_scripts import fit_info, sigmond_info, sigmond_input
 
 doc = '''
@@ -38,7 +38,6 @@ general:
     omissions: []                       #default []
     rebin: 1                            #default 1
 fit_spectrum:
-  reference_particle: pi                #required
   default_corr_fit:                     #required unless both default_interacting_corr_fit and default_noninteracting_corr_fit are specified
     model: 1-exp                        #required
     tmin: 15                            #required
@@ -48,7 +47,7 @@ fit_spectrum:
     noise_cutoff: 0.0                   #not required #default 0
     priors: {}                          #not required #default {}, but if specified, should be a dictionary of param name: value
     ratio: true                         #not required #default false
-    sim_fit: false                      #not required #default false -> broken
+    sim_fit: false                      #not required #default false 
     tmin_plots:                         #not required #default []
     - model: 1-exp                        #required
       tmin_min: 10                        #required
@@ -57,8 +56,9 @@ fit_spectrum:
     tmax_plots:                         #not required #default []
     - model: 1-exp                        #required
       tmax_min: 30                        #required
-      tmin_max: 40                        #required
+      tmax_max: 40                        #required
     ...
+  reference_particle: pi                #not required #default None
   default_noninteracting_corr_fit: None #not required, but set up is same as default_corr_fit
   default_interacting_corr_fit: None    #not required, but set up is same as default_corr_fit
   correlator_fits:                              #not required #default {}
@@ -73,6 +73,7 @@ fit_spectrum:
   create_pdfs: true                             #not required #default true
   create_pickles: true                          #not required #default true
   create_summary: true                          #not required #default true
+  do_interacting_fits: true                     #not required #default true
   figheight: 6                          #not required #default 6
   figwidth: 8                           #not required #default 8
   only:                                 #not required
@@ -84,7 +85,6 @@ fit_spectrum:
   - isosinglet S=0 E PSQ=3
   ...
   generate_estimates: true              #not required #default true
-  max_condition_number: 50              #not required #default 50
   minimizer_info:                       #not required #defaults below
     chisquare_rel_tol: 0.0001             
     max_iterations: 2000
@@ -105,11 +105,16 @@ fit_spectrum:
   plot: true                            #not required #default true
   precompute: true                      #not required #default true
   rotated_input_correlators_dir:        #not required #automatically taken from project if not given
+  run_tag: ""                           #not required #default "" #should correspond to rotate run_tag
   thresholds:                           #not required #default [] #replace "sh1" and "sh2" with user given names
   - [sh1, sh2]
   ...
   use_rotated_samplings: true            #not required #default true => broken
   used_averaged_bins: true               #not required #default true
+  tN: 5                                 #not required #defualt finds most recently used file
+  t0: 5                                 #not required #defualt finds most recently used file
+  tD: 10                                #not required #defualt finds most recently used file
+  pivot_type: 0                         #not required #defualt finds most recently used file; 0 - single pivot, 1 - rolling pivot
 '''
 
 #for guessing number of hadrons in an operator
@@ -243,7 +248,7 @@ class SigmondSpectrumFits:
         if self.other_params['pivot_type']:
             rotate_type = 'RP'
         return self.proj_files_handler.operator_overlaps_samplings(channel, self.project_handler.project_info.bins_info.getRebinFactor(),
-                                                     sampling_mode, rotate_type, self.tN, self.t0, self.tD)
+                                                     sampling_mode, rotate_type, self.tN, self.t0, self.tD, self.other_params["run_tag"])
 
     def __init__( self, task_name, proj_files_handler, general_configs, task_configs, sph ):
         self.task_name = task_name
@@ -280,7 +285,6 @@ class SigmondSpectrumFits:
             'used_averaged_bins': True, #otherwise, use samplings
             'use_rotated_samplings': True, #otherwise, use bins
             'precompute': True,
-            'max_condition_number': 50,
             'correlated': True,
             'minimizer_info': {
                 'minimizer':'lmder',
@@ -400,7 +404,7 @@ class SigmondSpectrumFits:
 
         #get pivot file if one if not given -> need to fix for multiple rotations
         if self.other_params["pivot_file"]==None: #
-            self.other_params["pivot_file"] = self.proj_files_handler.pivot_file(rotate_type, self.tN, self.t0, self.tD, 
+            self.other_params["pivot_file"] = self.proj_files_handler.pivot_file(rotate_type, self.tN, self.t0, self.tD, self.other_params['run_tag'],
                                                                                  self.project_handler.project_info.bins_info.getRebinFactor(),
                                                                                  sampling_mode)
             task_configs["pivot_file"] = self.other_params["pivot_file"]

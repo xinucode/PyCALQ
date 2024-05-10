@@ -920,3 +920,11 @@ def update_process_index(ip,nnodes):
     ip += 1
     ip = ip%nnodes
     return ip
+
+def bootstrap_error_by_array( array ):
+    average = array[0]
+    samples = array[1:]
+    sigmaB = np.sum( (samples-average)*(samples-average) ) 
+    sigmaB = np.sqrt(sigmaB/(len(samples)-1))
+    return sigmaB
+

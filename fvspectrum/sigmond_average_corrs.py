@@ -31,7 +31,6 @@ average_corrs:                          #required
   average_by_bins: false                #not required #default false
   average_hadron_irrep_info: true       #not required #default true
   average_hadron_spatial_info: true     #not required #default true
-  bins_mode: true                       #not required #default true
   create_pdfs: true                     #not required #default true
   create_pickles: true                    #not required #default true
   create_summary: true                  #not required #default true
@@ -41,6 +40,7 @@ average_corrs:                          #required
   generate_estimates: true              #not required #default true
   ignore_missing_correlators: true      #not required #default true
   plot: true                            #not required #default true
+  separate_mom: true                    #not required #default false
   tmax: 64                              #not required #default 64
   tmin: 0                               #not required #default 0
 '''
@@ -90,14 +90,12 @@ class SigmondAverageCorrs:
             'figheight':6,
             'average_hadron_spatial_info': True,
             'average_hadron_irrep_info': True,
-            'bins_mode': True,
             'tmin':0,
             'tmax':64,
             'erase_original_matrix_from_memory': True,
             'ignore_missing_correlators': True,
             'generate_estimates': True,
             'average_by_bins': True,
-            'task_tag': "",
             'separate_mom': False
         }
         sigmond_util.update_params(self.other_params,task_configs) #update other_params with task_params, 
@@ -199,7 +197,6 @@ class SigmondAverageCorrs:
                 index = avchannel.momentum_squared
                 mom_key = index
                 self.moms.append(index)
-                # self.other_params['task_tag'] = self.other_params['task_tag'][:-1]+str(index)
             if file_created[index]:
                 wmode = sigmond.WriteMode.Update
             else:

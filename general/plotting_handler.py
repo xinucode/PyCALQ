@@ -351,13 +351,14 @@ class PlottingHandler:
             if label:
                 plt.legend()
 
-    def plot_operator_overlaps(self, values, errors, opname):
+    def plot_operator_overlaps(self, values, errors, opname=""):
         """histogram of operator overlaps"""
         plt.bar(range(len(values)),values)
         plt.errorbar(x=range(len(values)), y=values, yerr=errors,linewidth=0.0, elinewidth=1.5, capsize=5, marker=None, color="black")
         plt.xlabel("rotate level")
         plt.ylabel("$|Z|^2$")
-        self.moving_textbox([opname])
+        if opname:
+            self.moving_textbox([opname])
 
     #these pickle can only be opened on same system as it was generated 
     # (they are written with bytes because that was the only it would let me)

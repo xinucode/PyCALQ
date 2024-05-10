@@ -28,9 +28,26 @@ compare_spectrums:              #required
         tD: 18
         tN: 5
       ...
-      rebin: 1                      #required
+      rebin: 1                      #not required
       run_tag: ''                   #not required #default: ''
-      sampling_mode: J              #required
+      sampling_mode: J              #not required
+  - compare_files: []               #not required #default []
+  - compare_rebin:                  #not required
+      rebin_values: []              #required 
+      run_tag: ''                   #not required #default: ''
+      sampling_mode: J              #not required
+      pivot_type: 0               #not required #default: 0
+      t0: 8                         #required 
+      tN: 5                         #required 
+      tD: 18                        #required 
+  - compare_tags:
+      filetags: []                  #required
+      sampling_mode: J              #not required
+      pivot_type: 0               #not required #default: 0
+      t0: 8                         #required 
+      tN: 5                         #required 
+      tD: 18                        #required 
+      rebin: 1                      #not required
   figheight: 8                      #not required #default: 8
   figwidth: 15                      #not required #default: 15
   plot: true                        #required
