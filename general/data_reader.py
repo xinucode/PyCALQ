@@ -19,7 +19,7 @@ import os
 
 ############################################################################################
 # Set up logging
-#logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.CRITICAL)
 
 # doc = '''
 # H5Data - a task a read in h5py from correlator analysis
@@ -35,13 +35,6 @@ import os
 
 # '''
 
-hadron_map_ref = {'Sigma': 'S(0)_ref',
-              'Pi': 'pi(0)_ref',
-              'Kaon': 'k(0)_ref',
-              'Nucleon': 'N(0)_ref',
-              'Lambda':'L(0)_ref',
-              'Pion':'pi(0)'}
-
 class LQCD_DATA_READER:
     
     def __init__(self, file_path,L):
@@ -52,10 +45,10 @@ class LQCD_DATA_READER:
         if not file_path:
             logging.critical("Ensure file path is in project directory")
         
-        if not os.path.exists(self.file_path):
-            logging.critical(f"The HDF5 file does not exist at the specified path: {self.file_path}")
-        else:
-            pass
+        # if not os.path.exists(self.file_path):
+        #     logging.critical(f"The HDF5 file does not exist at the specified path: {self.file_path}")
+        # else:
+        #     pass
     # Continue with reading the file using h5py
 
     def load_data(self):
@@ -78,13 +71,9 @@ class LQCD_DATA_READER:
             self.load_data()
         
         single_hadron_list = [] #create a list with keys of hadrons in this analysis
-        # for key in self.data.get('single_hadrons'):
-        #     single_hadron_list.append(key)
-
-        for key in hadron_map_ref:
+        for key in self.data.get('single_hadrons'):
             single_hadron_list.append(key)
 
-        #hadron_list = hadron_map_ref.keys()
         return single_hadron_list
     
     def single_hadron_data(self,hadron):
@@ -95,8 +84,7 @@ class LQCD_DATA_READER:
         # term is a key for h5py files, can be accessed through .keys()  
         # single hadron has hadrons
         # L (Lambda), N (Nucleon), S (sigma), X (?), k (kaon), pi (pion)
-        had = hadron_map_ref[hadron]
-        return self.data.get('single_hadrons')[had][:]
+        return self.data.get('single_hadrons')[hadron][:]
     
     # need to change, [0] data is the average, rest is bootstrap
     def energy_data(self,PSQ,Irrep,level): 
@@ -106,6 +94,8 @@ class LQCD_DATA_READER:
         # Irrep is the FV irrep 'G1u',...
         level = f"ecm_{level}"
         return self.data.get(PSQ)[Irrep].get(level)[:]
+
+
     
     # def energy_data_bootstrap_samples(self,PSQ,Irrep,level): 
     #     if self.data is None:
