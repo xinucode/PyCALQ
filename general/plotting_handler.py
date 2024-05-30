@@ -1,23 +1,33 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib
 import pickle
 import pylatex
 import os
 import logging
 import numpy as np
+import copy
+import cmath
 
-import sigmond
+# import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
-from sigmond_scripts.analysis.utils import util as utils
-from sigmond_scripts.analysis.sigmond_info import fit_info
+from sigmond_scripts import util as utils
+from sigmond_scripts import fit_info
 
+import luescher.tools.kinematics 
 
+#where source and sink labels go on plot
 ctext_x = 0.3
 ctext_y = 0.7
+
+#transparent box
 blank = patches.Rectangle((0, 0), 1, 1, fc="white", ec="white", 
                                  lw=0, alpha=0)
+
+#for a set of spectrum levels, will shift overlapping levels slightly left or right so 
+    #that they are more visible
 def shift_levels( indexes, vals, errors, shifted_array=np.array([]), index=0 ):
     if len(indexes):
         if not shifted_array.any():
@@ -72,14 +82,27 @@ def shift_levels( indexes, vals, errors, shifted_array=np.array([]), index=0 ):
     return 0.0
 
 class PlottingHandler:
+    # Flag to check if LaTeX is available for plot labels
+    latex = True
+    #checks if latex compler is present, if not sets this variable to false
+            #use this for latex labels, and make an option for non-latex labels.
+    latex = sigmond_util.set_latex_in_plots(plt.style)
+
+    #does a quick test to see if necessary latex libraries are present
+    x = np.linspace(0,10,10)
+    plt.plot(x,x)
+    try:
+        plt.tight_layout()
+
+    except RuntimeError as err:
+        print("Not all libraries are available for matplotlib latex plots. Latex will not be used for plots.")
+        print(f"\t message: {err}")
+        latex = False
+        matplotlib.rcParams['text.usetex'] = False
+ 
+    plt.clf()
 
     def __init__(self):
-
-        # Flag to check if LaTeX is available for plot labels
-        self.latex = True
-        #checks if latex compler is present, if not sets this variable to false
-            #use this for latex labels, and make an option for non-latex labels.
-        self.latex = sigmond_util.set_latex_in_plots(plt.style)
         self.doc = []
 
     #############################
@@ -99,11 +122,14 @@ class PlottingHandler:
         plt.gcf().set_size_inches(self.figwidth, self.figheight)
 
     def set_figsize(self, figwidth, figheight):
+        """Set the figsize for both this class and matplotlib"""
         self.figheight = figheight
         self.figwidth = figwidth
         plt.gcf().set_size_inches(figwidth, figheight)
 
     def moving_textbox(self, labels):
+        """Uses the legend object as a textbox instead so that the 
+            text will move around the data accordingly"""
         plt.legend([blank]*len(labels), labels, frameon=False, fancybox=False, framealpha=0.0, shadow=None)
 
     def correlator_plot(self,df, ptype=0, op1=None, op2=None, color_index = 0):
@@ -130,14 +156,30 @@ class PlottingHandler:
 
         plt.tight_layout()
 
-    def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, sh_index = 0, color_index = 0):
+    def sigmond_corrfit_plot_and_save(self,df, fit_result_info, Nt, ptype=0, op1=None, save_pickle = "", save_pdf = "", 
+                                      sh_index = 0, color_index = 0, new_trange = None):
+        """runs sigmond_corrfit_plot and saves to pickle and/or pdf as desired, 
+            if save_pdf or save_pickle are empty, then does not save"""
+        self.sigmond_corrfit_plot(df, fit_result_info, Nt, ptype, op1, sh_index, color_index, new_trange)
+        if save_pickle:
+            self.save_pickle(save_pickle)
+        if save_pdf:
+            self.save_pdf(save_pdf)
+
+    def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, sh_index = 0, color_index = 0, new_trange = None):
         """Generate a correlator plot with fit using Matplotlib."""
         labels = []
         plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index], zorder=1)
 
-        if ptype==0:
+        tmin = fit_result_info["info"].tmin
+        tmax = fit_result_info["info"].tmax
+        if new_trange!=None:
+            tmin = new_trange[0]
+            tmax = new_trange[1]
+
+        if ptype==0: #correlator plot
             if fit_result_info["success"]:
-                x=np.linspace(fit_result_info["info"].tmin, fit_result_info["info"].tmax, 100)
+                x=np.linspace(tmin, tmax, 100)
                 model = fit_result_info["info"].model.sigmond_object(Nt)
                 params = []
                 for estimate in fit_result_info["estimates"]:
@@ -145,16 +187,19 @@ class PlottingHandler:
                 y = [model.eval(params, xi) for xi in x]
                 plt.plot(x,y, color="black", ls="--")
             if fit_result_info["info"].ratio:
-                plt.ylabel(r"$R(t)$") #not all dollar signs require a latex compiler, for example this is okay.
+                plt.ylabel(r"$R(t)$")
             else:
-                plt.ylabel(r"$C(t)$") #not all dollar signs require a latex compiler, for example this is okay.
-        else:
+                plt.ylabel(r"$C(t)$") 
+        else: #effective energy plot
             if fit_result_info["success"]:
                 #for single -> use eval for double. 
                 energy_index = fit_result_info["info"].energy_index
+                #plot fit line
                 if fit_result_info["info"].model.short_name!="1-exp":
-                    x=np.linspace(fit_result_info["info"].tmin, fit_result_info["info"].tmax, fit_result_info["info"].tmax-fit_result_info["info"].tmin+1)
+                    x=np.linspace(tmin, tmax, tmax-tmin+1)
                     model = fit_result_info["info"].model.sigmond_object(Nt)
+                    #if sim fit, grab the fit params that correspont to the correlator being plotted
+                        #corrlator is indicated by sh_index => 0 - interacting correlator, 1,2 - single hadron correlators
                     if fit_result_info["info"].sim_fit: #make distinct between Deg/2-3exponential
                         if sh_index==0:
                             min_index = 0
@@ -171,7 +216,7 @@ class PlottingHandler:
                             indexes = [min_index,min_index+1,2,3,min_index+2]
                             params = [fit_result_info["estimates"][i].getFullEstimate() for i in indexes]
                         energy_index = min_index #correspond to fit model
-                    else:
+                    else: #just plot fit line
                         params = []
                         for estimate in fit_result_info["estimates"]:
                             params.append(estimate.getFullEstimate())
@@ -179,13 +224,13 @@ class PlottingHandler:
                     plt.plot(x[:-1]+0.5,y, color="black", ls="--")
                 energy_result = fit_result_info["estimates"][energy_index].getFullEstimate()
                 energy_err = fit_result_info["estimates"][energy_index].getSymmetricError()
-                plt.hlines(energy_result, fit_result_info["info"].tmin, fit_result_info["info"].tmax, color="black", zorder=2)
-                plt.gca().add_patch(patches.Rectangle((fit_result_info["info"].tmin, energy_result-energy_err), fit_result_info["info"].tmax-fit_result_info["info"].tmin, 2.0*energy_err, zorder=0, color="gray"))
+                plt.hlines(energy_result, tmin, tmax, color="black", zorder=2)
+                plt.gca().add_patch(patches.Rectangle((tmin, energy_result-energy_err), tmax-tmin, 2.0*energy_err, zorder=0, color="gray"))
             if self.latex:
                 if fit_result_info["info"].ratio:
-                    yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
+                    yscale = r"$a_t \delta E_{\textup{lab}}$" #the use of "\textup{}" command requires a latex compiler
                 else:
-                    yscale = r"$a_tE_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
+                    yscale = r"$a_tE_{\textup{lab}}$" 
             else: 
                 if fit_result_info["info"].ratio:
                     yscale = r"$a_t \delta E_{lab}$" #unsure if \delta needs latex
@@ -201,7 +246,7 @@ class PlottingHandler:
 
         # Annotate the plot with additional information if provided
         if op1:
-            labels.insert(0,f"corr: {str(op1)}") #double check that I'm not messing up sink and source
+            labels.insert(0,f"corr: {str(op1)}") 
         if fit_result_info["success"]:
             labels.append(f"$\chi^2/dof={format(float(fit_result_info['chisqrdof']),'.2f')}$")
 
@@ -209,7 +254,12 @@ class PlottingHandler:
 
         plt.tight_layout()
 
-    def add_tmin_fits(self, t,e,de,color_index, filled=True, model=None): #incorporate pvalue and chosen fit
+    def set_y_logscale(self):
+        plt.yscale('log')
+
+    #tmin or tmax plots
+    def add_fit_series(self, t,e,de,color_index, filled=True, model=None): #incorporate pvalue and chosen fit
+        """add a set of fits to a tmin or tmax plot"""
         if filled:
             marker_color = psettings.colors[color_index]
         else:
@@ -217,11 +267,15 @@ class PlottingHandler:
         plt.errorbar(x=t,y=e,yerr=de, linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], 
                      marker=psettings.markers[color_index], label=model, mfc=marker_color)
 
+    #add horizontal bar to plot corresponding to energy value of chosen fit
     def add_chosen_fit(self, energyval, energyerr, label="chosen"):
+        """add chosen fit as a horizontal bar to a plot"""
         plt.axhspan(energyval-energyerr, energyval+energyerr, color="gray")
         plt.axhline(energyval,color="black",ls="--", label=label)
 
-    def finalize_tmin_plot(self, title=None, ratio=False):
+    #tmin or tmax or t_whatever plots
+    def finalize_fit_series_plot(self, series_type="min", title=None, ratio=False):
+        """finalize a tmin or tmax plot"""
         if self.latex:
             if ratio:
                 yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
@@ -234,47 +288,74 @@ class PlottingHandler:
                 yscale = r"$a_tE_{lab}$"
 
         if self.latex:
-            plt.xlabel(r"$t_{\textup{min}}/a_t$")
+            plt.xlabel(rf"$t_{{\textup{{{series_type}}}}}/a_t$")
         else:
-            plt.xlabel(r"$t_{min}/a_t$")
+            plt.xlabel(rf"$t_{{{series_type}}}/a_t$")
         plt.ylabel(yscale)
         plt.legend(title=title)
         plt.tight_layout()
 
-    def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[]):
-        color_index = 0
+    #simple labeled line plot
+    def show_trend(self, x, y, ylabel=None, legend=False):
+        plt.plot(x,y, label=ylabel)
+        if legend:
+            plt.legend()
+
+    def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[], label=None, index=0, ndatasets=1, shift=False):
+        """Summary of spectrum plot"""
         indexes = np.array(indexes)
         levels = np.array(levels)
         errs = np.array(errs)
-        shifted_array = 0.25*shift_levels(indexes,levels,errs)
-        plt.errorbar(x=indexes+shifted_array, y=levels, yerr=errs,linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index])
-        plt.xlim(min(indexes)-1.0,max(indexes)+1.0)
+        shifted_array = shift_levels(indexes,levels,errs)
+        columns = max(shifted_array)-min(shifted_array)+1.0
+        shifted_array = shifted_array/columns/ndatasets
+        shifted_array += index/ndatasets-0.5+0.5/ndatasets
+        
+        plt.errorbar(x=indexes+shifted_array, y=levels, yerr=errs,linewidth=0.0, elinewidth=1.5, capsize=5, 
+                     color=psettings.colors[index], marker=psettings.markers[index], label=label)
 
-        dd = 0.005
-        for line in thresholds:
-            plt.axhline(line[1], color="black", ls="--")
-            line_label = ""
-            for particle in line[0]:
-                line_label+=psettings.latex_format[particle]
-            minx,maxx = plt.xlim()
-            miny,maxy = plt.ylim()
-            plt.text(minx+dd*(maxx-minx), line[1]+dd*(maxy-miny), line_label )
-        xticks = [f"{psettings.latex_format[irrep]}({mom})" for (irrep, mom) in xticks]
-        plt.xticks(list(range(len(xticks))),xticks)
-        if self.latex:
-            if reference:
-                latex_rest_mass = psettings.latex_format[reference].replace('$',"")
-                plt.ylabel(rf"$E_{{\textup{{cm}}}}/E_{{{latex_rest_mass}}}$") #change to ref
+        if index==ndatasets-1:
+            plt.xlim(min(indexes)-1.0,max(indexes)+1.0)
+            dd = 0.005
+            for line in thresholds:
+                plt.axhline(line[1], color="black", ls="--")
+                line_label = ""
+                for particle in line[0]:
+                    line_label+=psettings.latex_format[particle]
+                minx,maxx = plt.xlim()
+                miny,maxy = plt.ylim()
+                plt.text(minx+dd*(maxx-minx), line[1]+dd*(maxy-miny), line_label )
+            if len(xticks[0])==2:
+                xticks = [f"{psettings.latex_format[irrep]}({mom})" for (irrep, mom) in xticks]
+                rotation = 0
+            elif len(xticks[0])==3:
+                xticks = [f"{psettings.latex_format[irrep]}({mom}) {level}" for (irrep, mom, level) in xticks]
+                rotation = 90
+
+            plt.xticks(list(range(len(xticks))),xticks,size="small", rotation=rotation)
+            if self.latex:
+                if reference:
+                    latex_rest_mass = psettings.latex_format[reference].replace('$',"")
+                    plt.ylabel(rf"$E_{{\textup{{cm}}}}/E_{{{latex_rest_mass}}}$") #change to ref
+                else:
+                    if shift:
+                        plt.ylabel(r"$a_t \delta E_{lab}$") #change to ref
+                    else:
+                        plt.ylabel(r"$a_t E_{\textup{cm}}$") #change to ref
             else:
-                plt.ylabel(r"$a_t E_{\textup{cm}}$") #change to ref
-        else:
-            if reference:
-                latex_rest_mass = psettings.latex_format[reference].replace('$',"")
-                plt.ylabel(rf"$E_{{cm}}/E_{{{latex_rest_mass}}}$") #change to ref
-            else:
-                plt.ylabel(r"$a_t E_{cm}$")
+                if reference:
+                    latex_rest_mass = psettings.latex_format[reference].replace('$',"")
+                    plt.ylabel(rf"$E_{{cm}}/E_{{{latex_rest_mass}}}$") #change to ref
+                else:
+                    if shift:
+                        plt.ylabel(r"$a_t \delta E_{lab}$")
+                    else:
+                        plt.ylabel(r"$a_t E_{cm}$")
+            if label:
+                plt.legend()
 
     def plot_operator_overlaps(self, values, errors, opname):
+        """histogram of operator overlaps"""
         plt.bar(range(len(values)),values)
         plt.errorbar(x=range(len(values)), y=values, yerr=errors,linewidth=0.0, elinewidth=1.5, capsize=5, marker=None, color="black")
         plt.xlabel("rotate level")
@@ -292,6 +373,56 @@ class PlottingHandler:
     def save_pdf( self, filename, transparent=True):
         """Save the current Matplotlib figure as a PDF file."""
         plt.savefig( filename, transparent=transparent ) 
+
+    ###########################
+    ##### Leuscher Plots ######
+    ###########################
+    #input can be data files generated, and fit
+    def single_channel_plot( self, energies, fit_output, fit_param,fit_masses,lattice_size):
+        # energies is the average energies,
+        average_energies = energies
+        # next is array of [ fit_param1,fit_param2,chi2 ]
+        # fit_type is ERE param
+        # masses = [ma,mb]
+        ma,mb = fit_masses
+        # L
+        x = []
+        x_range = []
+        y = []
+        y_range = []
+        ma,mb = masses
+        for i in range(len(average_energies)):
+            x.append(luescher.tools.kinematics.q2(i,ma,mb))
+            y.append(qcotd(i,L,psq,ma,mb,ref))
+            xp = []
+            yp = []
+            for en in np.linspace(average_energies[i] - 0.01, average_energies[i] + 0.01, 100):
+                xp.append(luescher.tools.kinematics.q2(en,ma,mb))
+                yp.append(qcotd(en,L,psq,ma,mb,ref))
+            x_range.append(xp)
+            y_range.append(yp)
+        
+        ecm_values = np.linspace(min(average_energies) - 0.5, min(average_energies) + 0.05, 500)
+        q2_values = np.linspace(min(luescher.tools.kinematics.q2(average_energies,ma,mb))-0.1, max(luescher.tools.kinematics.q2(average_energies,ma,mb))+0.1, 300)
+        virtual_state = []
+        for q2 in np.linspace(min(luescher.tools.kinematics.q2(average_energies,ma,mb))-0.75,-0.0001,300):
+            virtual_state.append(cmath.sqrt(-q2))
+        line = []
+        # need fit params (fit_output)
+        # fit params come as number of params + chi2
+        number_of_fit_params = len(fit_output)
+        fit_params = fit_output[:number_of_fit_params]
+        #fit = [-(1/3.30),2*1.582] #with ecm factor
+        for energy_COM in ecm_values:
+            line.append(luescher.tools.parametrizations.output(energy_COM,ma,mb,fit_param,fit_params))
+        
+        
+        # last value of fit
+        
+
+
+        
+        return 
 
     ###########################
     ##### pylatex actions #####
@@ -313,7 +444,7 @@ class PlottingHandler:
         """Append a new section to the LaTeX document."""
         self.doc[index].append(pylatex.Command("subsubsection",title))
 
-    def add_correlator_subsection(self,corrname, leftplotfile, rightplotfile, index = 0): #add table of estimates?, list of correlators?
+    def add_correlator_subsection(self,corrname, leftplotfile, rightplotfile, index = 0): 
         """Add a subsection with two plots to the LaTeX document."""
         if not os.path.exists(leftplotfile) and not os.path.exists(rightplotfile):
             logging.warning(f"Unable to include {corrname} in summary pdf.")
@@ -344,6 +475,7 @@ class PlottingHandler:
                 thisfig.add_image(rightplotfile,width=pylatex.NoEscape(r'0.5\linewidth'), placement=pylatex.NoEscape("\centering") )
 
     def add_single_plot(self, plotfile, index=0):
+        """add only one plot the textwidth"""
         if not os.path.exists(plotfile):
             logging.warning(f"Unable to include {plotfile} in summary pdf.")
             return
@@ -353,35 +485,30 @@ class PlottingHandler:
 
 
     def summary_table(self, reference, headers, data, title = "", index = 0):
+        """a table that includes the fit information of the correlators"""
         if reference:
             latex_rest_mass = psettings.latex_format[reference].replace('$',"")
             headers = [header.replace("latex_rest_mass",latex_rest_mass) for header in headers]
         headers = [pylatex.NoEscape(header) for header in headers]
         with self.doc[index].create(pylatex.Center()) as centered:
-            # if title:
-                # self.doc[index].append(pylatex.Command("caption",pylatex.NoEscape(pylatex.utils.bold(pylatex.NoEscape(title)))))
-                # self.doc[index].append(pylatex.NoEscape("\n\n"))
-            with self.doc[index].create(pylatex.Table(position='h!')) as table:
-                table.append(pylatex.Command("centering"))
-                if title:
-                    table.add_caption(pylatex.NoEscape(pylatex.utils.bold(pylatex.NoEscape(title))))
-                with table.create(pylatex.Tabular("|".join(['c']*len(headers)))) as current_table:
-                    current_table.add_row(headers)
-                    current_table.add_hline()
-                    for line in data:
-                        line = [psettings.latex_format[col] if col in psettings.latex_format.keys() else col for col in line]
-                        line = [pylatex.NoEscape(col) for col in line]
-                        current_table.add_row(line)
+            centered.append(pylatex.utils.bold(pylatex.NoEscape(title)))
+            with centered.create(pylatex.LongTable("|".join(['c']*len(headers)))) as current_table:
+                current_table.add_row(headers)
+                current_table.add_hline()
+                for line in data:
+                    line = [psettings.latex_format[col] if col in psettings.latex_format.keys() else col for col in line]
+                    line = [pylatex.NoEscape(col) for col in line]
+                    current_table.add_row(line)
+        self.doc[index].append(pylatex.NoEscape("\n\n"))
 
     def add_operator_overlaps(self, files, index=0):
+        """creates a section called 'Operator Overlaps' 
+        and fills it in with the given file list"""
         with self.doc[index].create(pylatex.Subsubsection("Operator Overlaps")):
             self.add_plot_series(files,index)
-            # for x,y in zip(files[::2],files[1::2]):
-            #     self.include_additional_plots(x,y, index)
-            # if len(files)%2:
-            #     self.include_additional_plots(files[-1],files[-1]+"2")
 
     def add_plot_series(self, files, index=0):
+        """adds a series of plots in a two columns"""
         for x,y in zip(files[::2],files[1::2]):
             self.include_additional_plots(x,y, index)
         if len(files)%2:
