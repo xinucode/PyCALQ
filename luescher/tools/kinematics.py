@@ -1,7 +1,7 @@
 import numpy as np
 
 import math
-from zeta import Z
+from luescher.tools.zeta import Z
 
 #~~~~~~~~~~~~~~~~~~~~~~~`
 # energy-dependent kinematic functions

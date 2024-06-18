@@ -7,7 +7,7 @@ general:
       seed: 454
       bootskip: 31
     tweak_ensemble:
-      rebin: 5
+      rebin: 4
       #or
     #   ensemble_id: cls21_c103
     #   num_measurements: 

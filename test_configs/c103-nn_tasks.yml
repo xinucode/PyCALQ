@@ -2,176 +2,142 @@ tasks:
   # preview_corrs: 
   #   raw_data_files: 
   #     - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
-  # average_corrs:
-  #   # only:
-  #   #   - psq=0
-  #   raw_data_files: 
-  #     - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
-  #     - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/singlet_S0.bin
-  #   separate_mom: True
-  #   # plot: False
-  #   generate_estimates: False
-  #   create_pickles: False
+  # - average_corrs:
+  #     # only:
+  #     #   - psq=0
+  #     raw_data_files: 
+  #       - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
+  #       - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/singlet_S0.bin
+  #     separate_mom: True
+  #     plot: False
+  #     generate_estimates: False
+  #     create_pickles: False
   #   # info: True
 
-  # rotate_corrs:
-  #   t0: 5
-  #   tN: 5
-  #   tD: 10
-  #   plot: False
-  #   generate_estimates: False
-  #   # only:
-  #   #   - psq=0
-
-  fit_spectrum:
-    # info: True
-    only:
-      - isosinglet S=0 T1g PSQ=0
-      - isosinglet S=0 A2 PSQ=1
-    single_hadrons:
-      N:
-        - isodoublet S=0 P=(0,0,0) G1g N-SS_0 0
-        - isodoublet S=0 PSQ=1 G1 N-SS_0 0
-        - isodoublet S=0 PSQ=2 G N-SS_0 0
-        - isodoublet S=0 PSQ=3 G N-SS_0 0
-        - isodoublet S=0 PSQ=4 G1 N-SS_0 0
-        - isodoublet S=0 PSQ=5 F1 N-SS_0 0
-    default_noninteracting_corr_fit:
-      model: 2-exp
-      tmin: 6
-      tmax: 25
-      tmin_try_min: 5
-      tmin_try_max: 8
-      tmin_plots:
-      - model: 1-exp
-        tmin_min: 10
-        tmin_max: 20
-      - model: 2-exp
-        tmin_min: 5
-        tmin_max: 15
-    default_interacting_corr_fit:
-      model: 2-exp
-      tmin: 8
-      tmax: 25
-      tmin_try_min: 2
-      tmin_try_max: 10
-      sim_fit: True
-      tmin_plots:
-      - model: 1-exp
-        tmin_min: 10
-        tmin_max: 18
-      - model: 2-exp
-        tmin_min: 5
-        tmin_max: 15
-      - model: 1-exp
-        tmin_min: 10
-        tmin_max: 18
-        ratio: True
-      - model: 2-exp
-        tmin_min: 2
-        tmin_max: 10
-        sim_fit: True
-      tmax_plots:
-      - model: 2-exp
-        tmax_min: 15
-        tmax_max: 25
-        sim_fit: True
-    non_interacting_levels:
-      isosinglet S=0 T1g PSQ=0: [[N(0),N(0)],[N(1), N(1)],[N(1), N(1)],[N(2), N(2)],[N(2), N(2)],[N(2), N(2)],[N(3), N(3)],[N(3), N(3)],[N(4), N(4)],[N(4), N(4)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)]]
-      isosinglet S=0 A2 PSQ=1: [[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(1), N(4)],[N(2), N(3)],[N(2), N(3)],[N(2), N(5)],[N(2), N(5)],[N(4), N(5)],[N(4), N(5)]]
-    correlator_fits:
-      isosinglet S=0 P=(0,0,0) T1g ROT 5:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 6:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 7:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 8:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 9:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 10:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 11:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 12:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 13:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 P=(0,0,0) T1g ROT 14:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 PSQ=1 A2 ROT 5:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 PSQ=1 A2 ROT 6:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 PSQ=1 A2 ROT 7:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 PSQ=1 A2 ROT 8:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
-      isosinglet S=0 PSQ=1 A2 ROT 9:
-        model: 2-exp
-        tmin: 6
-        tmin_plots: []
-        tmax_plots: []
-        sim_fit: False
+  # - rotate_corrs:
+  #     t0: 4
+  #     tN: 4
+  #     tD: 8
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 4
+  #     tN: 4
+  #     tD: 10
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #       # - psq=0
+  # - rotate_corrs:
+  #     t0: 5
+  #     tN: 5
+  #     tD: 10
+  #     pivot_type: 1
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 5
+  #     tN: 5
+  #     tD: 12
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 6
+  #     tN: 6
+  #     tD: 12
+  #     pivot_type: 1
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 6
+  #     tN: 6
+  #     tD: 14
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
+  # - rotate_corrs:
+  #     t0: 7
+  #     tN: 7
+  #     tD: 14
+  #     plot: False
+  #     generate_estimates: False
+  #     # only:
+  #     #   - psq=0
 
 
+  - compare_spectrums:
+      max_level: 3
+      compare_plots:
+      - compare_gevp:
+          gevp_values:
+          # - tN: 4
+          #   t0: 4
+          #   tD: 8
+          # - tN: 4
+          #   t0: 4
+          #   tD: 10
+          - tN: 5
+            t0: 5
+            tD: 10
+            pivot_type: 0
+          # - tN: 5
+          #   t0: 5
+          #   tD: 10
+            # pivot_type: 1
+          - tN: 5
+            t0: 5
+            tD: 12
+          - tN: 6
+            t0: 6
+            tD: 12
+            pivot_type: 0
+          - tN: 6
+            t0: 6
+            tD: 12
+            pivot_type: 1
+          - t0: 6
+            tN: 6
+            tD: 14
+          - t0: 7
+            tN: 7
+            tD: 14
+          
+          sampling_mode: 'B'
+          rebin: 4
+          run_tag: 6Ntmin
+      - compare_rebin:
+          rebin_values: [1,2,4,5]
+          tN: 5
+          t0: 5
+          tD: 10
+          sampling_mode: 'B'
+          run_tag: 6Ntmin
+      # - compare_rebin:
+      #     reference_particle: N
+      #     rebin_values: [1,2,5,6,8,10]
+      #     tN: 5
+      #     t0: 5
+      #     tD: 10
+      #     sampling_mode: 'B'
+      #     run_tag: 6Ntmin
+      # reference_particle: N
 
-
-
+      - compare_tags:
+          filetags:
+          - 5Ntmin
+          - 6Ntmin
+          - 7Ntmin
+          tN: 6
+          t0: 6
+          tD: 12
+          sampling_mode: 'B'
+          rebin: 4

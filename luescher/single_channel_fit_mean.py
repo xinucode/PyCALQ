@@ -156,7 +156,7 @@ class SingleChannelFitMean:
         irreps_all = {}
         for psq in psq_list:
             irreps_all[psq] = []
-            for key in self.data.get(psq):
+            for key in self.dr.irrep_keys(psq):
                 irreps_all[psq].append(key)
         
         irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
@@ -167,10 +167,13 @@ class SingleChannelFitMean:
             self.ecm_data[psq] = {}
             for irrep in irreps[psq]:
                 if psq == 'PSQ0':
-                    level = "ecm_0_ref" # level as an int
+                    level = 0
+                    # level = "ecm_0_ref" # level as an int
                 else:
-                    level = "ecm_1_ref" 
-                self.ecm_data[psq][irrep] = self.data.get(psq).get(irrep).get(level)[:]
+                    level = 1
+                    # level = "ecm_1_ref" 
+                # self.ecm_data[psq][irrep] = self.data.get(psq).get(irrep).get(level)[:]
+                self.ecm_data[psq][irrep] = self.dr.ref_energy_data(psq,irrep,level)
         # now that we have ecm_data, lets do a fit and save results
         self.average_energies = []
         #first we want to use average data
@@ -274,8 +277,8 @@ class SingleChannelFitMean:
 
                 total_label_num += 1
                 # get energy from ecm_data
-                ma, n = extract_values(self.data[mom][irr].attrs['free_levels'][label_number][0])
-                mb, m = extract_values(self.data[mom][irr].attrs['free_levels'][label_number][1])
+                ma, n = extract_values(self.dr.free_levels(mom,irr,label_number)[0])
+                mb, m = extract_values(self.dr.free_levels(mom,irr,label_number)[1])
                 ma = mass_map[ma]
                 mb = mass_map[mb]
                 #data_array = self.energy_data(mom,irr,label)

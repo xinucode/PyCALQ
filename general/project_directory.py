@@ -202,22 +202,28 @@ class ProjectDirectoryHandler:
         return os.path.join(self.plot_dir(f"{ptype}s"), f"{self.task_name}{filetag}_summary_plot.{ptype}")
     
     #filename for important info for gevp pivot
-    def pivot_file(self, rotate_type, tN, t0, tD, rebin=1, sampling_type=None, channel=None ):
+    def pivot_file(self, rotate_type, tN, t0, tD, run_tag = "", rebin=1, sampling_type=None, channel=None):
+        tag = "pivot_info"
+        if run_tag:
+            tag += f"-{run_tag}"
         if tm.Task.rotate_corrs.name==self.task_name:
-            return self.samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, "pivot_info")
+            return self.samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD,tag)
         else:
-            return self.all_tasks[tm.Task.rotate_corrs.name].samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, "pivot_info")
+            return self.all_tasks[tm.Task.rotate_corrs.name].samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, tag)
         
     #filename for histogram plot of operator overlaps
     def operator_overlaps_plot(self, op, ptype):
         return os.path.join(self.plot_dir(f"{ptype}s"), f"{op}_operator_overlaps.{ptype}")
     
     #filename for samplings of operator overlaps
-    def operator_overlaps_samplings(self, channel = None, rebin=1, sampling_type=None, rotate_type=None, tN=None, t0=None, tD=None):
+    def operator_overlaps_samplings(self, channel = None, rebin=1, sampling_type=None, rotate_type=None, tN=None, t0=None, tD=None, run_tag = ""):
+        tag = "operator_overlaps"
+        if run_tag:
+            tag += f"-{run_tag}"
         if tm.Task.fit_spectrum.name==self.task_name:
-            return self.samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, "operator_overlaps")
+            return self.samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, tag)
         else:
-            return self.all_tasks[tm.Task.fit_spectrum.name].samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, "operator_overlaps")
+            return self.all_tasks[tm.Task.fit_spectrum.name].samplings_file(False, channel, None, rebin, sampling_type, rotate_type, tN, t0, tD, tag)
     
     #finds all averaged correlator data files based on rebin, sampling_type == 'B' or 'J', and selects momentums in only_mom if desired
     def get_averaged_data(self,binned, rebin, sampling_type=None, only_mom = []):

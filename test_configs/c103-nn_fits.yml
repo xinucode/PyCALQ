@@ -1,0 +1,1008 @@
+tasks:
+  - fit_spectrum:
+      pivot_type: 0
+      # t0: 4
+      # tN: 4
+      # tD: 8
+      # t0: 4
+      # tN: 4
+      # tD: 10
+      # t0: 5
+      # tN: 5
+      # tD: 10
+      # t0: 5
+      # tN: 5
+      # tD: 12
+      t0: 6
+      tN: 6
+      tD: 12
+      # t0: 6
+      # tN: 6
+      # tD: 14
+      # t0: 7
+      # tN: 7
+      # tD: 14
+      minimizer_info:
+        # minimizer: scipy
+        minimizer: lmder
+        parameter_rel_tol: 1e-6
+        chisquare_rel_tol: 1e-4
+        max_iterations: 1000
+        verbosity: high
+      run_tag: 6Ntmin
+      # plot: False
+      # compute_overlaps: False
+      create_pickles: False
+      only:
+        - isosinglet S=0 T1g PSQ=0
+        - isosinglet S=0 A2 PSQ=1
+        - isosinglet S=0 E PSQ=1
+        - isosinglet S=0 A2 PSQ=2
+        - isosinglet S=0 B1 PSQ=2
+        - isosinglet S=0 B2 PSQ=2
+        - isosinglet S=0 A2 PSQ=3
+        - isosinglet S=0 E PSQ=3
+        - isosinglet S=0 A2 PSQ=4
+        - isosinglet S=0 E PSQ=4
+      single_hadrons:
+        N:
+          - isodoublet S=0 P=(0,0,0) G1g N-SS_0 0
+          - isodoublet S=0 PSQ=1 G1 N-SS_0 0
+          - isodoublet S=0 PSQ=2 G N-SS_0 0
+          - isodoublet S=0 PSQ=3 G N-SS_0 0
+          - isodoublet S=0 PSQ=4 G1 N-SS_0 0
+          - isodoublet S=0 PSQ=5 F1 N-SS_0 0
+      default_noninteracting_corr_fit:
+        model: 2-exp
+        tmin: 6
+        tmax: 25
+        tmin_plots:
+        - model: 1-exp
+          tmin_min: 10
+          tmin_max: 20
+        - model: 2-exp
+          tmin_min: 5
+          tmin_max: 15
+      default_interacting_corr_fit:
+        model: 2-exp
+        tmin: 8
+        tmax: 25
+        sim_fit: True
+        tmin_plots:
+        - model: 1-exp
+          tmin_min: 10
+          tmin_max: 18
+        - model: 2-exp
+          tmin_min: 5
+          tmin_max: 15
+        - model: 1-exp
+          tmin_min: 10
+          tmin_max: 18
+          ratio: True
+        - model: 2-exp
+          tmin_min: 3
+          tmin_max: 10
+          sim_fit: True
+        tmax_plots:
+        - model: 2-exp
+          tmax_min: 15
+          tmax_max: 25
+          sim_fit: True
+      non_interacting_levels:
+        isosinglet S=0 T1g PSQ=0: [[N(0),N(0)],[N(1), N(1)],[N(1), N(1)],[N(2), N(2)],[N(2), N(2)],[N(2), N(2)],[N(3), N(3)],[N(3), N(3)],[N(4), N(4)],[N(4), N(4)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)]]
+        isosinglet S=0 A2 PSQ=1: [[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(1), N(4)],[N(2), N(3)],[N(2), N(3)],[N(2), N(5)],[N(2), N(5)],[N(4), N(5)],[N(4), N(5)]]
+        isosinglet S=0 E PSQ=1: [[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(2), N(3)],[N(1), N(4)],[N(2), N(3)],[N(2), N(3)],[N(2), N(3)],[N(2), N(5)],[N(2), N(5)],[N(2), N(5)],[N(2), N(5)],[N(4), N(5)],[N(4), N(5)],[N(4), N(5)],[N(4), N(5)]]
+        isosinglet S=0 A2 PSQ=2: [[N(1), N(1)],[N(0), N(2)],[N(1), N(3)],[N(1), N(3)],[N(2), N(2)],[N(1), N(5)],[N(2), N(4)],[N(2), N(4)],[N(1), N(5)],[N(3), N(5)],[N(3), N(5)],[N(3), N(5)],[N(3), N(5)],[N(5), N(5)],[N(5), N(5)]]
+        isosinglet S=0 B1 PSQ=2: [[N(1), N(1)],[N(0), N(2)],[N(2), N(2)],[N(1), N(3)],[N(2), N(2)],[N(2), N(2)],[N(2), N(2)],[N(2), N(4)],[N(1), N(5)],[N(2), N(4)],[N(1), N(5)],[N(3), N(5)],[N(3), N(5)],[N(3), N(5)],[N(3), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)]]
+        isosinglet S=0 B2 PSQ=2: [[N(1), N(1)],[N(0), N(2)],[N(1), N(1)],[N(1), N(3)],[N(2), N(2)],[N(2), N(2)],[N(2), N(2)],[N(2), N(2)],[N(1), N(5)],[N(1), N(5)],[N(2), N(4)],[N(2), N(4)],[N(3), N(5)] ,[N(3), N(5)],[N(3), N(5)],[N(3), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)]]
+        isosinglet S=0 A2 PSQ=3: [[N(0), N(3)],[N(1), N(1)],[N(1), N(1)],[N(2), N(5)],[N(3), N(4)],[N(2), N(5)],[N(2), N(5)],[N(2), N(5)],[N(3), N(4)]]
+        isosinglet S=0 E PSQ=3: [[N(0), N(3)],[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(1), N(2)],[N(2), N(5)],[N(2), N(5)],[N(2), N(5)],[N(2), N(5)], [N(2), N(5)],[N(2), N(5)],[N(2), N(5)],[N(2), N(5)],[N(3), N(4)],[N(3), N(4)],[N(3), N(4)],[N(3), N(4)]]
+        isosinglet S=0 A2 PSQ=4: [[N(1), N(1)],[N(0), N(4)],[N(2), N(2)],[N(1), N(5)],[N(3), N(3)],[N(1), N(5)],[N(5), N(5)]]
+        isosinglet S=0 E PSQ=4: [[N(1), N(1)],[N(0), N(4)],[N(2), N(2)],[N(2), N(2)],[N(2), N(2)],[N(1), N(5)],[N(3), N(3)],[N(1), N(5)],[N(3), N(3)],[N(1), N(5)],[N(3), N(3)],[N(3), N(3)],[N(5), N(5)],[N(5), N(5)],[N(5), N(5)]]
+      correlator_fits:
+        isosinglet S=0 P=(0,0,0) T1g ROT 0:
+          tmin: 6
+        isosinglet S=0 P=(0,0,0) T1g ROT 2:
+          model: 2-exp
+          tmin: 5 #6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          # tmin_plots:
+          # - model: 2-exp
+          #   tmin_min: 5
+          #   tmin_max: 15
+        isosinglet S=0 P=(0,0,0) T1g ROT 3:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 10:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 12:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 13:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 P=(0,0,0) T1g ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 0:
+          tmin: 9
+          tmin_try_min: 2
+          tmin_try_max: 10
+        isosinglet S=0 PSQ=1 A2 ROT 1:
+          tmin: 7
+          tmax: 24
+        isosinglet S=0 PSQ=1 A2 ROT 2:
+          tmax: 24
+        isosinglet S=0 PSQ=1 A2 ROT 3:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 A2 ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 0:
+          tmin: 6
+          # tmin_try_min: 2
+          # tmin_try_max: 10
+        
+        # isosinglet S=0 PSQ=1 E ROT 1:
+        #   tmin_try_min: 2
+        #   tmin_try_max: 10
+        isosinglet S=0 PSQ=1 E ROT 2:
+          tmax: 24
+        isosinglet S=0 PSQ=1 E ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 10:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 12:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 13:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 15:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 16:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=1 E ROT 17:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 1:
+          tmin: 8
+          tmax: 22
+          # tmin_try_min: 2
+          # tmin_try_max: 10
+        isosinglet S=0 PSQ=2 A2 ROT 2:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 3:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 7:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 8:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 10:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 12:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 13:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 A2 ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 0:
+          # tmin: 7
+          tmax: 25
+        isosinglet S=0 PSQ=2 B1 ROT 1:
+          tmin: 7
+          tmax: 20
+        isosinglet S=0 PSQ=2 B1 ROT 2:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 3:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 6:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 9:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 10:
+          model: 2-exp
+          tmin: 7
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 12:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 13:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 15:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 16:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 17:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 18:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 19:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B1 ROT 20:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 0:
+          tmin: 9
+          tmax: 23
+        isosinglet S=0 PSQ=2 B2 ROT 1:
+          tmin: 9
+          tmax: 22
+          # tmin_try_min: 2
+          # tmin_try_max: 10
+        isosinglet S=0 PSQ=2 B2 ROT 2:
+          # tmin: 7 #8
+          tmax: 23
+          tmin_try_min: 2
+          tmin_try_max: 10
+        isosinglet S=0 PSQ=2 B2 ROT 3:
+          tmin: 8
+          tmax: 22
+          tmin_try_min: 2
+          tmin_try_max: 10
+        isosinglet S=0 PSQ=2 B2 ROT 4:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 10:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 12:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 13:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 15:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 16:
+          model: 2-exp
+          tmin: 7
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 17:
+          model: 2-exp
+          tmin: 7
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 18:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 19:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 20:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=2 B2 ROT 21:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 A2 ROT 0:
+          tmin: 8 #7
+          tmax: 23
+          # tmin_try_min: 2
+          # tmin_try_max: 10
+        isosinglet S=0 PSQ=3 A2 ROT 1:
+          tmax: 23
+        isosinglet S=0 PSQ=3 A2 ROT 2:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          # tmin_plots:
+          # - model: 2-exp
+          #   tmin_min: 5
+          #   tmin_max: 15
+          # - model: 1-exp
+          #   tmin_min: 10
+          #   tmin_max: 30
+        isosinglet S=0 PSQ=3 A2 ROT 3:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 A2 ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 A2 ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 A2 ROT 6:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          # tmin_plots:
+          # - model: 2-exp
+          #   tmin_min: 5
+          #   tmin_max: 15
+          # - model: 1-exp
+          #   tmin_min: 10
+          #   tmin_max: 30
+        isosinglet S=0 PSQ=3 A2 ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 A2 ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 0:
+          tmin: 10
+          # tmin_try_min: 2
+          # tmin_try_max: 10
+          tmax: 23
+          tmin_plots:
+          - model: 1-exp
+            tmin_min: 10
+            tmin_max: 18
+          - model: 1-exp
+            tmin_min: 10
+            tmin_max: 18
+            ratio: True
+          - model: 2-exp
+            tmin_min: 3
+            tmin_max: 10
+            sim_fit: True
+          tmax_plots:
+          - model: 2-exp
+            tmax_min: 15
+            tmax_max: 25
+            sim_fit: True
+
+        isosinglet S=0 PSQ=3 E ROT 1:
+          # tmin: 7
+          # tmin_try_min: 2
+          # tmin_try_max: 10
+          tmax: 22
+          tmin_plots:
+          - model: 1-exp
+            tmin_min: 10
+            tmin_max: 18
+          - model: 1-exp
+            tmin_min: 10
+            tmin_max: 18
+            ratio: True
+          - model: 2-exp
+            tmin_min: 3
+            tmin_max: 10
+            sim_fit: True
+          tmax_plots:
+          - model: 2-exp
+            tmax_min: 15
+            tmax_max: 25
+            sim_fit: True
+        isosinglet S=0 PSQ=3 E ROT 2:
+          tmax: 24
+        isosinglet S=0 PSQ=3 E ROT 3:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 5:
+          model: 2-exp
+          tmin: 7
+          # tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          tmin_plots:
+          - model: 2-exp
+            tmin_min: 5
+            tmin_max: 15
+        isosinglet S=0 PSQ=3 E ROT 6:
+          model: 2-exp
+          tmin: 5
+          # tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          tmin_plots:
+          - model: 2-exp
+            tmin_min: 5
+            tmin_max: 15
+        isosinglet S=0 PSQ=3 E ROT 7:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 10:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 12:
+          model: 2-exp
+          tmin: 7
+          # tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          tmin_plots:
+          - model: 2-exp
+            tmin_min: 5
+            tmin_max: 15
+        isosinglet S=0 PSQ=3 E ROT 13:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 15:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=3 E ROT 16:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 A2 ROT 0:
+          tmin: 6
+          tmin_try_min: 2
+          tmin_try_max: 10
+        isosinglet S=0 PSQ=4 A2 ROT 1:
+          tmin: 9
+          tmin_try_min: 2
+          tmin_try_max: 10
+        isosinglet S=0 PSQ=4 A2 ROT 2:
+          tmin: 6
+          tmax: 21
+        isosinglet S=0 PSQ=4 A2 ROT 3:
+          model: 2-exp
+          tmin: 6 #7
+          # tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          tmin_plots:
+          - model: 2-exp
+            tmin_min: 5
+            tmin_max: 15
+        isosinglet S=0 PSQ=4 A2 ROT 4:
+          model: 1-exp
+          tmin: 15
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          # tmin_plots:
+          # - model: 2-exp
+          #   tmin_min: 5
+          #   tmin_max: 15
+          # - model: 1-exp
+          #   tmin_min: 10
+          #   tmin_max: 30
+        isosinglet S=0 PSQ=4 A2 ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 A2 ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 0:
+          tmax: 24
+        isosinglet S=0 PSQ=4 E ROT 1:
+          tmin: 7
+          tmin_try_min: 2
+          tmin_try_max: 10
+        isosinglet S=0 PSQ=4 E ROT 3:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 4:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 5:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 6:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 7:
+          model: 2-exp
+          tmin: 7
+          # tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          tmin_plots:
+          - model: 2-exp
+            tmin_min: 5
+            tmin_max: 15
+        isosinglet S=0 PSQ=4 E ROT 8:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 9:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 10:
+          model: 2-exp
+          tmin: 5
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 11:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 12:
+          model: 2-exp
+          tmin: 7
+          # tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+          tmin_plots:
+          - model: 2-exp
+            tmin_min: 5
+            tmin_max: 15
+        isosinglet S=0 PSQ=4 E ROT 13:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+        isosinglet S=0 PSQ=4 E ROT 14:
+          model: 2-exp
+          tmin: 6
+          tmin_plots: []
+          tmax_plots: []
+          sim_fit: False
+
+
+
+
+
+
+
+
+
+

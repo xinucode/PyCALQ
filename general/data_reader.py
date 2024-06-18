@@ -19,7 +19,7 @@ import os
 
 ############################################################################################
 # Set up logging
-logging.basicConfig(level=logging.CRITICAL)
+# logging.basicConfig(level=logging.CRITICAL)
 
 # doc = '''
 # H5Data - a task a read in h5py from correlator analysis
@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.CRITICAL)
 
 class LQCD_DATA_READER:
     
-    def __init__(self, file_path,L):
+    def __init__(self, file_path,L, isospin=None, strangeness=None):
         self.file_path = file_path # file path that leads directo
         self.data = None  # You can initialize data here if needed
         self.L = L
@@ -45,6 +45,16 @@ class LQCD_DATA_READER:
         if not file_path:
             logging.critical("Ensure file path is in project directory")
         
+        if isospin==None and strangeness==None:
+            self.channel = None
+        else:
+            strange_str = f"S{strangeness}"
+            if strangeness<0:
+                strange_str = f"Sm{-strangeness}"
+
+            self.channel = f"iso{isospin}_{strange_str}"
+
+
         # if not os.path.exists(self.file_path):
         #     logging.critical(f"The HDF5 file does not exist at the specified path: {self.file_path}")
         # else:
@@ -54,6 +64,21 @@ class LQCD_DATA_READER:
     def load_data(self):
         # Open the H5py file and load the data
         self.data = h5.File(self.file_path,'r')
+
+        #check the channel name, retrieve if one is available
+        if self.channel==None:
+            available_channels = list(self.data.keys())
+            available_channels.remove('single_hadrons')
+            if len(available_channels)==1:
+                self.channel = available_channels[0]
+            elif len(available_channels)>1:
+                logging.critical(f"Too many channels in input file, please define a channel using 'isospin' and 'strangeness' parameters.")
+            else:
+                logging.critical(f"No channels available in input data file.")
+        else:
+            if self.channel not in self.data.keys():
+                logging.critical(f"Channel {self.channel} not found in file {self.file_path}. Please correct name or data file.")
+
         return self.data
 
     def load_psq(self):
@@ -61,10 +86,16 @@ class LQCD_DATA_READER:
             self.load_data()
         
         psq_keys = []
-        for key in self.data:
+        for key in self.data[self.channel]:
             if key[0:3] == 'PSQ':
                 psq_keys.append(key)
         return psq_keys
+
+    def irrep_keys(self,psq):
+        if self.data is None:
+            self.load_data()
+
+        return list(self.data[self.channel][psq].keys())
 
     def single_hadron_list(self):
         if self.data is None:
@@ -87,15 +118,19 @@ class LQCD_DATA_READER:
         return self.data.get('single_hadrons')[hadron][:]
     
     # need to change, [0] data is the average, rest is bootstrap
-    def energy_data(self,PSQ,Irrep,level): 
+    def ref_energy_data(self,PSQ,Irrep,level): 
         if self.data is None:
             self.load_data()
         # PSQ can be PSQ0,1,2,3
         # Irrep is the FV irrep 'G1u',...
-        level = f"ecm_{level}"
-        return self.data.get(PSQ)[Irrep].get(level)[:]
+        level = f"ecm_{level}_ref"
+        return self.data[self.channel].get(PSQ)[Irrep].get(level)[:]
 
-
+    def free_levels(self,mom,irr,level):
+        # particle_mom = self.data[self.channel][mom][irr].attrs['free_levels'][level] #pi(0)
+        # particle, mom = particle_mom.split('(') #pi, 0)
+        # mom = mom[:-1] #0
+        return self.data[self.channel][mom][irr].attrs['free_levels'][level]
     
     # def energy_data_bootstrap_samples(self,PSQ,Irrep,level): 
     #     if self.data is None:
