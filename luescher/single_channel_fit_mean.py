@@ -15,11 +15,6 @@ import scipy.special as sp      #special functions
 import scipy.integrate as integrate #needed to do numerical integration, alt?
 import yaml
 import os
-import general.plotting_handler as ph
-
-
-import luescher.tools.kinematics as kin_tools
-import luescher.tools.parametrizations as params
 ##
 from matplotlib.lines import Line2D  # Import Line2D for custom legend handles
 #from tqdm import tqdm  # Import the tqdm library
@@ -27,7 +22,6 @@ from scipy import optimize,integrate
 from scipy.optimize import fsolve,minimize
 from scipy.integrate import quad
 from luescher.tools.zeta import Z
-
 ## Z function that is fast
 
 
@@ -53,18 +47,11 @@ class SingleChannelFitMean:
         # if not task_configs:
         #     logging.critical(f"No directory to view. Add 'raw_data_files' to '{task_name}' task parameters.")
 
-        self.ensemble_info = sigmond_util.get_ensemble_info(general_configs)
-        self.L = self.ensemble_info.getLatticeXExtent()
+        ensemble_info = sigmond_util.get_ensemble_info(general_configs)
+        self.L = 64#ensemble_info.getLatticeXExtent()
         # path name needs to link toward the hdf5 file 
         if 'data_file' in task_params.keys(): # want to add if statement 
             file_path = task_params['data_file']
-        else:
-            logging.critical(f"Ensure data has been generated for '{task_name}' to continue single-channel analysis.")
-
-        if 'fit_param' in task_params.keys(): 
-            self.fit_form = task_params['data_file']
-        else:
-            self.fit_form = 'ERE' #default fit form
 
         print(file_path)
         print(self.L)
@@ -72,7 +59,7 @@ class SingleChannelFitMean:
         self.data = self.dr.load_data()
         print("Data loaded")
         #print(self.data)
-        #other params
+
         # check that data from Hf file is real
         if not self.data:
             logging.critical(f"Ensure data has been generated for '{task_name}' to continue single-channel analysis.")
@@ -101,6 +88,59 @@ class SingleChannelFitMean:
             yaml.dump({"tasks":task_params}, log_file)
 
 
+    def momentum_state(self,i):
+        # d = [0,0,0]
+        if i == 'PSQ0':
+            return np.array([0,0,0])
+        # d = [0,0,1]
+        elif i == 'PSQ1':
+            return np.array([0,0,1])
+        # d = [1,1,0]
+        elif i == 'PSQ2':
+            return np.array([1,1,0])
+        # d = [1,1,1]
+        elif i == 'PSQ3':
+            return np.array([1,1,1])
+        # d = [0,0,2]
+        elif i == 'PSQ4':
+            return np.array([0,0,2])
+        else: 
+            # Raise an exception for invalid input
+            raise ValueError("Invalid value for 'i'. 'i' must be 0, 1, 2, or 3.")
+    
+    def q2(self,ecm,ma,mb): #assume all ref inputs
+        #ecm is the energy data
+        #ma,mb comes from the energies in the channel
+        q2 = ecm**2 / 4 - (ma**2 + mb**2) / 2 + ((ma**2 - mb**2)**2) / (4*ecm**2)
+        return q2
+    
+    def msplit(self,ecm,ma,mb): #if ma,mb are degenerate its 1
+        return 1 + ((ma**2 - mb**2)/ecm**2 ) 
+
+    
+     #gamma, lorentz factor
+    def gamma(self,ecm,d,ref):
+        d_vec = self.momentum_state(d) 
+        L_ref = self.L*ref
+        E = math.sqrt(ecm**2 + (((2*math.pi)/L_ref)**2)*np.dot(d_vec,d_vec))
+        #print("E=",E)
+        return E/ ecm #np.abs(ecm)
+    
+    # s-wave luscher quantization condition
+    def qcotd(self,ecm,psq,ma,mb,ref):
+        L_ref = self.L*ref
+        d_vec = self.momentum_state(psq) #0,1,2,3
+        c = 2 / (self.gamma(ecm,psq,ref)*L_ref*math.sqrt(math.pi))
+        #print("c=",c)
+        # print('ecm=', ecm)
+        # print("gamma = ",self.gamma(ecm,psq,ref))
+        #print( psq )
+        #print( ma )
+        return c*Z(self.q2(ecm,ma,mb)*((L_ref/(2*math.pi))**2),gamma=self.gamma(ecm,psq,ref),l=0,m=0,d=d_vec,m_split=self.msplit(ecm,ma,mb),precision=1e-11).real
+    
+    
+
+
     def run( self ):       
         log_path = os.path.join(self.proj_handler.log_dir(), 'luescher_log.yml') 
         # step 1, import the keys needed for analysis from single_hadron_list
@@ -119,28 +159,18 @@ class SingleChannelFitMean:
             for key in self.data.get(psq):
                 irreps_all[psq].append(key)
         
-        self.ang_mom = task_params['l'] #can be list
-
-        if self.ang_mom == 0:
-            irreps =  {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
-        
-        # irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
-        # print(irreps)
+        irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
+        print(irreps)
 
         self.ecm_data = {} # save possible data
         for psq in psq_list:
             self.ecm_data[psq] = {}
             for irrep in irreps[psq]:
-                if ma_ref != mb_ref:
-                    if psq == 'PSQ0':
-                        level = "ecm_0_ref" # level as an int
-                    else:
-                        level = "ecm_1_ref" 
-                    self.ecm_data[psq][irrep] = self.data.get(psq).get(irrep).get(level)[:]
+                if psq == 'PSQ0':
+                    level = "ecm_0_ref" # level as an int
                 else:
-                    level = 'ecm_0_ref'
-                    self.ecm_data[psq][irrep] = self.data.get(psq).get(irrep).get(level)[:]
-
+                    level = "ecm_1_ref" 
+                self.ecm_data[psq][irrep] = self.data.get(psq).get(irrep).get(level)[:]
         # now that we have ecm_data, lets do a fit and save results
         self.average_energies = []
         #first we want to use average data
@@ -151,7 +181,6 @@ class SingleChannelFitMean:
                 self.ecm_average_data[psq][irrep] = self.ecm_data[psq][irrep][0]
                 self.average_energies.append(self.ecm_data[psq][irrep][0])
 
-        
 
         self.ma_ave = ma_ref[0]
         self.mb_ave = mb_ref[0]
@@ -257,12 +286,20 @@ class SingleChannelFitMean:
 
         self.covariance_matrix = np.cov(np.array(ecm_NN_bs_arr))
         self.cov_de = np.cov(energy_shift_data())
+        print(self.cov_de)
 
-        # determinant condition for s-wave
-        # just an algebraic relation
+        def delta_Sp(ecm):
+            return (ecm**2 - (self.mb_ave+self.ma_ave)**2 )/ (self.mb_ave+self.ma_ave)**2
+        
+        def ere_delta(ecm,a,b):
+            return (ecm)*(a+b*delta_Sp(ecm))
+
+        # fit ere expansion
+        def ere(ecm,a,b):
+            return ((-1/a)+0.5*b*self.q2(ecm,self.ma_ave,self.mb_ave)) #in units of reference mass, usually mpi
+
         def determinant_condition(ecm,psq,a,b):
-            #p = psq[3] 
-            kin_tools.qcotd(ecm,self.L,psq,ma_ref,mb_ref,ref_mass)
+            #p = psq[3]
             return (self.qcotd(ecm,psq,self.ma_ave,self.mb_ave,self.ref_ave) - ere_delta(ecm,a,b))
 
         def QC1(psq,irrep, a, b):
@@ -274,6 +311,7 @@ class SingleChannelFitMean:
             #     a = x
             # else:
             #     a,b = x
+            a,b = x
             res = []
             for psq in psq_list:
                 for irrep in irreps[psq]:
@@ -281,7 +319,7 @@ class SingleChannelFitMean:
                     # print(irrep)
                     #d = psq[3]
                     #print(self.ecm_average_data[psq][irrep])
-                    diff = self.ecm_average_data[psq][irrep] - QC1(psq,irrep,*x)
+                    diff = self.ecm_average_data[psq][irrep] - QC1(psq,irrep,a,b)
                     res.append(diff)
             value = np.array(res)@np.linalg.inv(self.cov_de)@np.array(res)
             return value
@@ -289,17 +327,11 @@ class SingleChannelFitMean:
         print(f" Using Effective Range Expansion for single-channel:{self.channel_1} (m = {self.ma_ave}) ,{self.channel_2} (m = {self.mb_ave})")
         #print(self.ecm_average_data)
         #print(chi2([0.04654117,0.65386267]))
-        #result = minimize(chi2,x0=[0.04,0.6],method='nelder-mead')
 
         # next lets run a fit to check
         #logging.info(r" Minimizing ERE for average data set")
         def average_fit(): #~~~ returning the mean bootstrap sample fit 
-            try:
-                a_guess = np.random.normal(0.1, 5)
-                b_guess = np.random.normal(0.5,5)
-                result = minimize(chi2,x0=[0.04,0.6],method='nelder-mead') 
-                else:
-
+            result = minimize(chi2,x0=[0.04,0.6],method='nelder-mead')
             print(result)
             return [result.x[0],result.x[1],result.fun]
         # def average_fit():#output_file=f"fit_results_channel_{self.channel_1}{self.channel_2}.txt"):
@@ -358,6 +390,7 @@ class SingleChannelFitMean:
         #     #logging.info(f" ERE fits written to file: {output_file}")                            
         #     return #[best_a, best_b, chi2_res]
             
+
         def deriv(n,i,x): # 2 parameter difference derivative
             if len(self.best_fit) == 1:
                 a = self.best_fit
@@ -401,21 +434,10 @@ class SingleChannelFitMean:
             return Vnm
 
         self.best_fit = average_fit()
-        # can just add errors once this works
         return self.best_fit#print(self.best_fit)
         # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
 
     def plot( self ):
-        if self.alt_params['plot']:
-            logging.info(f"Saving plots to directory {self.proj_handler.log_dir()}...")
-        else:
-            logging.info(f"No plots requested.")
-            return
-        phl = ph.PlottingHandler()
-
-        filename = f'l{self.ang_mom}_{self.channel_1}_{self.channel_2}_{fit_type}.pdf'
-        plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
-        
         # x = []
         # x_range = []
         # y = []
