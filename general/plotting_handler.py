@@ -253,6 +253,8 @@ class PlottingHandler:
 
     def set_y_logscale(self):
         plt.yscale('log')
+    def set_y_linscale(self):
+        plt.yscale('linear')
 
     #tmin or tmax plots
     def add_fit_series(self, t,e,de,color_index, filled=True, model=None): #incorporate pvalue and chosen fit
@@ -261,7 +263,8 @@ class PlottingHandler:
             marker_color = psettings.colors[color_index]
         else:
             marker_color = "white"
-        plt.errorbar(x=t,y=e,yerr=de, linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], 
+
+        plt.errorbar(x=np.array(t)+0.05*color_index,y=e,yerr=de, linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], 
                      marker=psettings.markers[color_index], label=model, mfc=marker_color)
 
     #add horizontal bar to plot corresponding to energy value of chosen fit
@@ -298,18 +301,35 @@ class PlottingHandler:
         if legend:
             plt.legend()
 
-    def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[], label=None, index=0, ndatasets=1, shift=False):
+    def legend(self):
+        plt.legend()
+
+    def ylim(self, ymin=None, ymax=None):
+        if ymin==None or ymax==None:
+            return plt.ylim()
+        else:
+            return plt.ylim((ymin, ymax))
+
+    def summary_plot(self,indexes,levels,errs,xticks, reference=None, thresholds=[], label=None, index=0, ndatasets=1, shift=False, filled = True):
         """Summary of spectrum plot"""
         indexes = np.array(indexes)
         levels = np.array(levels)
         errs = np.array(errs)
         shifted_array = shift_levels(indexes,levels,errs)
-        columns = max(shifted_array)-min(shifted_array)+1.0
+        if type(shifted_array)==float:
+            columns = 1.0
+        else:
+            columns = max(shifted_array)-min(shifted_array)+1.0
         shifted_array = shifted_array/columns/ndatasets
         shifted_array += index/ndatasets-0.5+0.5/ndatasets
+
+        if filled:
+            mfc = psettings.colors[index]
+        else:
+            mfc = 'white'
         
         plt.errorbar(x=indexes+shifted_array, y=levels, yerr=errs,linewidth=0.0, elinewidth=1.5, capsize=5, 
-                     color=psettings.colors[index], marker=psettings.markers[index], label=label)
+                     color=psettings.colors[index], marker=psettings.markers[index],mfc=mfc, label=label)
 
         if index==ndatasets-1:
             plt.xlim(min(indexes)-1.0,max(indexes)+1.0)

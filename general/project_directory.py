@@ -246,12 +246,12 @@ class ProjectDirectoryHandler:
     
     #finds all rotated correlator data files based on rebin, rotate_type = 'SP' or 'RP', 
         #diagonalization parameters tN, t0, and tD, and sampling_type = 'B' or 'J'.
-    def get_rotated_data(self,binned, rebin, rotate_type, tN, t0, tD, sampling_type=None): #, only_mom = []
+    def get_rotated_data(self,binned, rebin, rotate_type, tN, t0, tD, sampling_type=None, run_tag = ""): #, only_mom = []
         data_files = []
         if tm.Task.rotate_corrs.name==self.task_name:
-            data_files += list(glob.glob(self.samplings_file(binned, None, None, rebin,sampling_type, rotate_type, tN, t0, tD)))
+            data_files += list(glob.glob(self.samplings_file(binned, None, None, rebin,sampling_type, rotate_type, tN, t0, tD, run_tag)))
         else:
-            data_files += list(glob.glob(self.all_tasks[tm.Task.rotate_corrs.name].samplings_file(binned, None, None, rebin,sampling_type,rotate_type, tN, t0, tD)))
+            data_files += list(glob.glob(self.all_tasks[tm.Task.rotate_corrs.name].samplings_file(binned, None, None, rebin,sampling_type,rotate_type, tN, t0, tD, run_tag)))
         return data_files
         
     #removes all old summary files for a given task

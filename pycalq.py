@@ -9,7 +9,7 @@ import fvspectrum.sigmond_view_corrs
 import fvspectrum.sigmond_average_corrs 
 import fvspectrum.sigmond_rotate_corrs
 import fvspectrum.sigmond_spectrum_fits
-# import fvspectrum.generate_toy_correlators
+import fvspectrum.generate_toy_correlators
 import fvspectrum.compare_sigmond_levels
 
 # Thanks to Drew and https://stackoverflow.com/a/48201163/191474
@@ -33,7 +33,7 @@ DEFAULT_TASKS = { #manage default configurations
             tm.Task.average_corrs: None,
             tm.Task.rotate_corrs: None,
             tm.Task.fit_spectrum: None,
-            # tm.Task.toy_corrs: None,
+            tm.Task.toy_corrs: None,
             tm.Task.compare_spectrums: None,
         }
 }
@@ -46,14 +46,14 @@ SIGMOND_TASKS = [ #manage which classes to use for each unique task -> change fo
     tm.Task.average_corrs,
     tm.Task.rotate_corrs,
     tm.Task.fit_spectrum,
-    # tm.Task.toy_corrs,
+    tm.Task.toy_corrs,
 ]                            
 TASK_MAP = { #manage which classes to use for each unique task -> change for selection (fvspectrum)
     tm.Task.preview_corrs: fvspectrum.sigmond_view_corrs.SigmondPreviewCorrs,
     tm.Task.average_corrs: fvspectrum.sigmond_average_corrs.SigmondAverageCorrs,
     tm.Task.rotate_corrs: fvspectrum.sigmond_rotate_corrs.SigmondRotateCorrs,
     tm.Task.fit_spectrum: fvspectrum.sigmond_spectrum_fits.SigmondSpectrumFits,
-    # tm.Task.toy_corrs: fvspectrum.generate_toy_correlators.GenerateToyCorrs,
+    tm.Task.toy_corrs: fvspectrum.generate_toy_correlators.GenerateToyCorrs,
     tm.Task.compare_spectrums: fvspectrum.compare_sigmond_levels.CompareLevels,
 }
 TASK_DOC = { #imports documentation from each task
@@ -61,7 +61,7 @@ TASK_DOC = { #imports documentation from each task
     tm.Task.average_corrs: fvspectrum.sigmond_average_corrs.doc,
     tm.Task.rotate_corrs: fvspectrum.sigmond_rotate_corrs.doc,
     tm.Task.fit_spectrum: fvspectrum.sigmond_spectrum_fits.doc,
-    # tm.Task.toy_corrs: fvspectrum.generate_toy_correlators.doc,
+    tm.Task.toy_corrs: fvspectrum.generate_toy_correlators.doc,
     tm.Task.compare_spectrums: fvspectrum.compare_sigmond_levels.doc,
 }
 

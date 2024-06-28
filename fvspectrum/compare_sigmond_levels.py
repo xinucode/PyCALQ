@@ -164,8 +164,6 @@ class CompareLevels:
             elif root=='compare_tags':
                 for file_tag in plot_configs['filetags']:
                     dataset_key = file_tag
-                    # file_tag=''
-                    # file_tag=file_tag
                     tN = plot_configs['tN']
                     t0 = plot_configs['t0']
                     tD = plot_configs['tD']
@@ -176,7 +174,7 @@ class CompareLevels:
                     sampling_mode = plot_configs['sampling_mode']
                     # sampling_mode = sampling_mode+"-samplings"
                     rebin = plot_configs['rebin']
-                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode+"-samplings", rotate_type, tN, t0, tD, file_tag)
+                    key = proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].filekey(None, rebin, sampling_mode+"-samplings", rotate_type, tN, t0, tD, '-'+file_tag)
                     file = self.proj_files_handler.all_tasks[tm.Task.fit_spectrum.name].estimates_file(key)
                     if os.path.isfile(file):
                         plot[dataset_key] = file
@@ -207,7 +205,6 @@ class CompareLevels:
         plh = ph.PlottingHandler()
         plh.create_fig(self.other_params['figwidth'], self.other_params['figheight'])
         plh.create_summary_doc("Compare Spectrums")
-
 
         datasets = {}
         #make the plots
