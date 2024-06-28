@@ -8,4 +8,5 @@ class Task(Enum): #encode tasks into enum
     fit_spectrum = 3
     toy_corrs = 4
     compare_spectrums = 5
+    single_channel_fit = 6
 

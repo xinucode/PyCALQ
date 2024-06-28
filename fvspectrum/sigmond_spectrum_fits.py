@@ -793,6 +793,10 @@ class SigmondSpectrumFits:
                     
                     if complete_basis:
                         level_ordering.sort(key=energy_sort)
+                        free_levels = [self.other_params['non_interacting_levels'][str(channel)][level["rotate_level"]] for level in level_ordering]
+                        # free_levels = [[[particle.split('(')[0],particle.split('(')[1][:-1]] for particle in level] for level in free_levels]
+                        print(channel, free_levels)
+                        irrep_group.attrs['free_levels'] = free_levels
 
                     for i, level in enumerate(level_ordering):
                         for energy in ["ecm", "elab", 'dElab','ecm_ref']:
@@ -820,6 +824,7 @@ class SigmondSpectrumFits:
             if self.other_params['reference_particle']:
                 if f"{self.other_params['reference_particle']}(0)" in self.single_hadron_info:
                     reference_samplings = final_levels['single_hadrons'][f"{self.other_params['reference_particle']}(0)"][()]
+                    final_levels['single_hadrons'].create_dataset("ref",data=(reference_samplings))
                     for particle in final_levels['single_hadrons'].keys():
                         samplings = final_levels['single_hadrons'][particle][()]
                         final_levels['single_hadrons'].create_dataset(particle+"_ref",data=(samplings/reference_samplings))
