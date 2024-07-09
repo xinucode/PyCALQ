@@ -13,7 +13,7 @@ def delta_Sp(ecm,ma,mb):
     return (ecm**2 - (ma+mb)**2 )/ (ma+mb)**2
 
 def ere_delta(ecm,ma,mb,a,b):
-            return (ecm)*(a+b*delta_Sp(ecm,ma,mb))
+    return (ecm)*(a+b*delta_Sp(ecm,ma,mb))
 
 # fit ere expansion
 def ere(ecm,ma,mb,a,b):
