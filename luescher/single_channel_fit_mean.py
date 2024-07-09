@@ -320,7 +320,7 @@ class SingleChannelFitMean:
         def average_fit(): #~~~ returning the mean bootstrap sample fit 
             result = minimize(chi2,x0=[0.04,0.6],method='nelder-mead')
             print(result)
-            return [result.x[0],result.x[1],result.fun]
+            return [result.x[0],result.x[1]]
         # def average_fit():#output_file=f"fit_results_channel_{self.channel_1}{self.channel_2}.txt"):
         #     # will do a 1 and 2 parameter fit and see which is best
         #     # best_a = None
@@ -377,42 +377,41 @@ class SingleChannelFitMean:
         #     #logging.info(f" ERE fits written to file: {output_file}")                            
         #     return #[best_a, best_b, chi2_res]
             
-
-        def deriv(n,i,x): # 2 parameter difference derivative
-            if len(self.best_fit) == 1:
-                a = self.best_fit
+        def deriv(n,psq,irrep,x): # 2 parameter difference derivative
+            if len(x) == 1:
+                a = x
                 b = 0
             else:
-                a, b = self.best_fit
+                a, b = x
 
             eps = .001
             if n == 0:
-                return (self.QC1(i,0,a-eps,b)-self.QC1(i,0,a+eps,b))/(2*eps)
+                return (QC1(psq,irrep,a-eps,b)-QC1(psq,irrep,a+eps,b))/(2*eps)
             elif n ==1:
-                return (self.QC1(i,0,a,b-eps)-self.QC1(i,0,a,b+eps))/(2*eps)
+                return (QC1(psq,irrep,a,b-eps)-QC1(psq,irrep,a,b+eps))/(2*eps)
         
         def vij(self,x): #V_ij is error matrix for parameters, take _ii to get each error
             # v_nm = dp_i / dp_n
             # error estimation function
             # cov = self.cov = self.data.covariance_data()
-            if len(self.best_fit) == 2:
+            if len(x) == 2:
                 nint = [0,1]
             else: 
                 nint = 0
-
-            psq = [0,1,2,3]
+            # irreps = {'PSQ0': ['G1u']
+            psq = ['PSQ0','PSQ1','PSQ2','PSQ3']
             lmat = np.empty(0)
             for n in nint:
                 if n == 0:
                     dl = []
                     for i in psq:
-                        dl.append(self.deriv(n,i,x))
+                        dl.append(deriv(n,psq,irreps[psq],x))
 
                     lmat = np.append(lmat,dl)
                 else:
                     dl =[]
                     for i in psq:
-                        dl.append(self.deriv(n,i,x))
+                        dl.append(deriv(n,psq,irreps[psq],x))
                     
                     lmat = np.vstack([lmat,dl])
                 
@@ -420,8 +419,50 @@ class SingleChannelFitMean:
             
             return Vnm
 
+        def find_intersection(x, y1, y2):
+            x_range = np.linspace(-0.10,-.05,100) # x range is q2 range
+            f1 = np.interp(x_range,x,y1)
+            f2 = np.interp(x_range,x,y2)
+            # Find the indices where the two curves intersect (assuming they do)
+            root = []
+            for i in range(len(f1)):
+                if f1[i] - f2[i] < .001:
+                    root.append(x_range[i])
+            return root
+
+        def find_bound_state(x):
+            q2_values = np.linspace(-0.10, -0.01, 300) # need to change q2 based on data (future)
+            virtual_state = []
+            for q2 in q2_values:
+                virtual_state.append(cmath.sqrt(-q2))
+            # x is best fit parameters
+            a = x[0]
+            b = x[1]
+            best_fit_line = []
+            #fit = [-(1/3.30),2*1.582] #with ecm factor
+            # ere_delta(ecm,ma,mb,a,b)
+            for q2 in q2_values:
+                ecm = np.sqrt(q2 +self.ma_ave**2 ) + np.sqrt(q2 +self.mb_ave**2 )
+                best_fit_line.append(parametrizations.ere_delta(ecm,self.ma_ave,self.mb_ave,a,b))
+
+            bound_mom_2 =  find_intersection(q2_values,virtual_state,best_fit_line)[0]
+
+            vij_matrix = vij([a,b])
+            # derivative errors 
+            # g^T V g -> g is d(parametrrization)/d(param), so d(ERE_delta)/d(param)
+            vec = lambda ecm:np.array([ecm,ecm*parametrization.delta_Sp(ecm,self.ma_ave,self.mb_ave)]) 
+
+            ecm_bound = np.sqrt(bound_mom_2 + self.ma_ave**2 ) + np.sqrt(bound_mom_2 +self.mb_ave**2 )
+            sigma_f = np.sqrt(np.transpose(vec(ecm_bound))@vij_matrix@vec(ecm_bound)) 
+            # error is quadrature error
+            def pEpk(q2):
+                return np.sqrt(-q2)*(-q2 + self.ma_ave**2 )**(-1/2) + np.sqrt(-q2)*(-q2 + self.mb_ave**2 )**(-1/2)
+            bound_error = np.sqrt((pEpk(bound_mom_2) * sigma_f)**2)
+            return [ecm_bound,bound_error]
+
         self.best_fit = average_fit()
-        return self.best_fit#print(self.best_fit)
+        self.bound_state = find_bound_state()
+        return [self.best_fit,self.bound_state]#print(self.best_fit)
         # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
 
     def plot( self ):
