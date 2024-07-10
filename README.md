@@ -463,3 +463,13 @@ class Task(Enum): #encode tasks into enum
 ```
 
 Then, open `pycalq.py` and add the task to `DEFAULT_TASKS`, `TASK_MAP`, and `TASK_DOC` in the same manner as the current tasks. If the task uses sigmond mcobshandler to manage data and memory, add the task to `SIGMOND_TASKS` and update the `dependencies` and `raw_data_dependence` variables at the top of `fvspectrum/sigmond_project_handler.py` accordingly.
+
+
+## To Do
+
+Items that need to be fixed:
+ - Spectrum task: the estimates for interacting and noninteracting need to be separated because they occasionally have the same channel name. 
+ - spectrum task: the fits to nonzero momentum single hadrons do not need to be calculated unless calculating the operator overlaps. if operator overlaps are turned off, then do not calculate these fits. 
+
+Desired updates:
+ - internal setup for slurm or other scheduler systems
