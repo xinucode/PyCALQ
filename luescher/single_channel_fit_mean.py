@@ -447,7 +447,7 @@ class SingleChannelFitMean:
 
             bound_mom_2 =  find_intersection(q2_values,virtual_state,best_fit_line)[0]
 
-            vij_matrix = vij([a,b])
+            self.vnm_matrix = vij([a,b])
             # derivative errors 
             # g^T V g -> g is d(parametrrization)/d(param), so d(ERE_delta)/d(param)
             vec = lambda ecm:np.array([ecm,ecm*parametrization.delta_Sp(ecm,self.ma_ave,self.mb_ave)]) 
@@ -458,14 +458,112 @@ class SingleChannelFitMean:
             def pEpk(q2):
                 return np.sqrt(-q2)*(-q2 + self.ma_ave**2 )**(-1/2) + np.sqrt(-q2)*(-q2 + self.mb_ave**2 )**(-1/2)
             bound_error = np.sqrt((pEpk(bound_mom_2) * sigma_f)**2)
-            return [ecm_bound,bound_error]
+            return [ecm_bound,bound_error] #need to fix to include errors in Sigma data
 
         self.best_fit = average_fit()
+        self.errors_in_parameters = np.diag(vij(self.best_fit))
         self.bound_state = find_bound_state()
         return [self.best_fit,self.bound_state]#print(self.best_fit)
         # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
 
     def plot( self ):
+        def phase_shift_plot(self):
+            #self.fit = Chi2Fit(self.data)
+            #self.ecm_average_data[psq][irrep]
+            #self.average_energies
+            x = []
+            x_range = []
+            y = []
+            y_range = []
+            mapping = lambda x: f"PSQ{x}"
+            for i in range(len(average_energies)): # need to change to include all PSQ,Irreps, and energy
+                x.append(kinematics.q2(average_energies[i], self.ma_ave,self.mb_ave))
+                y.append(kinematics.qcotd(average_energies[i],self.L,mapping(i),self.ma_ave,self.mb_ave,self.ref_ave)) #qcotd(ecm,L,psq,ma,mb,ref)
+                if i == 0:
+                    x_range_i = []
+                    y_range_i = []
+                    for en in np.linspace(average_energies[i] - 0.01, average_energies[i] + 0.01, 100):
+                        x_range_i.append(kinematics.q2(en, self.ma_ave,self.mb_ave))
+                        y_range_i.append(kinematics.qcotd(en,self.L,mapping(i),self.ma_ave,self.mb_ave,self.ref_ave))
+                    x_range.append(x_range_i)
+                    y_range.append(y_range_i)
+                else:
+                    xp = []
+                    yp = []
+                    for en in np.linspace(average_energies[i] - 0.01, average_energies[i] + 0.01, 100):
+                        xp.append(kinematics.q2(en, self.ma_ave,self.mb_ave))
+                        yp.append(kinematics.qcotd(en,self.L,mapping(i),self.ma_ave,self.mb_ave,self.ref_ave))
+                    x_range.append(xp)
+                    y_range.append(yp)
+
+            #ecm_values = np.linspace(min(average_energies),max(average_energies),100)
+            q2_values = np.linspace(-0.25, 0.01, 150)
+            virtual_state = []
+            for q2 in q2_values:
+                virtual_state.append(cmath.sqrt(-q2))
+                
+            #ecm_values = np.linspace(6.6,7.6, 300)
+            a,b = self.best_fit
+            best_fit_line = []
+            #fit = [-(1/3.30),2*1.582] #with ecm factor
+            for q2 in q2_values:
+                ecm = np.sqrt( q2 + self.ma_ave**2) + np.sqrt( q2 + self.mb_ave**2 )
+                best_fit_line.append(parametrizations.ere_delta(ecm,self.ma_ave, self.mb_ave,a,b))
+            
+            # load in covariance matrix estimated
+            vij = self.vnm_matrix # using best_fit
+            # vec for error estimation is derivative in each parameter of paramerization (ERE_Delta)
+            vec = lambda ecm:np.array([ecm,ecm*self.fit.qc.delta_Sp(ecm,0)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
+            #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)])
+
+            sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toen(q2,self.ma_ave, self.mb_ave)))@vij@vec(kinematics.q2toen(q2,self.ma_ave, self.mb_ave))) for q2 in q2_values]
+            upper = np.array(best_fit_line) + np.array(sigma_f)
+            lower = np.array(best_fit_line) - np.array(sigma_f)
+            #fk_values = [self.qc.q2(ecm,0) for ecm in ecm_values]
+            bound_mom = self.bound_state[0]
+            plt.figure(figsize=(8,6))
+            shapes = ['o','s','D','v']
+            labels = ['$G_{1u}(0)$','$G_1 (1)$', '$G (2)$' , '$G(3)$']
+            legend_handles = []  # Create an empty list to store custom legend handles
+            for i in range(len(average_energies)):
+                plt.plot(x[i], y[i], marker=shapes[i], color='blue', label=labels[i])
+                plt.plot(x_range[i], y_range[i], color="blue", alpha=0.8)  # Plot the ranges with transparency
+                # Add a custom legend handle (marker with no line)
+                legend_handles.append(Line2D([0], [0], marker=shapes[i], color='w', markerfacecolor='blue', markersize=10, label=labels[i]))
+
+
+            plt.plot(q2_values,virtual_state,color='black',linestyle='--')
+            # Create the plot with error bars
+            # plt.plot(fk_values, best_fit_line, color='blue')
+                # plt.fill_between(fk_values, f_values_lower, f_values_upper, color='lightblue', alpha=0.5)
+            #plt.errorbar(fk_values, best_fit_line, yerr=sigma_f)
+
+            # # Create a function to compute the upper and lower bounds of f
+            # def compute_bounds(ecm, sigma_f):
+            #     upper = self.fit.ere_delta(ecm,0, a, b) + sigma_f/2
+            #     lower = self.fit.ere_delta(ecm,0, a, b) - sigma_f/2
+            #     return upper, lower
+
+            # Calculate the upper and lower bounds for each ecm value
+            #upper_bounds, lower_bounds = zip(*[compute_bounds(ecm, sf) for ecm, sf in zip(ecm_values, sig_f)])
+            plt.plot(q2_values,best_fit_line , color='blue',linestyle='-.')
+            #plt.fill_between(fk_values, lower_bounds, upper_bounds, color='lightblue', alpha=0.5)
+            plt.plot(bound_mom,parametrizations.ere_delta(kinematics.q2toen(bound_mom,self.ma_ave, self.mb_ave),self.ma_ave, self.mb_ave, self.best_fit[0], self.best_fit[1]),'r*',markersize=10)
+            plt.fill_between(q2_values,lower,upper,alpha = 0.5, color = 'lightblue')
+            plt.axhline(y=0,color='black')
+            plt.axvline(x=0,color='black')
+            plt.ylim(0,0.6)
+            plt.xlim(-0.25,0.05)
+            # Customize the legend with custom handles (markers only)
+            legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 12})
+            plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16, fontdict={'fontweight': 'bold', 'fontstyle': 'italic'})
+            plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16, fontdict={'fontweight': 'bold', 'fontstyle': 'italic'})
+            plt.title(f'{self.channel_1},{self.channel_2}  Scattering ',fontsize=16)
+            plt.savefig(f'{self.channel_1},{self.channel_2} _Scattering.pdf')
+            #legend.set_title('Legend', prop={'size': 12})  # Set legend title and font size
+
+            plt.show()
+
         # x = []
         # x_range = []
         # y = []

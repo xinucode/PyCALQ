@@ -36,6 +36,9 @@ def q2(ecm,ma,mb): #assume all ref inputs
     q2 = ecm**2 / 4 - (ma**2 + mb**2) / 2 + ((ma**2 - mb**2)**2) / (4*ecm**2)
     return q2
 
+def q2toecm(q2,ma,mb):
+    return np.sqrt(q2 + ma**2) + np.sqrt(q2 + mb**2)
+
 # msplit required for Luscher: 
 # measures the shift of the rvector of unequal relativistic masses
 def msplit(ecm,ma,mb): #if ma,mb are degenerate its 1
