@@ -76,7 +76,7 @@ class SingleChannelFitMean:
             'figheight':6,
         }
          #Sarah
-        self.irreps = self.alt_params['irreps']
+        self.irreps = task_params['irreps']#self.alt_params['irreps']
         if type(self.irreps)!=dict:
             logging.error("""Incorrect setup for irreps. Expecting definition of form:
             irreps:
@@ -289,7 +289,7 @@ class SingleChannelFitMean:
         def determinant_condition(ecm,psq,a,b):
             #p = psq[3]
             return (kinematics.qcotd(ecm,self.L,psq,self.ma_ave,self.mb_ave,self.ref_ave) - parametrizations.ere_delta(ecm,self.ma_ave,self.mb_ave,a,b))
-
+        
         def QC1(psq,irrep, a, b):
             func = lambda ecm: determinant_condition(ecm,psq, a, b)
             return fsolve(func,self.ecm_average_data[psq][irrep])[0] #guess is the energy going in
@@ -336,7 +336,7 @@ class SingleChannelFitMean:
             elif n ==1:
                 return (QC1(psq,irrep,a,b-eps)-QC1(psq,irrep,a,b+eps))/(2*eps)
         
-        def vij(self,x): #V_ij is error matrix for parameters, take _ii to get each error
+        def vij(x): #V_ij is error matrix for parameters, take _ii to get each error
             # v_nm = dp_i / dp_n
             # error estimation function
             # cov = self.cov = self.data.covariance_data()
@@ -351,17 +351,17 @@ class SingleChannelFitMean:
                 if n == 0:
                     dl = []
                     for i in psq:
-                        dl.append(deriv(n,psq,irreps[psq],x))
+                        dl.append(deriv(n,i,self.irreps[i][0],x))
 
                     lmat = np.append(lmat,dl)
                 else:
                     dl =[]
                     for i in psq:
-                        dl.append(deriv(n,psq,irreps[psq],x))
+                        dl.append(deriv(n,i,self.irreps[i][0],x))
                     
                     lmat = np.vstack([lmat,dl])
                 
-            Vnm = np.linalg.inv(lmat@np.linalg.inv(self.covdE)@np.transpose(lmat))
+            Vnm = np.linalg.inv(lmat@np.linalg.inv(self.cov_de)@np.transpose(lmat))
             
             return Vnm
 
@@ -377,7 +377,7 @@ class SingleChannelFitMean:
             return root
 
         def find_bound_state(x):
-            q2_values = np.linspace(-0.10, -0.01, 300) # need to change q2 based on data (future)
+            q2_values = np.linspace(-0.15, -0.001, 300) # need to change q2 based on data (future)
             virtual_state = []
             for q2 in q2_values:
                 virtual_state.append(cmath.sqrt(-q2))
@@ -391,13 +391,13 @@ class SingleChannelFitMean:
 
             bound_mom_2 =  find_intersection(q2_values,virtual_state,best_fit_line)[0]
 
-            self.vnm_matrix = vij([a,b])
+            # self.vnm_matrix = vij([a,b])
             # derivative errors 
             # g^T V g -> g is d(parametrrization)/d(param), so d(ERE_delta)/d(param)
-            vec = lambda ecm:np.array([ecm,ecm*parametrization.delta_Sp(ecm,self.ma_ave,self.mb_ave)]) 
+            vec = lambda ecm:np.array([ecm,ecm*parametrizations.delta_Sp(ecm,self.ma_ave,self.mb_ave)]) 
 
             ecm_bound = np.sqrt(bound_mom_2 + self.ma_ave**2 ) + np.sqrt(bound_mom_2 +self.mb_ave**2 )
-            sigma_f = np.sqrt(np.transpose(vec(ecm_bound))@vij_matrix@vec(ecm_bound)) 
+            sigma_f = np.sqrt(np.transpose(vec(ecm_bound))@self.vnm_matrix@vec(ecm_bound)) 
             # error is quadrature error
             def pEpk(q2):
                 return np.sqrt(-q2)*(-q2 + self.ma_ave**2 )**(-1/2) + np.sqrt(-q2)*(-q2 + self.mb_ave**2 )**(-1/2)
@@ -407,7 +407,7 @@ class SingleChannelFitMean:
         self.best_fit = average_fit()
         self.vnm_matrix = vij(self.best_fit)
         self.errors_in_parameters = np.diag(self.vnm_matrix)
-        self.bound_state = find_bound_state()
+        self.bound_state = find_bound_state(self.best_fit)
         return [self.best_fit,self.bound_state]#print(self.best_fit)
         # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
 
@@ -437,7 +437,7 @@ class SingleChannelFitMean:
         for psq in psq_list:
             for irrep in irreps[psq]:
                 x = kinematics.q2(self.ecm_average_data[psq][irrep], self.ma_ave,self.mb_ave)
-                y = kinematics.qcotd(self.ecm_average_data[psq][irrep],psq,self.ma_ave,self.mb_ave,self.ref_ave)
+                y = kinematics.qcotd(self.ecm_average_data[psq][irrep],self.L,psq,self.ma_ave,self.mb_ave,self.ref_ave)
                 plt.plot(x, y, marker=shapes_dict[psq], color='blue', label=labels_dict[psq])
                 legend_handles.append(Line2D([0], [0], marker=shapes_dict[psq], color='w', markerfacecolor='blue', markersize=10, label=labels_dict[psq]))
         
@@ -459,21 +459,21 @@ class SingleChannelFitMean:
 
         vij = self.vnm_matrix # using best_fit
         # vec for error estimation is derivative in each parameter of paramerization (ERE_Delta)
-        vec = lambda ecm:np.array([ecm,ecm*self.fit.qc.delta_Sp(ecm,0)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
-        sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toen(q2,self.ma_ave, self.mb_ave)))@vij@vec(kinematics.q2toen(q2,self.ma_ave, self.mb_ave))) for q2 in q2_values]
+        vec = lambda ecm:np.array([ecm,ecm*parametrizations.delta_Sp(ecm,self.ma_ave, self.mb_ave)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
+        sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toecm(q2,self.ma_ave, self.mb_ave)))@vij@vec(kinematics.q2toecm(q2,self.ma_ave, self.mb_ave))) for q2 in q2_values]
         upper = np.array(best_fit_line) + np.array(sigma_f)
         lower = np.array(best_fit_line) - np.array(sigma_f)
         #fk_values = [self.qc.q2(ecm,0) for ecm in ecm_values]
-        bound_mom = self.bound_state[0]   
+        #bound_mom = self.bound_state[0]   
         plt.plot(q2_values,best_fit_line , color='blue',linestyle='-.')
         #plt.fill_between(fk_values, lower_bounds, upper_bounds, color='lightblue', alpha=0.5)
-        plt.plot(bound_mom,parametrizations.ere_delta(kinematics.q2toen(bound_mom,self.ma_ave, self.mb_ave),self.ma_ave, self.mb_ave, self.best_fit[0], self.best_fit[1]),'r*',markersize=10)
+        #plt.plot(bound_mom,parametrizations.ere_delta(kinematics.q2toecm(bound_mom,self.ma_ave, self.mb_ave),self.ma_ave, self.mb_ave, self.best_fit[0], self.best_fit[1]),'r*',markersize=10)
         plt.fill_between(q2_values,lower,upper,alpha = 0.5, color = 'lightblue')
         plt.axhline(y=0,color='black')
         plt.axvline(x=0,color='black')
         legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 12})
-        plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16, fontdict={'fontweight': 'bold', 'fontstyle': 'italic'})
-        plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16, fontdict={'fontweight': 'bold', 'fontstyle': 'italic'})
+        plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
+        plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
         plt.title(f'{self.channel_1},{self.channel_2}  Scattering ',fontsize=16)
         plt.savefig(f'{self.channel_1},{self.channel_2} _Scattering.pdf')
         #legend.set_title('Legend', prop={'size': 12})  # Set legend title and font size

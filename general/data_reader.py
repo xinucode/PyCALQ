@@ -333,4 +333,3 @@ class LQCD_DATA_READER:
 #         # covariance matrix of bootstrap samples
 #         sp_data = np.array(self.sigma_pi_data())
 #         return np.cov(sp_data[:,1:])
-

@@ -71,5 +71,5 @@ def qcotd(ecm,L,psq,ma,mb,ref):
     # print("gamma = ",self.gamma(ecm,psq,ref))
     #print( psq )
     #print( ma )
-    return c*Z(self.q2(ecm,ma,mb)*((L_ref/(2*math.pi))**2),gamma=self.gamma(ecm,psq,ref),l=0,m=0,d=d_vec,m_split=self.msplit(ecm,ma,mb),precision=1e-11).real
+    return c*Z(q2(ecm,ma,mb)*((L_ref/(2*math.pi))**2),gamma=gamma(ecm,psq,L,ref),l=0,m=0,d=d_vec,m_split=msplit(ecm,ma,mb),precision=1e-11).real
     
