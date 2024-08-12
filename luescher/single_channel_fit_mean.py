@@ -57,12 +57,17 @@ class SingleChannelFitMean:
         if 'data_file' in task_params.keys(): # want to add if statement 
             file_path = task_params['data_file']
 
-        print(file_path)
-        print(self.L)
+        # retrieve data
         self.dr = dr.LQCD_DATA_READER(file_path,self.L) # data reader is object dr
         self.data = self.dr.load_data()
-        print("Data loaded")
+        logging.info("Data loaded")
         #print(self.data)
+        #other params
+        self.other_params = {
+            'plot': True,
+            'figwidth':8,
+            'figheight':6,
+        }
 
         # check that data from Hf file is real
         if not self.data:
@@ -74,33 +79,52 @@ class SingleChannelFitMean:
             'plot': True,
             'figwidth':8,
             'figheight':6,
+            'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
         }
-         #Sarah
-        self.irreps = task_params['irreps']#self.alt_params['irreps']
-        if type(self.irreps)!=dict:
-            logging.error("""Incorrect setup for irreps. Expecting definition of form:
-            irreps:
-                PSQ0:
-                - G1u
-                - G1g
-                - ...
-                PSQ1:
-                ...""")
+        #Sarah
+        self.channels_and_irreps = task_params['irreps']#self.alt_params['irreps']
+        # {['pi(0)_ref','S(0)_ref'] : {'PSQ0':['G1u'],'PSQ1':['G1'],'PSQ2':['G'],'PSQ3':['G']}}
+        # if type(self.irreps)!=dict:
+        #     logging.error("""Incorrect setup for irreps. Expecting definition of form:
+        #     Isospin, Strangeness: #see data_reader
+        #         PSQ0:
+        #         - G1u:
+        #             levels [0,1,...] 
+        #         - G1g
+        #         - ...
+        #         PSQ1:
+        #         ...""")
 
         #hadron list
         self.single_hadron_list = np.array(self.dr.single_hadron_list())
-
-        self.channel = task_params['channel']
-        self.channel_1 = self.channel[0]
-        self.channel_2 = self.channel[1]
-
-        if np.any(np.isin(self.single_hadron_list,self.channel_1)) and np.any(np.isin(self.single_hadron_list,self.channel_2)):
-            logging.info("Channel is confirmed to be in data file. Continuing analysis ...")
+        # generate list of channels
+        self.channel = []
+        self.irreps = {}
+        for channel in self.channels_and_irreps:
+            self.channel.append(channel)
+            self.irreps[channel] = self.channels_and_irreps[channel]
+        print("irreps",self.irreps)
+        # self.channel = task_params['channel']
+        # if len(self.channel) == 1:
+        #     self.channel_1 = self.channel[0]
+        #     self.channel_2 = self.channel[1]
+        # else:
+        #     # case of channels [[ch1],[ch2]]
+        #print(self.channel[0].split(',')[0])
+        #print(self.data.keys())
+        for channel in self.channel:
+            #print(channel)
+            channel_1 = str(channel.split(',')[0])
+            channel_2 = str(channel.split(',')[0])
+            print(channel_1)
+            if np.any(np.isin(self.single_hadron_list,channel_1)) and np.any(np.isin(self.single_hadron_list,channel_2)):
+                logging.info(f"scattering Channel {channel} is confirmed to be in data file. Continuing analysis ...")
             
         #initialize your task, store default input in self.proj_dir_handler.log_dir() (basically, throw the full possible input with all parameters where all the assumed parameters have been filled in in there)
-        with open( os.path.join(proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
+        with open( os.path.join(self.proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs}, log_file)
             yaml.dump({"tasks":task_params}, log_file)
+
 
 
     def momentum_state(self,i): #
@@ -128,22 +152,35 @@ class SingleChannelFitMean:
         log_path = os.path.join(self.proj_handler.log_dir(), 'luescher_log.yml') 
         # step 1, import the keys needed for analysis from single_hadron_list
         # first get the required channel masses
-        ma_ref = self.dr.single_hadron_data(self.channel[0]) # make sure using ref masses
-        mb_ref = self.dr.single_hadron_data(self.channel[1]) # 
-        ref_mass = self.dr.single_hadron_data('ref')
-        # next load in the data
-        # lowest level from each data
-        # if psq != 0, do next level instead
-        psq_list = self.dr.load_psq()
-        # collect irreps for each of the PSQ, which is the available data
+        self.m_ref_dict = {}
+        self.ref_mass = {}
+        psq_list = {}
+        for i, channel in enumerate(self.channel):
+            channel_1 = str(channel.split(',')[0])
+            channel_2 = str(channel.split(',')[0])
+            self.m_ref_dict[channel] = [self.dr.single_hadron_data(channel_1),self.dr.single_hadron_data(channel_2) ] #ma_ref, mb_ref in channel
+            self.ref_mass[channel] = self.dr.single_hadron_data('ref')
+            psq_list[channel] = self.dr.load_psq()
+        # ma_ref = self.dr.single_hadron_data(self.channel[0]) # make sure using ref masses
+        # mb_ref = self.dr.single_hadron_data(self.channel[1]) # 
+        
+        # psq_list = self.dr.load_psq()
         irreps_all = {}
-        for psq in psq_list:
-            irreps_all[psq] = []
-            for key in self.dr.irrep_keys(psq):
-                irreps_all[psq].append(key)
+        irreps = {}
+        for channel in self.channel:
+            irreps_all[channel] = {}
+            irreps[channel] = self.irreps[channel]
+            for psq in psq_list[channel]:
+                irreps_all[channel][psq] = []
+                for key in self.dr.irrep_keys(psq):
+                    irreps_all[channel][psq].append(key)
 
-        irreps = self.irreps #{'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
-        print(irreps)
+        
+        # for channel in self.channel:
+        #     irreps = self.irreps #{'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
+        with open( os.path.join(self.proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
+            yaml.dump({"irreps used in channel":irreps}, log_file)
+        #logging.info(irreps )
         # irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
         # print(irreps)
         psq_remove = []
@@ -154,68 +191,61 @@ class SingleChannelFitMean:
             psq_list.remove(psq)
 
         self.ecm_data = {} # save possible data
-        for psq in psq_list:
-            self.ecm_data[psq] = {}
-            for irrep in irreps[psq]:
-                if psq == 'PSQ0':
-                    level = 0
-                    # level = "ecm_0_ref" # level as an int
-                else:
-                    level = 1
-                    # level = "ecm_1_ref" 
-                # self.ecm_data[psq][irrep] = self.data.get(psq).get(irrep).get(level)[:]
-                self.ecm_data[psq][irrep] = self.dr.ref_energy_data(psq,irrep,level)
-        # now that we have ecm_data, lets do a fit and save results
-        self.average_energies = []
-        #first we want to use average data
         self.ecm_average_data = {}
-        for psq in psq_list:
-            self.ecm_average_data[psq] = {}
-            for irrep in irreps[psq]:
-                self.ecm_average_data[psq][irrep] = self.ecm_data[psq][irrep][0]
-                self.average_energies.append(self.ecm_data[psq][irrep][0])
+        self.ecm_bootstrap_data = {}
+        ecm_NN_bs_arr = []
+        for channel in self.channel:
+            self.ecm_data[channel] = {} 
+            self.ecm_average_data[channel] = {}
+            self.ecm_bootstrap_data[channel] = {}
+            for psq in psq_list:
+                self.ecm_data[channel][psq] = {}
+                self.ecm_average_data[channel][psq] = {}
+                self.ecm_bootstrap_data[channel][psq] = {} 
+                for irrep in irreps[psq]:
+                    self.ecm_data[channel][psq][irrep] = {}
+                    self.ecm_average_data[channel][psq][irrep] = {} 
+                    self.ecm_bootstrap_data[channel][psq][irrep] = {} 
+                    for level in irreps[psq][irrep]:
+                        if self.alt_params['ref_energies']:
+                            level_title = f"ecm_{level}_ref"
+                            self.ecm_data[channel][psq][irrep][level_title] = self.dr.ref_energy_data(psq,irrep,level)
+                            self.ecm_average_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][0]
+                            self.ecm_bootstrap_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][1:]
+                            ecm_NN_bs_arr.append(self.ecm_bootstrap_data[channel][psq][irrep][level_title].tolist())
+                        else:
+                            level_title = f"ecm_{level}"
+                            logging.critical("Need non-ref energies from data reader")
 
-        self.ma_ave = ma_ref[0]
-        self.mb_ave = mb_ref[0]
-        self.ref_ave = ref_mass[0]
+
+
+        # self.ma_ave = ma_ref[0]
+        # self.mb_ave = mb_ref[0]
+        # self.ref_ave = ref_mass[0]
         #print(self.ref_ave)
 
-        # get cov data
-        self.ecm_bs = {}
-        for psq in psq_list:
-            self.ecm_bs[psq] = {}
-            for irrep in irreps[psq]:
-                self.ecm_bs[psq][irrep] = self.ecm_data[psq][irrep][1:]
-
-        ecm_NN_bs_arr = []
-        for psq in psq_list:
-            for irrep in irreps[psq]:
-                ecm_NN_bs_arr.append(self.ecm_bs[psq][irrep].tolist()) # the ordering should be kep tin which the calculation will go
+        # ecm_NN_bs_arr = []
+        # for psq in psq_list:
+        #     for irrep in irreps[psq]:
+        #         for level in irreps[psq][irrep]:
+        #         ecm_NN_bs_arr.append(self.ecm_bs[psq][irrep].tolist()) # the ordering should be kep tin which the calculation will go
         
 
 
-        def energy_shift_data():
-
-            ecm_data = ecm_NN_bs_arr
+        def energy_shift_data(channel):
+                
+            ecm_data = self.ecm_bootstrap_data[channel]
 
             #Sarah
             mref = np.array(self.dr.single_hadron_data('ref'))[1:]
-            m1_ref = np.array(self.dr.single_hadron_data(self.channel_1))
-            m2_ref = np.array(self.dr.single_hadron_data(self.channel_2))
-            # mpi = np.array(self.dr.single_hadron_data('pi(0)'))[1:]
-            # mS_ref = np.array(self.dr.single_hadron_data('S(0)_ref'))
-            # mpi_ref = np.array(self.dr.single_hadron_data('pi(0)_ref'))
-            # mk_ref = np.array(self.dr.single_hadron_data('k(0)_ref'))
-            # mN_ref = np.array(self.dr.single_hadron_data('N(0)_ref'))
+            m1_ref,m2_ref = m_ref_dict[tuple(channel)]
+            # m1_ref = np.array(self.dr.single_hadron_data(self.channel_1))
+            # m2_ref = np.array(self.dr.single_hadron_data(self.channel_2))
             
            # mapping for masses
             mass_map = {
                 get_particle_name(self.channel_1): m1_ref[1:],
                 get_particle_name(self.channel_2): m2_ref[1:],
-                # 'pi': np.array(mpi_ref)[1:],
-                # 'S': np.array(mS_ref)[1:],
-                # 'k': np.array(mk_ref)[1:],
-                # 'N': np.array(mN_ref)[1:],
             }
             
             def extract_values(input_str):
@@ -236,7 +266,7 @@ class SingleChannelFitMean:
 
             def deltaE(ecm,ma,mb,n,m,psq):#function to shift e_cm data to shifted data to free energy levels
                 if psq == 0:
-                    l = self.L*mref #Sarah
+                    l = self.L*mref 
                     dE = ecm - np.sqrt(ma**2 + n*(2*math.pi/l)**2 ) - np.sqrt((mb)**2 + m*(2*math.pi/l)**2 )
                 else:
                     l = self.L*mref #Sarah
@@ -245,40 +275,53 @@ class SingleChannelFitMean:
                     dE = ecm - ecmfree
                 return dE
             
-            mom2 = ['PSQ0','PSQ1','PSQ2','PSQ3']
-            # Define a mapping of mom values to irreps
-            irreps = {
-                'PSQ0': 'G1u',
-                'PSQ1': 'G1',
-                'PSQ2': 'G',
-                'PSQ3': 'G',
-            }
-            lvls = [1,1,1,1]
+            # mom2 = ['PSQ0','PSQ1','PSQ2','PSQ3']
+            # # Define a mapping of mom values to irreps
+            # irreps = {
+            #     'PSQ0': 'G1u',
+            #     'PSQ1': 'G1',
+            #     'PSQ2': 'G',
+            #     'PSQ3': 'G',
+            # }
+            # lvls = [1,1,1,1]
             data_list = []
-            total_label_num = -1  # Initialize total label number
-            # now need to get the energy shift from two-particle free energy
-            # these are given in hdf5 file attributes
-            #print(hf['PSQ3/G'].attrs['free_levels']) example of free energy shifts
-            for mom, lvl in zip(mom2, lvls):
-                # Determine the associated irrep based on mom using the mapping
-                irr = irreps.get(mom)
+            for psq in psq_list:
+                for irrep in irreps[psq]:
+                    for level in irreps[psq][irrep]: # level is number
+                        if self.alt_params['ref_energies']:
+                            level_title = f"ecm_{level}_ref"
+                        else:
+                            level_title = f"ecm_{level}"
+                        ma, n = extract_values(self.dr.free_levels(psq,irrep,level)[0])
+                        mb, m = extract_values(self.dr.free_levels(psq,irrep,level)[1])
+                        ma = mass_map[ma]
+                        mb = mass_map[mb]
+                        data_list.append(deltaE(ecm_data[psq][irrep][level_title] ,ma,mb,n,m,int(psq[3:])))
 
-                # Determine the range of label numbers based on the level
-                if mom == 'PSQ0':
-                    # For PSQ0, use the full range including 0
-                    label_number = 0
-                else:
-                    # For other mom values, skip 0 and start from 1
-                    label_number = 1
+            # #total_label_num = -1  # Initialize total label number
+            # # now need to get the energy shift from two-particle free energy
+            # # these are given in hdf5 file attributes
+            # #print(hf['PSQ3/G'].attrs['free_levels']) example of free energy shifts
+            # for mom, lvl in zip(mom2, lvls):
+            #     # Determine the associated irrep based on mom using the mapping
+            #     irr = irreps.get(mom)
 
-                total_label_num += 1
-                # get energy from ecm_data
-                ma, n = extract_values(self.dr.free_levels(mom,irr,label_number)[0])
-                mb, m = extract_values(self.dr.free_levels(mom,irr,label_number)[1])
-                ma = mass_map[ma]
-                mb = mass_map[mb]
-                #data_array = self.energy_data(mom,irr,label)
-                data_list.append(deltaE(ecm_data[total_label_num],ma,mb,n,m,int(mom[3:])))
+            #     # Determine the range of label numbers based on the level
+            #     if mom == 'PSQ0':
+            #         # For PSQ0, use the full range including 0
+            #         label_number = 0
+            #     else:
+            #         # For other mom values, skip 0 and start from 1
+            #         label_number = 1
+
+            #     total_label_num += 1
+            #     # get energy from ecm_data
+            #     ma, n = extract_values(self.dr.free_levels(mom,irr,label_number)[0])
+            #     mb, m = extract_values(self.dr.free_levels(mom,irr,label_number)[1])
+            #     ma = mass_map[ma]
+            #     mb = mass_map[mb]
+            #     #data_array = self.energy_data(mom,irr,label)
+            #     data_list.append(deltaE(ecm_data[total_label_num],ma,mb,n,m,int(mom[3:])))
             
             data = np.array(data_list)
             return data

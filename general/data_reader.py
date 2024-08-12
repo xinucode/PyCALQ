@@ -123,7 +123,7 @@ class LQCD_DATA_READER:
             self.load_data()
         # PSQ can be PSQ0,1,2,3
         # Irrep is the FV irrep 'G1u',...
-        level = f"ecm_{level}_ref"
+        #level = f"ecm_{level}_ref"
         return self.data[self.channel].get(PSQ)[Irrep].get(level)[:]
 
     def free_levels(self,mom,irr,level):
