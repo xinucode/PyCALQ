@@ -74,6 +74,7 @@ class SingleChannelFitMean:
             'figwidth':8,
             'figheight':6,
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
+            'delta_E covariance':True,
         }
         #Sarah
         self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
@@ -294,9 +295,11 @@ class SingleChannelFitMean:
         self.covariance_matrix = {}
         self.cov_de = {}
         for channel in self.channel:
-            self.covariance_matrix[channel] = np.cov(ecm_NN_bs_arr[channel])
-            self.cov_de[channel] = np.cov(energy_shift_data(channel))
-        
+            if self.alt_params['delta_E covariance']:
+                self.covariance_matrix[channel] =  np.cov(energy_shift_data(channel))
+            else:
+                self.covariance_matrix[channel] = np.cov(ecm_NN_bs_arr[channel])
+
 
         def determinant_condition(ecm,psq,a,b):
             #p = psq[3]
