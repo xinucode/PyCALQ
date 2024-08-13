@@ -63,12 +63,14 @@ def gamma(ecm,d,L,ref):
 # Leuscher Zeta Function
 # using numerical approach including numerical integrals
 def qcotd(ecm,L,psq,ma,mb,ref):
+    if ecm < 0:
+        return np.inf
     L_ref = L*ref
     d_vec = momentum_state(psq) #0,1,2,3
     c = 2 / (gamma(ecm,psq,L,ref)*L_ref*math.sqrt(math.pi))
     #print("c=",c)
-    # print('ecm=', ecm)
-    # print("gamma = ",self.gamma(ecm,psq,ref))
+    if gamma(ecm,psq,L,ref) < 1: #because energy guess is negative
+        return np.abs(gamma)
     #print( psq )
     #print( ma )
     return c*Z(q2(ecm,ma,mb)*((L_ref/(2*math.pi))**2),gamma=gamma(ecm,psq,L,ref),l=0,m=0,d=d_vec,m_split=msplit(ecm,ma,mb),precision=1e-11).real

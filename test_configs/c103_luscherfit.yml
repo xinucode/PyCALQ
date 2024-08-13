@@ -8,7 +8,7 @@ tasks:
   - single_channel_fit:
       data_file: /home/jomo/PyCALQ/test_configs/fit_spectrum_levels-Nbin10-SP-4tN-4t0-16tD_B-samplings.hdf5
       #irreps : {['pi(0)_ref','S(0)_ref'] : {'PSQ0':[{'G1u':[0]}],'PSQ1':[{'G1':[1]}],'PSQ2':[{'G':[1]}],'PSQ3':[{'G':[1]}]}}
-      irreps: 
+      channels: 
         'pi(0)_ref,S(0)_ref': 
           PSQ0: 
             - G1u: [0]
