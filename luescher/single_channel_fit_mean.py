@@ -61,13 +61,7 @@ class SingleChannelFitMean:
         self.dr = dr.LQCD_DATA_READER(file_path,self.L) # data reader is object dr
         self.data = self.dr.load_data()
         logging.info("Data loaded")
-        #print(self.data)
-        #other params
-        self.other_params = {
-            'plot': True,
-            'figwidth':8,
-            'figheight':6,
-        }
+
 
         # check that data from Hf file is real
         if not self.data:
@@ -82,7 +76,7 @@ class SingleChannelFitMean:
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
         }
         #Sarah
-        self.channels_and_irreps = task_params['irreps']#self.alt_params['irreps']
+        self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
         # {['pi(0)_ref','S(0)_ref'] : {'PSQ0':['G1u'],'PSQ1':['G1'],'PSQ2':['G'],'PSQ3':['G']}}
         # if type(self.irreps)!=dict:
         #     logging.error("""Incorrect setup for irreps. Expecting definition of form:
@@ -103,20 +97,12 @@ class SingleChannelFitMean:
         for channel in self.channels_and_irreps:
             self.channel.append(channel)
             self.irreps[channel] = self.channels_and_irreps[channel]
+        print('channels',self.channel)
         print("irreps",self.irreps)
-        # self.channel = task_params['channel']
-        # if len(self.channel) == 1:
-        #     self.channel_1 = self.channel[0]
-        #     self.channel_2 = self.channel[1]
-        # else:
-        #     # case of channels [[ch1],[ch2]]
-        #print(self.channel[0].split(',')[0])
-        #print(self.data.keys())
         for channel in self.channel:
             #print(channel)
             channel_1 = str(channel.split(',')[0])
-            channel_2 = str(channel.split(',')[0])
-            print(channel_1)
+            channel_2 = str(channel.split(',')[1])
             if np.any(np.isin(self.single_hadron_list,channel_1)) and np.any(np.isin(self.single_hadron_list,channel_2)):
                 logging.info(f"scattering Channel {channel} is confirmed to be in data file. Continuing analysis ...")
             
@@ -155,6 +141,7 @@ class SingleChannelFitMean:
         self.m_ref_dict = {}
         self.ref_mass = {}
         psq_list = {}
+        irrep_list = {}
         for i, channel in enumerate(self.channel):
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[0])
@@ -163,32 +150,32 @@ class SingleChannelFitMean:
             psq_list[channel] = self.dr.load_psq()
         # ma_ref = self.dr.single_hadron_data(self.channel[0]) # make sure using ref masses
         # mb_ref = self.dr.single_hadron_data(self.channel[1]) # 
-        
-        # psq_list = self.dr.load_psq()
-        irreps_all = {}
-        irreps = {}
-        for channel in self.channel:
-            irreps_all[channel] = {}
-            irreps[channel] = self.irreps[channel]
-            for psq in psq_list[channel]:
-                irreps_all[channel][psq] = []
-                for key in self.dr.irrep_keys(psq):
-                    irreps_all[channel][psq].append(key)
-
+        print("psq list",psq_list)
+        # irreps_all = {}
+        # irreps = {}
+        # for channel in self.channel:
+        #     irreps_all[channel] = {}
+        #     irreps[channel] = {}
+        #     for psq in psq_list[channel]:
+        #         irreps_all[channel][psq] = []
+        #         irreps[channel][psq] = []
+        #         for key in self.dr.irrep_keys(psq):
+        #             irreps_all[channel][psq].append(key)
+        # print("irreps",irreps)
         
         # for channel in self.channel:
         #     irreps = self.irreps #{'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
         with open( os.path.join(self.proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
-            yaml.dump({"irreps used in channel":irreps}, log_file)
+            yaml.dump({"irreps used in channel":self.irreps}, log_file)
         #logging.info(irreps )
         # irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
         # print(irreps)
-        psq_remove = []
-        for psq in psq_list:
-            if psq not in irreps:
-                psq_remove.append(psq)
-        for psq in psq_remove:
-            psq_list.remove(psq)
+        # psq_remove = []
+        # for psq in psq_list:
+        #     if psq not in self.irreps:
+        #         psq_remove.append(psq)
+        # for psq in psq_remove:
+        #     psq_list.remove(psq)
 
         self.ecm_data = {} # save possible data
         self.ecm_average_data = {}
@@ -198,18 +185,18 @@ class SingleChannelFitMean:
             self.ecm_data[channel] = {} 
             self.ecm_average_data[channel] = {}
             self.ecm_bootstrap_data[channel] = {}
-            for psq in psq_list:
+            for psq in psq_list[channel]:
                 self.ecm_data[channel][psq] = {}
                 self.ecm_average_data[channel][psq] = {}
                 self.ecm_bootstrap_data[channel][psq] = {} 
-                for irrep in irreps[psq]:
+                for irrep in self.irreps[channel][psq]:
                     self.ecm_data[channel][psq][irrep] = {}
                     self.ecm_average_data[channel][psq][irrep] = {} 
                     self.ecm_bootstrap_data[channel][psq][irrep] = {} 
-                    for level in irreps[psq][irrep]:
+                    for level in self.irreps[channel][psq][irrep]:
                         if self.alt_params['ref_energies']:
                             level_title = f"ecm_{level}_ref"
-                            self.ecm_data[channel][psq][irrep][level_title] = self.dr.ref_energy_data(psq,irrep,level)
+                            self.ecm_data[channel][psq][irrep][level_title] = self.dr.ref_energy_data(psq,irrep,level_title)
                             self.ecm_average_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][0]
                             self.ecm_bootstrap_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][1:]
                             ecm_NN_bs_arr.append(self.ecm_bootstrap_data[channel][psq][irrep][level_title].tolist())
@@ -237,15 +224,16 @@ class SingleChannelFitMean:
             ecm_data = self.ecm_bootstrap_data[channel]
 
             #Sarah
-            mref = np.array(self.dr.single_hadron_data('ref'))[1:]
-            m1_ref,m2_ref = m_ref_dict[tuple(channel)]
+            mref = np.array(self.ref_mass[channel])[1:] #np.array(self.dr.single_hadron_data('ref'))[1:]
+            m1_ref,m2_ref = self.m_ref_dict[channel]
             # m1_ref = np.array(self.dr.single_hadron_data(self.channel_1))
             # m2_ref = np.array(self.dr.single_hadron_data(self.channel_2))
-            
+            channel_1 = str(channel.split(',')[0])
+            channel_2 = str(channel.split(',')[1])
            # mapping for masses
             mass_map = {
-                get_particle_name(self.channel_1): m1_ref[1:],
-                get_particle_name(self.channel_2): m2_ref[1:],
+                get_particle_name(channel_1): m1_ref[1:],
+                get_particle_name(channel_2): m2_ref[1:],
             }
             
             def extract_values(input_str):
