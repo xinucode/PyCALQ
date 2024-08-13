@@ -92,6 +92,7 @@ class SingleChannelFitMean:
 
         #hadron list
         self.single_hadron_list = np.array(self.dr.single_hadron_list())
+        print(self.single_hadron_list)
         # generate list of channels
         self.channel = []
         self.irreps = {}
@@ -106,6 +107,8 @@ class SingleChannelFitMean:
             channel_2 = str(channel.split(',')[1])
             if np.any(np.isin(self.single_hadron_list,channel_1)) and np.any(np.isin(self.single_hadron_list,channel_2)):
                 logging.info(f"scattering Channel {channel} is confirmed to be in data file. Continuing analysis ...")
+            else:
+                logging.critical(f"Scattering Channel {channel} not found in data. Must be hadrons including {self.single_hadron_list}")
 
         # check parametrization
         if self.alt_params.get('parametrization') or task_params.get('parametrization'):
@@ -218,7 +221,7 @@ class SingleChannelFitMean:
 
             #Sarah
             mref = np.array(self.ref_mass[channel])[1:] #np.array(self.dr.single_hadron_data('ref'))[1:]
-            m1_ref,m2_ref = self.m_ref_dict[channel]
+            # m1_ref,m2_ref = self.m_ref_dict[channel]
             # m1_ref = m1_ref[1:]
             # m2_ref = m2_ref[1:]
             # m1_ref = np.array(self.dr.single_hadron_data(self.channel_1))
@@ -226,11 +229,13 @@ class SingleChannelFitMean:
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[1])
            # mapping for masses
-            mass_map = {
-                get_particle_name(channel_1): m1_ref[1:],
-                get_particle_name(channel_2): m2_ref[1:],
-                #get_particle_name(channel_2): m2_ref[1:],
-            }
+        #    mass_map = {}
+        #    for 
+        #     mass_map = {
+        #         get_particle_name(channel_1): m1_ref[1:],
+        #         get_particle_name(channel_2): m2_ref[1:],
+        #         #get_particle_name(channel_2): m2_ref[1:],
+        #     }
             def extract_values(input_str):
                 # Find the position of the opening and closing parentheses
                 open_paren = input_str.find('(')
@@ -268,8 +273,14 @@ class SingleChannelFitMean:
                             level_title = f"ecm_{level}"
                         ma, n = extract_values(self.dr.free_levels(psq,irrep,level)[0])
                         mb, m = extract_values(self.dr.free_levels(psq,irrep,level)[1])
-                        ma = mass_map[ma]
-                        mb = mass_map[mb]
+                        if self.alt_params['ref_energies']:
+                            hadron_title_a = f'{ma}({n})_ref'
+                            hadron_title_b = f'{mb}({m})_ref'
+                        else:
+                            hadron_title_a = f'{ma}({n})'
+                            hadron_title_b = f'{mb}({m})'
+                        ma = self.dr.single_hadron_data(hadron_title_a)[1:]
+                        mb = self.dr.single_hadron_data(hadron_title_b)[1:]
                         data_list.append(deltaE(ecm_data[psq][irrep][level_title] ,ma,mb,n,m,int(psq[3:])))
 
             # #total_label_num = -1  # Initialize total label number
