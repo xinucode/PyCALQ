@@ -140,17 +140,16 @@ class SingleChannelFitMean:
         # first get the required channel masses
         self.m_ref_dict = {}
         self.ref_mass = {}
-        psq_list = {}
-        irrep_list = {}
+        self.psq_list = {}
         for i, channel in enumerate(self.channel):
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[0])
             self.m_ref_dict[channel] = [self.dr.single_hadron_data(channel_1),self.dr.single_hadron_data(channel_2) ] #ma_ref, mb_ref in channel
             self.ref_mass[channel] = self.dr.single_hadron_data('ref')
-            psq_list[channel] = self.dr.load_psq()
+            self.psq_list[channel] = self.dr.load_psq()
         # ma_ref = self.dr.single_hadron_data(self.channel[0]) # make sure using ref masses
         # mb_ref = self.dr.single_hadron_data(self.channel[1]) # 
-        print("psq list",psq_list)
+        print("psq list",self.psq_list)
         # irreps_all = {}
         # irreps = {}
         # for channel in self.channel:
@@ -165,8 +164,7 @@ class SingleChannelFitMean:
         
         # for channel in self.channel:
         #     irreps = self.irreps #{'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
-        with open( os.path.join(self.proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
-            yaml.dump({"irreps used in channel":self.irreps}, log_file)
+
         #logging.info(irreps )
         # irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
         # print(irreps)
@@ -180,43 +178,30 @@ class SingleChannelFitMean:
         self.ecm_data = {} # save possible data
         self.ecm_average_data = {}
         self.ecm_bootstrap_data = {}
-        ecm_NN_bs_arr = []
+        ecm_NN_bs_arr = {}
         for channel in self.channel:
             self.ecm_data[channel] = {} 
             self.ecm_average_data[channel] = {}
             self.ecm_bootstrap_data[channel] = {}
-            for psq in psq_list[channel]:
+            ecm_NN_bs_arr[channel] = []
+            for psq in self.psq_list[channel]:
                 self.ecm_data[channel][psq] = {}
                 self.ecm_average_data[channel][psq] = {}
                 self.ecm_bootstrap_data[channel][psq] = {} 
-                for irrep in self.irreps[channel][psq]:
+                for irrep in self.irreps[channel][psq][0]: #need to add irrep list to data reader, [0] required to take out of list
                     self.ecm_data[channel][psq][irrep] = {}
                     self.ecm_average_data[channel][psq][irrep] = {} 
                     self.ecm_bootstrap_data[channel][psq][irrep] = {} 
-                    for level in self.irreps[channel][psq][irrep]:
+                    for level in self.irreps[channel][psq][0][irrep]:
                         if self.alt_params['ref_energies']:
                             level_title = f"ecm_{level}_ref"
                             self.ecm_data[channel][psq][irrep][level_title] = self.dr.ref_energy_data(psq,irrep,level_title)
                             self.ecm_average_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][0]
                             self.ecm_bootstrap_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][1:]
-                            ecm_NN_bs_arr.append(self.ecm_bootstrap_data[channel][psq][irrep][level_title].tolist())
+                            ecm_NN_bs_arr[channel].append(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
                         else:
                             level_title = f"ecm_{level}"
                             logging.critical("Need non-ref energies from data reader")
-
-
-
-        # self.ma_ave = ma_ref[0]
-        # self.mb_ave = mb_ref[0]
-        # self.ref_ave = ref_mass[0]
-        #print(self.ref_ave)
-
-        # ecm_NN_bs_arr = []
-        # for psq in psq_list:
-        #     for irrep in irreps[psq]:
-        #         for level in irreps[psq][irrep]:
-        #         ecm_NN_bs_arr.append(self.ecm_bs[psq][irrep].tolist()) # the ordering should be kep tin which the calculation will go
-        
 
 
         def energy_shift_data(channel):
@@ -262,20 +247,11 @@ class SingleChannelFitMean:
                     ecmfree = np.sqrt(elab**2 - psq*(2*math.pi/(l))**2) 
                     dE = ecm - ecmfree
                 return dE
-            
-            # mom2 = ['PSQ0','PSQ1','PSQ2','PSQ3']
-            # # Define a mapping of mom values to irreps
-            # irreps = {
-            #     'PSQ0': 'G1u',
-            #     'PSQ1': 'G1',
-            #     'PSQ2': 'G',
-            #     'PSQ3': 'G',
-            # }
-            # lvls = [1,1,1,1]
+
             data_list = []
-            for psq in psq_list:
-                for irrep in irreps[psq]:
-                    for level in irreps[psq][irrep]: # level is number
+            for psq in self.psq_list[channel]:
+                for irrep in self.irreps[channel][psq][0]:
+                    for level in self.irreps[channel][psq][0][irrep]: # level is number
                         if self.alt_params['ref_energies']:
                             level_title = f"ecm_{level}_ref"
                         else:
@@ -314,8 +290,13 @@ class SingleChannelFitMean:
             data = np.array(data_list)
             return data
 
-        self.covariance_matrix = np.cov(np.array(ecm_NN_bs_arr))
-        self.cov_de = np.cov(energy_shift_data())
+        # set up covaraince matrixes for each channel
+        self.covariance_matrix = {}
+        self.cov_de = {}
+        for channel in self.channel:
+            self.covariance_matrix[channel] = np.cov(ecm_NN_bs_arr[channel])
+            self.cov_de[channel] = np.cov(energy_shift_data(channel))
+        
 
         def determinant_condition(ecm,psq,a,b):
             #p = psq[3]
@@ -343,7 +324,8 @@ class SingleChannelFitMean:
             value = np.array(res)@np.linalg.inv(self.cov_de)@np.array(res)
             return value
 
-        print(f" Using Effective Range Expansion for single-channel:{self.channel_1} (m = {self.ma_ave}) ,{self.channel_2} (m = {self.mb_ave})")
+
+        # print(f" Using Effective Range Expansion for single-channel:{self.channel_1} (m = {self.ma_ave}) ,{self.channel_2} (m = {self.mb_ave})")
 
 
         # next lets run a fit to check
