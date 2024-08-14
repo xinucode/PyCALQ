@@ -71,24 +71,12 @@ class SingleChannelFitMean:
             'write_data': True,
             'create_pdfs': True,
             'plot': True,
-            'figwidth':8,
-            'figheight':6,
+            'figwidth':10,
+            'figheight':6.132,
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
             'delta_E covariance':True,
         }
-        #Sarah
         self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
-        # {['pi(0)_ref','S(0)_ref'] : {'PSQ0':['G1u'],'PSQ1':['G1'],'PSQ2':['G'],'PSQ3':['G']}}
-        # if type(self.irreps)!=dict:
-        #     logging.error("""Incorrect setup for irreps. Expecting definition of form:
-        #     Isospin, Strangeness: #see data_reader
-        #         PSQ0:
-        #         - G1u:
-        #             levels [0,1,...] 
-        #         - G1g
-        #         - ...
-        #         PSQ1:
-        #         ...""")
 
         #hadron list
         self.single_hadron_list = np.array(self.dr.single_hadron_list())
@@ -96,9 +84,16 @@ class SingleChannelFitMean:
         # generate list of channels
         self.channel = []
         self.irreps = {}
+        self.fit_parametrization = {}
         for channel in self.channels_and_irreps:
             self.channel.append(channel)
             self.irreps[channel] = self.channels_and_irreps[channel]
+            if self.alt_params.get('parametrization') or task_params.get('parametrization'):
+                self.fit_parametrization[channel] = task_params['parametrization']
+            else:
+                # automatic param is delta ERE for now
+                self.fit_parametrization[channel] = 'ERE_delta'
+                logging.info('Parametrization not chosen. Default is Effective Range Expansion (ERE)')
         print('channels',self.channel)
         print("irreps",self.irreps)
         for channel in self.channel:
@@ -111,12 +106,7 @@ class SingleChannelFitMean:
                 logging.critical(f"Scattering Channel {channel} not found in data. Must be hadrons including {self.single_hadron_list}")
 
         # check parametrization
-        if self.alt_params.get('parametrization') or task_params.get('parametrization'):
-            self.fit_param = task_params['parametrization']
-        else:
-            # automatic param is delta ERE for now
-            self.fit_param = 'ERE_delta'
-            logging.info('Parametrization not chosen. Default is Effective Range Expansion (ERE)')
+        
         #initialize your task, store default input in self.proj_dir_handler.log_dir() (basically, throw the full possible input with all parameters where all the assumed parameters have been filled in in there)
         with open( os.path.join(self.proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs}, log_file)
@@ -146,45 +136,20 @@ class SingleChannelFitMean:
     
     
     def run( self ):       
-        log_path = os.path.join(self.proj_handler.log_dir(), 'luescher_log.yml') 
+         
         # step 1, import the keys needed for analysis from single_hadron_list
         # first get the required channel masses
+        self.log_path = {}
         self.m_ref_dict = {}
         self.ref_mass = {}
         self.psq_list = {}
         for i, channel in enumerate(self.channel):
+            self.log_path[channel] = os.path.join(self.proj_handler.log_dir(), f'luescher_{channel}_log.txt')
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[1])
             self.m_ref_dict[channel] = [self.dr.single_hadron_data(channel_1),self.dr.single_hadron_data(channel_2) ] #ma_ref, mb_ref in channel
             self.ref_mass[channel] = self.dr.single_hadron_data('ref')
             self.psq_list[channel] = self.dr.load_psq()
-        # ma_ref = self.dr.single_hadron_data(self.channel[0]) # make sure using ref masses
-        # mb_ref = self.dr.single_hadron_data(self.channel[1]) # 
-        print("psq list",self.psq_list)
-        # irreps_all = {}
-        # irreps = {}
-        # for channel in self.channel:
-        #     irreps_all[channel] = {}
-        #     irreps[channel] = {}
-        #     for psq in psq_list[channel]:
-        #         irreps_all[channel][psq] = []
-        #         irreps[channel][psq] = []
-        #         for key in self.dr.irrep_keys(psq):
-        #             irreps_all[channel][psq].append(key)
-        # print("irreps",irreps)
-        
-        # for channel in self.channel:
-        #     irreps = self.irreps #{'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
-
-        #logging.info(irreps )
-        # irreps = {'PSQ0': ['G1u'],'PSQ1': ['G1'],'PSQ2': ['G'], 'PSQ3': ['G']}
-        # print(irreps)
-        # psq_remove = []
-        # for psq in psq_list:
-        #     if psq not in self.irreps:
-        #         psq_remove.append(psq)
-        # for psq in psq_remove:
-        #     psq_list.remove(psq)
 
         self.ecm_data = {} # save possible data
         self.ecm_average_data = {}
@@ -283,31 +248,6 @@ class SingleChannelFitMean:
                         mb = self.dr.single_hadron_data(hadron_title_b)[1:]
                         data_list.append(deltaE(ecm_data[psq][irrep][level_title] ,ma,mb,n,m,int(psq[3:])))
 
-            # #total_label_num = -1  # Initialize total label number
-            # # now need to get the energy shift from two-particle free energy
-            # # these are given in hdf5 file attributes
-            # #print(hf['PSQ3/G'].attrs['free_levels']) example of free energy shifts
-            # for mom, lvl in zip(mom2, lvls):
-            #     # Determine the associated irrep based on mom using the mapping
-            #     irr = irreps.get(mom)
-
-            #     # Determine the range of label numbers based on the level
-            #     if mom == 'PSQ0':
-            #         # For PSQ0, use the full range including 0
-            #         label_number = 0
-            #     else:
-            #         # For other mom values, skip 0 and start from 1
-            #         label_number = 1
-
-            #     total_label_num += 1
-            #     # get energy from ecm_data
-            #     ma, n = extract_values(self.dr.free_levels(mom,irr,label_number)[0])
-            #     mb, m = extract_values(self.dr.free_levels(mom,irr,label_number)[1])
-            #     ma = mass_map[ma]
-            #     mb = mass_map[mb]
-            #     #data_array = self.energy_data(mom,irr,label)
-            #     data_list.append(deltaE(ecm_data[total_label_num],ma,mb,n,m,int(mom[3:])))
-            
             data = np.array(data_list)
             return data
 
@@ -322,24 +262,19 @@ class SingleChannelFitMean:
 
         
 
-        def determinant_condition(ecm,psq,ma,mb,ref,fit_params):
+        def determinant_condition(ecm,psq,ma,mb,ref,fit_param, fit_params):
             # p is priors, a, b , ... for fits
             #p = psq[3]
             # parametrizations.ere_delta(ecm,self.ma_ave,self.mb_ave,a,b)
-            return (kinematics.qcotd(ecm,self.L,psq,ma,mb,ref) -parametrizations.output(ecm,ma,mb,self.fit_param, fit_params) )
+            return (kinematics.qcotd(ecm,self.L,psq,ma,mb,ref) - parametrizations.output(ecm,ma,mb,fit_param, fit_params) )
         
-        def QC1(energy,psq,ma,mb,ref,fit_params):
+        def QC1(energy,psq,ma,mb,ref,fit_param, fit_params):
             #self.ecm_average_data[psq][irrep]
-            func = lambda ecm: determinant_condition(ecm,psq,ma,mb,ref,fit_params)
+            func = lambda ecm: determinant_condition(ecm,psq,ma,mb,ref,fit_param, fit_params)
             # energy is the expected energy level
             return fsolve(func,energy)[0] #guess is the energy going in
 
         def chi2(fit_params,channel):
-            # if len(x) == 1:
-            #     a = x
-            # else:
-            #     a,b = x
-            a,b = fit_params
             res = []
             for psq in self.psq_list[channel]:
                 for irrep in self.irreps[channel][psq][0]:
@@ -353,7 +288,7 @@ class SingleChannelFitMean:
                         ma = ma[0]
                         mb = mb[0]
                         ref = self.ref_mass[channel][0]            
-                        diff = self.ecm_average_data[channel][psq][irrep][level_title] - QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma,mb,ref,fit_params)
+                        diff = self.ecm_average_data[channel][psq][irrep][level_title] - QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma,mb,ref,self.fit_parametrization[channel],fit_params)
                         res.append(diff)
             value = np.array(res)@np.linalg.inv(self.covariance_matrix[channel])@np.array(res)
             return value
@@ -365,50 +300,74 @@ class SingleChannelFitMean:
         # next lets run a fit to check
         #logging.info(r" Minimizing ERE for average data set")
         def average_fit(channel): #~~~ returning the mean bootstrap sample fit 
-            result = minimize(chi2,x0=[0.04,0.6],args=(channel,),method='nelder-mead')
+            result = minimize(chi2,x0=[0.05,0.7],args=(channel,),method='nelder-mead')
             #print(result)
             return result#[result.x[0],result.x[1]]
     
-            
-        def deriv(n,psq,irrep,x): # 2 parameter difference derivative
-            if len(x) == 1:
-                a = x
-                b = 0
-            else:
-                a, b = x
+        def deriv(n,energy,psq,ma,mb,ref, fit_param,fit_params):  # Generalized derivative function
+            # first order difference, need to add more orders 
+            eps = 0.001  # Small perturbation
+            # QC1(energy,psq,ma,mb,ref,fit_params)
+            x_eps = fit_params.copy()  # Create a copy of x to perturb
 
-            eps = .001
-            if n == 0:
-                return (QC1(psq,irrep,a-eps,b)-QC1(psq,irrep,a+eps,b))/(2*eps)
-            elif n ==1:
-                return (QC1(psq,irrep,a,b-eps)-QC1(psq,irrep,a,b+eps))/(2*eps)
+            # Apply the perturbation to the nth parameter
+            x_eps[n] -= eps
+            QC1_minus = QC1(energy,psq,ma,mb,ref,fit_param, x_eps)
+            
+            x_eps[n] +=  eps  # Reset and apply in the other direction
+            QC1_plus = QC1(energy,psq,ma,mb,ref,fit_param, x_eps)
+
+            # Calculate the derivative
+            return (QC1_plus - QC1_minus) / (2 * eps)   
+        # def deriv(n,psq,irrep,x): # 2 parameter difference derivative
+        #     if len(x) == 1:
+        #         a = x
+        #         b = 0
+        #     else:
+        #         a, b = x
+
+        #     eps = .001
+        #     if n == 0:
+        #         return (QC1(psq,irrep,a-eps,b)-QC1(psq,irrep,a+eps,b))/(2*eps)
+        #     elif n ==1:
+        #         return (QC1(psq,irrep,a,b-eps)-QC1(psq,irrep,a,b+eps))/(2*eps)
         
-        def vij(x): #V_ij is error matrix for parameters, take _ii to get each error
+        def vij(channel, fit_params): #V_ij is error matrix for parameters, take _ii to get each error
             # v_nm = dp_i / dp_n
             # error estimation function
-            # cov = self.cov = self.data.covariance_data()
-            if len(x) == 2:
-                nint = [0,1]
-            else: 
-                nint = 0
-            # irreps = {'PSQ0': ['G1u']
-            psq = ['PSQ0','PSQ1','PSQ2','PSQ3']
-            lmat = np.empty(0)
+            # Determine the number of parameters
+            num_params = len(fit_params)
+            nint = list(range(num_params))  # Generate a list [0, 1, 2, ..., num_params-1]
+            # deriv(n,energy,psq,ma,mb,ref, fit_params)
+            lmat = []
+            ma, mb = self.m_ref_dict[channel]
+            ref = self.ref_mass[channel]
             for n in nint:
-                if n == 0:
-                    dl = []
-                    for i in psq:
-                        dl.append(deriv(n,i,self.irreps[i][0],x))
+                dl = []
+                for psq in self.psq_list[channel]:
+                    for irrep in self.irreps[channel][psq][0]:
+                        for level in self.irreps[channel][psq][0][irrep]:
+                            level_title = f"ecm_{level}_ref"
+                            dl.append(deriv(n, self.ecm_average_data[channel][psq][irrep][level_title], psq, ma[0],mb[0],ref[0], self.fit_parametrization[channel] ,fit_params))
+                lmat.append(dl)
+            
+            # Convert the list to a numpy array (matrix)
+            lmat = np.array(lmat)
+            # for n in nint:
+            #     if n == 0:
+            #         dl = []
+            #         for i in psq:
+            #             dl.append(deriv(n,i,self.irreps[i][0],x))
 
-                    lmat = np.append(lmat,dl)
-                else:
-                    dl =[]
-                    for i in psq:
-                        dl.append(deriv(n,i,self.irreps[i][0],x))
+            #         lmat = np.append(lmat,dl)
+            #     else:
+            #         dl =[]
+            #         for i in psq:
+            #             dl.append(deriv(n,i,self.irreps[i][0],x))
                     
-                    lmat = np.vstack([lmat,dl])
+            #         lmat = np.vstack([lmat,dl])
                 
-            Vnm = np.linalg.inv(lmat@np.linalg.inv(self.cov_de)@np.transpose(lmat))
+            Vnm = np.linalg.inv(lmat@np.linalg.inv(self.covariance_matrix[channel])@np.transpose(lmat))
             
             return Vnm
 
@@ -452,26 +411,37 @@ class SingleChannelFitMean:
             return [ecm_bound,bound_error] #need to fix to include errors in Sigma data
         
         self.fit_results = {}
+        self.vnm_matrix = {}
         for channel in self.channel:
             average_fit_results = average_fit(channel)
             self.fit_results[channel] = [average_fit_results.x[0],average_fit_results.x[1]]
-            with open( log_path, 'w+') as log_file:
-                log_file.write(f"Fit results for channel: {channel}\n")
-                log_file.write(f" {average_fit_results}\n")
+            self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
+            with open( self.log_path[channel], 'w+') as log_file:
+                log_file.write(f"Fit results for Scattering channel: {channel}\n")
+                log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+                log_file.write(f"Irreps analyzed: {self.irreps[channel]} \n")
+                log_file.write(f"Average data: {self.ecm_average_data[channel]} \n")
+                log_file.write(f"Parametrization used: {self.fit_parametrization[channel]}\n")
+                log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+                log_file.write(f"{average_fit_results }\n")
+                log_file.write(f"\n")
+                log_file.write(f"Covariance Matrix: {self.covariance_matrix[channel]} \n")
+                log_file.write(f"V_nm (estimated uncertainty in parameters): {self.vnm_matrix[channel]} \n")
 
         #self.best_fit = average_fit()
         # self.vnm_matrix = vij(self.best_fit)
         # self.errors_in_parameters = np.diag(self.vnm_matrix)
         # self.bound_state = find_bound_state(self.best_fit)
-        return self.fit_results #[self.best_fit,self.bound_state]#print(self.best_fit)
+        return logging.info(f"Fit results in {log_path}") #[self.best_fit,self.bound_state]#print(self.best_fit)
         # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
 
     def plot( self ):
+        #log_path = self.proj_handler.log_dir()
         # data is here
         # self.ecm_average_data  for each irrep and psq
         for channel in self.channel:
             channel_1 = str(channel.split(',')[0])
-            channel_2 = str(channel.split(',')[0])
+            channel_2 = str(channel.split(',')[1])
             ma, mb = self.m_ref_dict[channel]  
             ma_ave = ma[0]
             mb_ave = mb[0]
@@ -492,10 +462,12 @@ class SingleChannelFitMean:
             # q2 for values near bound state condition
             q2_values = np.linspace(-0.25, 0.01, 150)
             virtual_state = []
+            bound_state = []
             for q2 in q2_values:
                 virtual_state.append(cmath.sqrt(-q2))
+                bound_state.append(cmath.sqrt(q2))
 
-            plt.figure(figsize=(10,6.134))
+            plt.figure(figsize=(self.alt_params['figwidth'],self.alt_params['figheight']))
             for psq in psq_list:
                 for irrep in self.irreps[channel][psq][0]:
                     for level in self.irreps[channel][psq][0][irrep]:
@@ -523,25 +495,25 @@ class SingleChannelFitMean:
                 ecm = np.sqrt( q2 + ma_ave**2) + np.sqrt( q2 + mb_ave**2 )
                 best_fit_line.append(parametrizations.ere_delta(ecm,ma_ave, mb_ave,*best_fit_params))
 
-            #vij = self.vnm_matrix # using best_fit
+            vij = self.vnm_matrix[channel] # using best_fit
             # vec for error estimation is derivative in each parameter of paramerization (ERE_Delta)
-            #vec = lambda ecm:np.array([ecm,ecm*parametrizations.delta_Sp(ecm,self.ma_ave, self.mb_ave)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
-            #sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toecm(q2,self.ma_ave, self.mb_ave)))@vij@vec(kinematics.q2toecm(q2,self.ma_ave, self.mb_ave))) for q2 in q2_values]
-            #upper = np.array(best_fit_line) + np.array(sigma_f)
-            #lower = np.array(best_fit_line) - np.array(sigma_f)
+            vec = lambda ecm:np.array([ecm,ecm*parametrizations.delta_Sp(ecm,ma_ave,mb_ave)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
+            sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toecm(q2,ma_ave, mb_ave)))@vij@vec(kinematics.q2toecm(q2,ma_ave, mb_ave))) for q2 in q2_values]
+            upper = np.array(best_fit_line) + np.array(sigma_f)
+            lower = np.array(best_fit_line) - np.array(sigma_f)
             #fk_values = [self.qc.q2(ecm,0) for ecm in ecm_values]
             #bound_mom = self.bound_state[0]   
             plt.plot(q2_values,best_fit_line , color='blue',linestyle='-.')
             #plt.fill_between(fk_values, lower_bounds, upper_bounds, color='lightblue', alpha=0.5)
             #plt.plot(bound_mom,parametrizations.ere_delta(kinematics.q2toecm(bound_mom,self.ma_ave, self.mb_ave),self.ma_ave, self.mb_ave, self.best_fit[0], self.best_fit[1]),'r*',markersize=10)
-           # plt.fill_between(q2_values,lower,upper,alpha = 0.5, color = 'lightblue')
+            plt.fill_between(q2_values,lower,upper,alpha = 0.5, color = 'lightblue')
             plt.axhline(y=0,color='black')
             plt.axvline(x=0,color='black')
             legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 12})
             plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
             plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
-            plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)
-            plt.savefig(f'{channel_1},{channel_2} _Scattering.pdf')
+            plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)     
+            plt.savefig(os.path.join(self.proj_handler.log_dir(), f'{channel} _Scattering.pdf') )
             #legend.set_title('Legend', prop={'size': 12})  # Set legend title and font size
 
             #plt.show()
