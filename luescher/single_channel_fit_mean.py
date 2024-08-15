@@ -75,7 +75,8 @@ class SingleChannelFitMean:
             'figwidth':10,
             'figheight':6.132,
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
-            'delta_E covariance':True,
+            'delta_E_covariance':True,
+            'error_estimation': False,
         }
         self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
 
@@ -144,6 +145,7 @@ class SingleChannelFitMean:
         self.m_ref_dict = {}
         self.ref_mass = {}
         self.psq_list = {}
+        self.irrep_list = {}
         for i, channel in enumerate(self.channel):
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[1])
@@ -161,6 +163,7 @@ class SingleChannelFitMean:
             self.ecm_average_data[channel] = {}
             self.ecm_bootstrap_data[channel] = {}
             ecm_bs_arr[channel] = []
+            self.irrep_list[channel] = {}
             for psq in self.psq_list[channel]:
                 self.ecm_data[channel][psq] = {}
                 self.ecm_average_data[channel][psq] = {}
@@ -255,7 +258,7 @@ class SingleChannelFitMean:
         # set up covaraince matrixes for each channel
         self.covariance_matrix = {}
         for channel in self.channel:
-            if self.alt_params['delta_E covariance']:
+            if self.alt_params['delta_E_covariance']:
                 self.covariance_matrix[channel] =  np.cov(energy_shift_data(channel))
             else:
                 self.covariance_matrix[channel] = np.cov(ecm_bs_arr[channel])
@@ -374,12 +377,14 @@ class SingleChannelFitMean:
             return [ecm_bound,bound_error] #need to fix to include errors in Sigma data
         
         self.fit_results = {}
-        self.vnm_matrix = {}
+        if self.alt_params['error_estimation']:
+            self.vnm_matrix = {}
         for channel in self.channel:
             logging.info(f"Fit results in {self.log_path[channel]}")
             average_fit_results = average_fit(channel)
             self.fit_results[channel] = [average_fit_results.x[0],average_fit_results.x[1]]
-            self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
+            if self.alt_params['error_estimation']:
+                self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
             current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with open( self.log_path[channel], 'w+') as log_file:
                 log_file.write(f"Log date and time: {current_time}\n")
@@ -393,7 +398,8 @@ class SingleChannelFitMean:
                 log_file.write(f"{average_fit_results }\n")
                 log_file.write(f"\n")
                 log_file.write(f"Covariance Matrix: {self.covariance_matrix[channel]} \n")
-                log_file.write(f"V_nm (estimated uncertainty in parameters): {self.vnm_matrix[channel]} \n")
+                if self.alt_params['error_estimation']:
+                    log_file.write(f"V_nm (estimated uncertainty in parameters): {self.vnm_matrix[channel]} \n")
 
         #self.best_fit = average_fit()
         # self.vnm_matrix = vij(self.best_fit)
@@ -404,89 +410,103 @@ class SingleChannelFitMean:
 
     def plot( self ):
         if self.alt_params['plot']:
-            logging.info(f"Saving plots to directory {self.proj_handler}...")
+            logging.info(f"Saving plots to directory {self.proj_handler.log_dir()}...")
         else:
             logging.info(f"No plots requested.")
             return
-        
+        fig_params = [self.alt_params['figwidth'],self.alt_params['figheight']]
         #log_path = self.proj_handler.log_dir()
         # data is here
         # self.ecm_average_data  for each irrep and psq
         for channel in self.channel:
-            channel_1 = str(channel.split(',')[0])
-            channel_2 = str(channel.split(',')[1])
+            # channel_1 = str(channel.split(',')[0])
+            # channel_2 = str(channel.split(',')[1])
             ma, mb = self.m_ref_dict[channel]  
             ma_ave = ma[0]
             mb_ave = mb[0]
             ref_ave = self.ref_mass[channel][0]
             psq_list = self.dr.load_psq()
-            irreps = self.irreps 
-            shapes = ['o','s','D','v'] #automate to make shapes for different psq
-            labels = ['$G_{1u}(0)$','$G_1 (1)$', '$G (2)$' , '$G(3)$']
-            legend_handles = []  # Create an empty list to store custom legend handles
-            shapes_dict = {}
-            labels_dict = {}
-            enu = 0
-            for psq in psq_list: 
-                shapes_dict[psq] = shapes[enu]
-                labels_dict[psq] = labels[enu]
-                enu += 1
+            irreps = self.irreps[channel] 
+            # shapes = ['o','s','D','v'] #automate to make shapes for different psq
+            # labels = ['$G_{1u}(0)$','$G_1 (1)$', '$G (2)$' , '$G(3)$']
+            # legend_handles = []  # Create an empty list to store custom legend handles
+            # shapes_dict = {}
+            # labels_dict = {}
+            # enu = 0
+            # for psq in psq_list: 
+            #     shapes_dict[psq] = shapes[enu]
+            #     labels_dict[psq] = labels[enu]
+            #     enu += 1
             #irrep labels
             # q2 for values near bound state condition
-            q2_values = np.linspace(-0.25, 0.01, 150)
-            virtual_state = []
-            bound_state = []
-            for q2 in q2_values:
-                virtual_state.append(cmath.sqrt(-q2))
-                bound_state.append(cmath.sqrt(q2))
-
-            plt.figure(figsize=(self.alt_params['figwidth'],self.alt_params['figheight']))
+            #plt.figure(figsize=(self.alt_params['figwidth'],self.alt_params['figheight']))
+            x = {}
+            y = {}
+            x_range = {}
+            y_range = {}
             for psq in psq_list:
+                x[psq] = {}
+                y[psq] = {}
+                x_range[psq] = {}
+                y_range[psq] = {}
                 for irrep in self.irreps[channel][psq][0]:
-                    for level in self.irreps[channel][psq][0][irrep]:
-                        level_title = f"ecm_{level}_ref"
-                        x = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
-                        y = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)
-                        plt.plot(x, y, marker=shapes_dict[psq], color='blue', label=labels_dict[psq])
-                        legend_handles.append(Line2D([0], [0], marker=shapes_dict[psq], color='w', markerfacecolor='blue', markersize=10, label=labels_dict[psq]))
-            
-            for psq in psq_list:
-                x_range = []
-                y_range = []
-                for irrep in self.irreps[channel][psq][0]:
+                    x[psq][irrep] = {}
+                    y[psq][irrep] = {}
+                    x_range[psq][irrep] = {}
+                    y_range[psq][irrep] = {}
                     for level in self.irreps[channel][psq][0][irrep]:
                         level_title = f"ecm_{level}_ref"
                         std_deviation = np.std(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
+                        x[psq][irrep][level] = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
+                        y[psq][irrep][level]  = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)
+                        x_range[psq][irrep][level] = []
+                        y_range[psq][irrep][level] = []
                         for en in np.linspace(self.ecm_average_data[channel][psq][irrep][level_title]-std_deviation , self.ecm_average_data[channel][psq][irrep][level_title] +std_deviation , 100):
-                            x_range.append(kinematics.q2(en, ma_ave,mb_ave))
-                            y_range.append(kinematics.qcotd(en,self.L,psq,ma_ave,mb_ave,ref_ave))
-                plt.plot(x_range, y_range, color="blue", alpha=0.8)  
+                            x_range[psq][irrep][level].append(kinematics.q2(en, ma_ave,mb_ave))
+                            y_range[psq][irrep][level].append(kinematics.qcotd(en,self.L,psq,ma_ave,mb_ave,ref_ave))
+                        #plt.plot(x, y, marker=shapes_dict[psq], color='blue', label=labels_dict[psq])
+                        # legend_handles.append(Line2D([0], [0], marker=shapes_dict[psq], color='w', markerfacecolor='blue', markersize=10, label=labels_dict[psq]))
+            x_in = [x,x_range]
+            y_in = [y,y_range]
+            ph.PlottingHandler().single_channel_plot( fig_params, channel, irreps, x_in, y_in)
+            ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering_Data.pdf'), transparent=True)
+            # for psq in psq_list:
+            #     x_range = []
+            #     y_range = []
+            #     for irrep in self.irreps[channel][psq][0]:
+            #         for level in self.irreps[channel][psq][0][irrep]:
+            #             level_title = f"ecm_{level}_ref"
+            #             std_deviation = np.std(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
+            #             for en in np.linspace(self.ecm_average_data[channel][psq][irrep][level_title]-std_deviation , self.ecm_average_data[channel][psq][irrep][level_title] +std_deviation , 100):
+            # #                 x_range.append(kinematics.q2(en, ma_ave,mb_ave))
+            # #                 y_range.append(kinematics.qcotd(en,self.L,psq,ma_ave,mb_ave,ref_ave))
+            #     plt.plot(x_range, y_range, color="blue", alpha=0.8)  
             
-            best_fit_params = self.fit_results[channel]
-            best_fit_line = []
-            for q2 in q2_values: # need to change to make q2 automatic
-                ecm = np.sqrt( q2 + ma_ave**2) + np.sqrt( q2 + mb_ave**2 )
-                best_fit_line.append(parametrizations.ere_delta(ecm,ma_ave, mb_ave,*best_fit_params))
+            # best_fit_params = self.fit_results[channel]
+            # best_fit_line = []
+            # for q2 in q2_values: # need to change to make q2 automatic
+            #     ecm = np.sqrt( q2 + ma_ave**2) + np.sqrt( q2 + mb_ave**2 )
+            #     best_fit_line.append(parametrizations.ere_delta(ecm,ma_ave, mb_ave,*best_fit_params))
 
-            vij = self.vnm_matrix[channel] # using best_fit
-            # vec for error estimation is derivative in each parameter of paramerization (ERE_Delta)
-            vec = lambda ecm:np.array([ecm,ecm*parametrizations.delta_Sp(ecm,ma_ave,mb_ave)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
-            sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toecm(q2,ma_ave, mb_ave)))@vij@vec(kinematics.q2toecm(q2,ma_ave, mb_ave))) for q2 in q2_values]
-            upper = np.array(best_fit_line) + np.array(sigma_f)
-            lower = np.array(best_fit_line) - np.array(sigma_f)
-            #fk_values = [self.qc.q2(ecm,0) for ecm in ecm_values]
-            #bound_mom = self.bound_state[0]   
-            plt.plot(q2_values,best_fit_line , color='blue',linestyle='-.')
-            #plt.fill_between(fk_values, lower_bounds, upper_bounds, color='lightblue', alpha=0.5)
-            #plt.plot(bound_mom,parametrizations.ere_delta(kinematics.q2toecm(bound_mom,self.ma_ave, self.mb_ave),self.ma_ave, self.mb_ave, self.best_fit[0], self.best_fit[1]),'r*',markersize=10)
-            plt.fill_between(q2_values,lower,upper,alpha = 0.5, color = 'lightblue')
-            plt.axhline(y=0,color='black')
-            plt.axvline(x=0,color='black')
-            legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 12})
-            plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
-            plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
-            plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)     
-            plt.savefig(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering.pdf') )
+            # vij = self.vnm_matrix[channel] # using best_fit
+            # # vec for error estimation is derivative in each parameter of paramerization (ERE_Delta)
+            # vec = lambda ecm:np.array([ecm,ecm*parametrizations.delta_Sp(ecm,ma_ave,mb_ave)]) #np.array([deriv(ecm,a,b,0,.001),deriv(ecm,a,b,1,.001)]) #np.array([ecm,ecm*self.fit.ere_delta(ecm,0,a,b)])
+            # sigma_f = [np.sqrt(np.transpose(vec(kinematics.q2toecm(q2,ma_ave, mb_ave)))@vij@vec(kinematics.q2toecm(q2,ma_ave, mb_ave))) for q2 in q2_values]
+            # upper = np.array(best_fit_line) + np.array(sigma_f)
+            # lower = np.array(best_fit_line) - np.array(sigma_f)
+            # #fk_values = [self.qc.q2(ecm,0) for ecm in ecm_values]
+            # #bound_mom = self.bound_state[0]   
+            # plt.plot(q2_values,best_fit_line , color='blue',linestyle='-.')
+            # #plt.fill_between(fk_values, lower_bounds, upper_bounds, color='lightblue', alpha=0.5)
+            # #plt.plot(bound_mom,parametrizations.ere_delta(kinematics.q2toecm(bound_mom,self.ma_ave, self.mb_ave),self.ma_ave, self.mb_ave, self.best_fit[0], self.best_fit[1]),'r*',markersize=10)
+            # plt.fill_between(q2_values,lower,upper,alpha = 0.5, color = 'lightblue')
+            # plt.axhline(y=0,color='black')
+            # plt.axvline(x=0,color='black')
+            # legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 12})
+            # plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
+            # plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
+            # plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)     
+            # plt.savefig(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering.pdf') )
             #legend.set_title('Legend', prop={'size': 12})  # Set legend title and font size
 
             #plt.show()
