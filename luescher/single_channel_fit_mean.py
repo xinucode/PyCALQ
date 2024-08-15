@@ -8,6 +8,7 @@ import fvspectrum.sigmond_util as sigmond_util
 import cmath                    #math library (complex)
 import csv                      # read csv files
 import math                     # math library, mostly use it for math.pi, math.pow()
+import datetime
 import matplotlib.pyplot as plt #plotting library            
 import numpy as np              #basic functions, linear algebra, etc. 
 import random
@@ -51,8 +52,8 @@ class SingleChannelFitMean:
         # if not task_configs:
         #     logging.critical(f"No directory to view. Add 'raw_data_files' to '{task_name}' task parameters.")
 
-        ensemble_info = sigmond_util.get_ensemble_info(general_configs)
-        self.L = ensemble_info.getLatticeXExtent()
+        self.ensemble_info = sigmond_util.get_ensemble_info(general_configs)
+        self.L = self.ensemble_info.getLatticeXExtent()
         # path name needs to link toward the hdf5 file 
         if 'data_file' in task_params.keys(): # want to add if statement 
             file_path = task_params['data_file']
@@ -144,22 +145,22 @@ class SingleChannelFitMean:
         self.ref_mass = {}
         self.psq_list = {}
         for i, channel in enumerate(self.channel):
-            self.log_path[channel] = os.path.join(self.proj_handler.log_dir(), f'luescher_{channel}_log.txt')
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[1])
             self.m_ref_dict[channel] = [self.dr.single_hadron_data(channel_1),self.dr.single_hadron_data(channel_2) ] #ma_ref, mb_ref in channel
             self.ref_mass[channel] = self.dr.single_hadron_data('ref')
             self.psq_list[channel] = self.dr.load_psq()
+            self.log_path[channel] = os.path.join(self.proj_handler.log_dir(), f'luescher_{channel_1}_{channel_2}_log.txt')
 
         self.ecm_data = {} # save possible data
         self.ecm_average_data = {}
         self.ecm_bootstrap_data = {}
-        ecm_NN_bs_arr = {}
+        ecm_bs_arr = {}
         for channel in self.channel:
             self.ecm_data[channel] = {} 
             self.ecm_average_data[channel] = {}
             self.ecm_bootstrap_data[channel] = {}
-            ecm_NN_bs_arr[channel] = []
+            ecm_bs_arr[channel] = []
             for psq in self.psq_list[channel]:
                 self.ecm_data[channel][psq] = {}
                 self.ecm_average_data[channel][psq] = {}
@@ -174,11 +175,10 @@ class SingleChannelFitMean:
                             self.ecm_data[channel][psq][irrep][level_title] = self.dr.ref_energy_data(psq,irrep,level_title)
                             self.ecm_average_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][0]
                             self.ecm_bootstrap_data[channel][psq][irrep][level_title] = self.ecm_data[channel][psq][irrep][level_title][1:]
-                            ecm_NN_bs_arr[channel].append(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
+                            ecm_bs_arr[channel].append(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
                         else:
                             level_title = f"ecm_{level}"
                             logging.critical("Need non-ref energies from data reader")
-
 
         def energy_shift_data(channel):
                 
@@ -216,7 +216,6 @@ class SingleChannelFitMean:
                     return part_before_paren, number_inside_paren
                 else:
                     return None, None  # Return None for both values if parentheses are not found
-
             def deltaE(ecm,ma,mb,n,m,psq):#function to shift e_cm data to shifted data to free energy levels
                 if psq == 0:
                     l = self.L*mref 
@@ -232,6 +231,7 @@ class SingleChannelFitMean:
             for psq in self.psq_list[channel]:
                 for irrep in self.irreps[channel][psq][0]:
                     for level in self.irreps[channel][psq][0][irrep]: # level is number
+
                         if self.alt_params['ref_energies']:
                             level_title = f"ecm_{level}_ref"
                         else:
@@ -239,13 +239,14 @@ class SingleChannelFitMean:
                         ma, n = extract_values(self.dr.free_levels(psq,irrep,level)[0])
                         mb, m = extract_values(self.dr.free_levels(psq,irrep,level)[1])
                         if self.alt_params['ref_energies']:
-                            hadron_title_a = f'{ma}({n})_ref'
-                            hadron_title_b = f'{mb}({m})_ref'
+                            hadron_title_a = f'{ma}(0)_ref'
+                            hadron_title_b = f'{mb}(0)_ref'
                         else:
-                            hadron_title_a = f'{ma}({n})'
-                            hadron_title_b = f'{mb}({m})'
+                            hadron_title_a = f'{ma}(0)'
+                            hadron_title_b = f'{mb}(0)'
                         ma = self.dr.single_hadron_data(hadron_title_a)[1:]
                         mb = self.dr.single_hadron_data(hadron_title_b)[1:]
+
                         data_list.append(deltaE(ecm_data[psq][irrep][level_title] ,ma,mb,n,m,int(psq[3:])))
 
             data = np.array(data_list)
@@ -253,24 +254,21 @@ class SingleChannelFitMean:
 
         # set up covaraince matrixes for each channel
         self.covariance_matrix = {}
-        self.cov_de = {}
         for channel in self.channel:
             if self.alt_params['delta_E covariance']:
                 self.covariance_matrix[channel] =  np.cov(energy_shift_data(channel))
             else:
-                self.covariance_matrix[channel] = np.cov(ecm_NN_bs_arr[channel])
+                self.covariance_matrix[channel] = np.cov(ecm_bs_arr[channel])
 
-        
-
-        def determinant_condition(ecm,psq,ma,mb,ref,fit_param, fit_params):
+        def determinant_condition(ecm,psq,ma,mb,ref,fit_parametrization, fit_params):
             # p is priors, a, b , ... for fits
             #p = psq[3]
             # parametrizations.ere_delta(ecm,self.ma_ave,self.mb_ave,a,b)
-            return (kinematics.qcotd(ecm,self.L,psq,ma,mb,ref) - parametrizations.output(ecm,ma,mb,fit_param, fit_params) )
+            return (kinematics.qcotd(ecm,self.L,psq,ma,mb,ref) - parametrizations.output(ecm,ma,mb,fit_parametrization, fit_params) )
         
-        def QC1(energy,psq,ma,mb,ref,fit_param, fit_params):
+        def QC1(energy,psq,ma,mb,ref,fit_parametrization, fit_params):
             #self.ecm_average_data[psq][irrep]
-            func = lambda ecm: determinant_condition(ecm,psq,ma,mb,ref,fit_param, fit_params)
+            func = lambda ecm: determinant_condition(ecm,psq,ma,mb,ref,fit_parametrization, fit_params)
             # energy is the expected energy level
             return fsolve(func,energy)[0] #guess is the energy going in
 
@@ -279,10 +277,6 @@ class SingleChannelFitMean:
             for psq in self.psq_list[channel]:
                 for irrep in self.irreps[channel][psq][0]:
                     for level in self.irreps[channel][psq][0][irrep]:
-                    # print(psq)
-                    # print(irrep)
-                    #d = psq[3]
-                    #print(self.ecm_average_data[psq][irrep])
                         level_title = f"ecm_{level}_ref"
                         ma, mb = self.m_ref_dict[channel]  
                         ma = ma[0]
@@ -293,14 +287,8 @@ class SingleChannelFitMean:
             value = np.array(res)@np.linalg.inv(self.covariance_matrix[channel])@np.array(res)
             return value
 
-
-        # print(f" Using Effective Range Expansion for single-channel:{self.channel_1} (m = {self.ma_ave}) ,{self.channel_2} (m = {self.mb_ave})")
-
-
-        # next lets run a fit to check
-        #logging.info(r" Minimizing ERE for average data set")
         def average_fit(channel): #~~~ returning the mean bootstrap sample fit 
-            result = minimize(chi2,x0=[0.05,0.7],args=(channel,),method='nelder-mead')
+            result = minimize(chi2,x0=[0.01,0.7],args=(channel),method='nelder-mead')
             #print(result)
             return result#[result.x[0],result.x[1]]
     
@@ -309,28 +297,17 @@ class SingleChannelFitMean:
             eps = 0.001  # Small perturbation
             # QC1(energy,psq,ma,mb,ref,fit_params)
             x_eps = fit_params.copy()  # Create a copy of x to perturb
-
             # Apply the perturbation to the nth parameter
             x_eps[n] -= eps
             QC1_minus = QC1(energy,psq,ma,mb,ref,fit_param, x_eps)
-            
+
+            x_eps = fit_params.copy()
             x_eps[n] +=  eps  # Reset and apply in the other direction
             QC1_plus = QC1(energy,psq,ma,mb,ref,fit_param, x_eps)
 
             # Calculate the derivative
-            return (QC1_plus - QC1_minus) / (2 * eps)   
-        # def deriv(n,psq,irrep,x): # 2 parameter difference derivative
-        #     if len(x) == 1:
-        #         a = x
-        #         b = 0
-        #     else:
-        #         a, b = x
+            return (QC1_minus - QC1_plus) / (2 * eps)   
 
-        #     eps = .001
-        #     if n == 0:
-        #         return (QC1(psq,irrep,a-eps,b)-QC1(psq,irrep,a+eps,b))/(2*eps)
-        #     elif n ==1:
-        #         return (QC1(psq,irrep,a,b-eps)-QC1(psq,irrep,a,b+eps))/(2*eps)
         
         def vij(channel, fit_params): #V_ij is error matrix for parameters, take _ii to get each error
             # v_nm = dp_i / dp_n
@@ -349,24 +326,10 @@ class SingleChannelFitMean:
                         for level in self.irreps[channel][psq][0][irrep]:
                             level_title = f"ecm_{level}_ref"
                             dl.append(deriv(n, self.ecm_average_data[channel][psq][irrep][level_title], psq, ma[0],mb[0],ref[0], self.fit_parametrization[channel] ,fit_params))
-                lmat.append(dl)
-            
-            # Convert the list to a numpy array (matrix)
-            lmat = np.array(lmat)
-            # for n in nint:
-            #     if n == 0:
-            #         dl = []
-            #         for i in psq:
-            #             dl.append(deriv(n,i,self.irreps[i][0],x))
-
-            #         lmat = np.append(lmat,dl)
-            #     else:
-            #         dl =[]
-            #         for i in psq:
-            #             dl.append(deriv(n,i,self.irreps[i][0],x))
-                    
-            #         lmat = np.vstack([lmat,dl])
                 
+                lmat.append(np.array(dl))
+            lmat = np.array(lmat)
+    
             Vnm = np.linalg.inv(lmat@np.linalg.inv(self.covariance_matrix[channel])@np.transpose(lmat))
             
             return Vnm
@@ -413,10 +376,14 @@ class SingleChannelFitMean:
         self.fit_results = {}
         self.vnm_matrix = {}
         for channel in self.channel:
+            logging.info(f"Fit results in {self.log_path[channel]}")
             average_fit_results = average_fit(channel)
             self.fit_results[channel] = [average_fit_results.x[0],average_fit_results.x[1]]
             self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with open( self.log_path[channel], 'w+') as log_file:
+                log_file.write(f"Log date and time: {current_time}\n")
+                log_file.write(f"Ensemble: {self.ensemble_info}\n")
                 log_file.write(f"Fit results for Scattering channel: {channel}\n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 log_file.write(f"Irreps analyzed: {self.irreps[channel]} \n")
@@ -432,10 +399,16 @@ class SingleChannelFitMean:
         # self.vnm_matrix = vij(self.best_fit)
         # self.errors_in_parameters = np.diag(self.vnm_matrix)
         # self.bound_state = find_bound_state(self.best_fit)
-        return logging.info(f"Fit results in {log_path}") #[self.best_fit,self.bound_state]#print(self.best_fit)
+        #[self.best_fit,self.bound_state]#print(self.best_fit)
         # do the task, produce the data, data goes in self.proj_dir_handler.data_dir(), info/warning/errors about the process goes in self.proj_dir_handler.log_dir() (if any)
 
     def plot( self ):
+        if self.alt_params['plot']:
+            logging.info(f"Saving plots to directory {self.proj_handler}...")
+        else:
+            logging.info(f"No plots requested.")
+            return
+        
         #log_path = self.proj_handler.log_dir()
         # data is here
         # self.ecm_average_data  for each irrep and psq
@@ -513,7 +486,7 @@ class SingleChannelFitMean:
             plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
             plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
             plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)     
-            plt.savefig(os.path.join(self.proj_handler.log_dir(), f'{channel} _Scattering.pdf') )
+            plt.savefig(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering.pdf') )
             #legend.set_title('Legend', prop={'size': 12})  # Set legend title and font size
 
             #plt.show()
