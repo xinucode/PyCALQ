@@ -76,7 +76,7 @@ class SingleChannelFitMean:
             'figheight':6.132,
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
             'delta_E_covariance':True,
-            'error_estimation': False,
+            'error_estimation': True,
             'chi2_energy_compare': True 
         }
         self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
@@ -447,6 +447,8 @@ class SingleChannelFitMean:
             e_vals = []
             if self.alt_params['chi2_energy_compare']:
                 chi2_energy = {}
+                chi2_energy_error = {}
+                #parametrization_e_output(ecm,ma,mb,fit_param, fit_params)
             for psq in psq_list:
                 x[psq] = {}
                 y[psq] = {}
@@ -454,6 +456,7 @@ class SingleChannelFitMean:
                 y_range[psq] = {}
                 if self.alt_params['chi2_energy_compare']:
                     chi2_energy[psq] = {} 
+                    chi2_energy_error[psq] = {}
                 for irrep in self.irreps[channel][psq][0]:
                     x[psq][irrep] = {}
                     y[psq][irrep] = {}
@@ -461,12 +464,17 @@ class SingleChannelFitMean:
                     y_range[psq][irrep] = {}
                     if self.alt_params['chi2_energy_compare']:
                         chi2_energy[psq][irrep] = {} 
+                        chi2_energy_error[psq][irrep] = {}
                     for level in self.irreps[channel][psq][0][irrep]:
                         level_title = f"ecm_{level}_ref"
                         std_deviation = np.std(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
                         x[psq][irrep][level] = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
                         if self.alt_params['chi2_energy_compare']:
                             chi2_energy[psq][irrep][level] = QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma_ave,mb_ave,ref_ave,self.fit_parametrization[channel],self.fit_results[channel])
+                            g = parametrizations.error_output(chi2_energy[psq][irrep][level],ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
+                            sigma_f = np.sqrt(np.transpose(g)@self.vnm_matrix[channel]@g) 
+                            pEpq = kinematics.partialE_partialq(kinematics.q2(chi2_energy[psq][irrep][level], ma_ave,mb_ave),ma_ave,mb_ave)
+                            chi2_energy_error[psq][irrep][level] = np.sqrt((pEpq * sigma_f)**2)
                         e_vals.append(self.ecm_average_data[channel][psq][irrep][level_title])
                         y[psq][irrep][level]  = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)   
                         x_range[psq][irrep][level] = []
@@ -509,8 +517,9 @@ class SingleChannelFitMean:
 
             if self.alt_params['chi2_energy_compare']:
                 # add plotting with error here
-                chi_in = [self.ecm_average_data,chi2_energy]
-                ph.PlottingHandler().chi2_energies_compare_plot(fig_params, channel, irreps, chi_in)
+                chi_in = [self.ecm_average_data[channel],chi2_energy]
+                err_in = [self.ecm_bootstrap_data[channel],chi2_energy_error]
+                ph.PlottingHandler().chi2_energies_compare_plot(fig_params, channel, irreps, chi_in,err_in)
                 ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_chi2_energy_compare.pdf'), transparent=True)
             else:
                 pass

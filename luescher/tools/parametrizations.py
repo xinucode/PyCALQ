@@ -9,6 +9,13 @@ def output(ecm,ma,mb,fit_param, fit_params):
     elif fit_param == 'ERE_delta':
         return ere_delta(ecm,ma,mb,*fit_params)
 
+def error_output(ecm,ma,mb,fit_param, fit_params):
+    if fit_param == 'ERE':
+        return ere(ecm,ma,mb,*fit_params)
+    elif fit_param == 'ERE_delta':
+        vec = lambda e:np.array([e,e*delta_Sp(e,ma,mb)]) 
+        return vec(ecm)
+
 def delta_Sp(ecm,ma,mb):
     return (ecm**2 - (ma+mb)**2 )/ (ma+mb)**2
 

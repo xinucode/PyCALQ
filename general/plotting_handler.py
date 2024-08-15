@@ -385,13 +385,14 @@ class PlottingHandler:
     ###########################
     #
     # compare chi2 results to input energies
-    def chi2_energies_compare_plot(self, fig_params, channel, irreps, x_in):
+    def chi2_energies_compare_plot(self, fig_params, channel, irreps, x_in,err_in):
         figwidth, figheight = fig_params
         # channel_1 = str(channel.split(',')[0])
         # channel_2 = str(channel.split(',')[1])
         plt.figure(figsize=(figwidth,figheight))
         # x axis is the irrep
         data_energies, chi2_energies = x_in
+        ecm_bootstrap, chi2_energies_error = err_in 
         # y  is the data, one from data and one from fit
         x_range= [0,1,2,3]
         offset = 0.1
@@ -402,8 +403,11 @@ class PlottingHandler:
                     irrep_list.append(irrep)
                     for level in irreps[psq][0][irrep]:
                         level_title = f"ecm_{level}_ref"
-                        plt.plot(x_range[total_irrep]-offset,data_energies[channel][psq][irrep][level_title],marker='s',markersize=10,color='blue')
-                        plt.plot(x_range[total_irrep]+offset, chi2_energies[psq][irrep][level],marker='s',markersize=10,color='red')
+                        err = np.std(ecm_bootstrap[psq][irrep][level_title])
+                        plt.errorbar(x_range[total_irrep]-offset,data_energies[psq][irrep][level_title], yerr=err,linewidth=0.0, elinewidth=1.5, capsize=5, marker='s',markersize=10, color="blue")
+                        #plt.plot(x_range[total_irrep]-offset,data_energies[psq][irrep][level_title],marker='s',markersize=10,color='blue')
+                        #plt.plot(x_range[total_irrep]+offset, chi2_energies[psq][irrep][level],marker='s',markersize=10,color='red')
+                        plt.errorbar(x_range[total_irrep]+offset,chi2_energies[psq][irrep][level], yerr=chi2_energies_error[psq][irrep][level],linewidth=0.0, elinewidth=1.5, capsize=5, marker='s',markersize=10, color="red")
                         total_irrep += 1
         # Set the x-ticks using the collected irreps
         plt.xticks(x_range, irrep_list)

@@ -1,6 +1,7 @@
 import numpy as np
 
 import math
+import cmath
 from luescher.tools.zeta import Z
 
 #~~~~~~~~~~~~~~~~~~~~~~~`
@@ -38,6 +39,9 @@ def q2(ecm,ma,mb): #assume all ref inputs
 
 def q2toecm(q2,ma,mb):
     return np.sqrt(q2 + ma**2) + np.sqrt(q2 + mb**2)
+    
+def partialE_partialq(q2,ma,mb):
+    return np.sqrt(-q2)*(-q2 + ma**2 )**(-1/2) + np.sqrt(-q2)*(-q2 +mb)**(-1/2)
 
 # msplit required for Luscher: 
 # measures the shift of the rvector of unequal relativistic masses
