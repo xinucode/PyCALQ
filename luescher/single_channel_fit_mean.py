@@ -77,6 +77,7 @@ class SingleChannelFitMean:
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
             'delta_E_covariance':True,
             'error_estimation': False,
+            'chi2_energy_compare': True 
         }
         self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
 
@@ -382,7 +383,7 @@ class SingleChannelFitMean:
         for channel in self.channel:
             logging.info(f"Fit results in {self.log_path[channel]}")
             average_fit_results = average_fit(channel)
-            self.fit_results[channel] = [average_fit_results.x[0],average_fit_results.x[1]]
+            self.fit_results[channel] = list(average_fit_results.x)
             if self.alt_params['error_estimation']:
                 self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
             current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -418,47 +419,56 @@ class SingleChannelFitMean:
         #log_path = self.proj_handler.log_dir()
         # data is here
         # self.ecm_average_data  for each irrep and psq
+        
+        def determinant_condition(ecm,psq,ma,mb,ref,fit_parametrization, fit_params):
+            # p is priors, a, b , ... for fits
+            #p = psq[3]
+            # parametrizations.ere_delta(ecm,self.ma_ave,self.mb_ave,a,b)
+            return (kinematics.qcotd(ecm,self.L,psq,ma,mb,ref) - parametrizations.output(ecm,ma,mb,fit_parametrization, fit_params) )
+        
+        def QC1(energy,psq,ma,mb,ref,fit_parametrization, fit_params):
+            #self.ecm_average_data[psq][irrep]
+            func = lambda ecm: determinant_condition(ecm,psq,ma,mb,ref,fit_parametrization, fit_params)
+            # energy is the expected energy level
+            return fsolve(func,energy)[0] #guess is the energy going in
+
+
         for channel in self.channel:
-            # channel_1 = str(channel.split(',')[0])
-            # channel_2 = str(channel.split(',')[1])
             ma, mb = self.m_ref_dict[channel]  
             ma_ave = ma[0]
             mb_ave = mb[0]
             ref_ave = self.ref_mass[channel][0]
             psq_list = self.dr.load_psq()
             irreps = self.irreps[channel] 
-            # shapes = ['o','s','D','v'] #automate to make shapes for different psq
-            # labels = ['$G_{1u}(0)$','$G_1 (1)$', '$G (2)$' , '$G(3)$']
-            # legend_handles = []  # Create an empty list to store custom legend handles
-            # shapes_dict = {}
-            # labels_dict = {}
-            # enu = 0
-            # for psq in psq_list: 
-            #     shapes_dict[psq] = shapes[enu]
-            #     labels_dict[psq] = labels[enu]
-            #     enu += 1
-            #irrep labels
-            # q2 for values near bound state condition
-            #plt.figure(figsize=(self.alt_params['figwidth'],self.alt_params['figheight']))
             x = {}
             y = {}
             x_range = {}
             y_range = {}
+            e_vals = []
+            if self.alt_params['chi2_energy_compare']:
+                chi2_energy = {}
             for psq in psq_list:
                 x[psq] = {}
                 y[psq] = {}
                 x_range[psq] = {}
                 y_range[psq] = {}
+                if self.alt_params['chi2_energy_compare']:
+                    chi2_energy[psq] = {} 
                 for irrep in self.irreps[channel][psq][0]:
                     x[psq][irrep] = {}
                     y[psq][irrep] = {}
                     x_range[psq][irrep] = {}
                     y_range[psq][irrep] = {}
+                    if self.alt_params['chi2_energy_compare']:
+                        chi2_energy[psq][irrep] = {} 
                     for level in self.irreps[channel][psq][0][irrep]:
                         level_title = f"ecm_{level}_ref"
                         std_deviation = np.std(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
                         x[psq][irrep][level] = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
-                        y[psq][irrep][level]  = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)
+                        if self.alt_params['chi2_energy_compare']:
+                            chi2_energy[psq][irrep][level] = QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma_ave,mb_ave,ref_ave,self.fit_parametrization[channel],self.fit_results[channel])
+                        e_vals.append(self.ecm_average_data[channel][psq][irrep][level_title])
+                        y[psq][irrep][level]  = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)   
                         x_range[psq][irrep][level] = []
                         y_range[psq][irrep][level] = []
                         for en in np.linspace(self.ecm_average_data[channel][psq][irrep][level_title]-std_deviation , self.ecm_average_data[channel][psq][irrep][level_title] +std_deviation , 100):
@@ -470,23 +480,43 @@ class SingleChannelFitMean:
             y_in = [y,y_range]
             ph.PlottingHandler().single_channel_plot( fig_params, channel, irreps, x_in, y_in)
             ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering_Data.pdf'), transparent=True)
-            # for psq in psq_list:
-            #     x_range = []
-            #     y_range = []
-            #     for irrep in self.irreps[channel][psq][0]:
-            #         for level in self.irreps[channel][psq][0][irrep]:
-            #             level_title = f"ecm_{level}_ref"
-            #             std_deviation = np.std(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
-            #             for en in np.linspace(self.ecm_average_data[channel][psq][irrep][level_title]-std_deviation , self.ecm_average_data[channel][psq][irrep][level_title] +std_deviation , 100):
-            # #                 x_range.append(kinematics.q2(en, ma_ave,mb_ave))
-            # #                 y_range.append(kinematics.qcotd(en,self.L,psq,ma_ave,mb_ave,ref_ave))
-            #     plt.plot(x_range, y_range, color="blue", alpha=0.8)  
+            # find min and max of data in energy
+            # ecm_min_value = min(
+            #     self.ecm_average_data[channel][psq][irrep][level]
+            #     for psq in psq_list
+            #     for irrep in self.ecm_average_data[channel][psq]
+            #     for level in self.ecm_average_data[channel][psq][irrep]
+            # )
+            # ecm_max_value = max(
+            #     self.ecm_average_data[channel][psq][irrep][level]
+            #     for psq in psq_list
+            #     for irrep in self.ecm_average_data[channel][psq]
+            #     for level in self.ecm_average_data[channel][psq][irrep]
+            # )
+            ecm_fit_values = np.linspace(min(e_vals)-0.08,max(e_vals)+0.08, 100)            
+            # fit parametrization on top
+            q2_for_fit = []
+            best_fit_line = []
+            for e in ecm_fit_values: # need to change to make q2 automatic
+                q2_for_fit.append( kinematics.q2(e, ma_ave,mb_ave))
+                # ecm = np.sqrt( q2 + ma_ave**2) + np.sqrt( q2 + mb_ave**2 )
+                best_fit_line.append( parametrizations.output(e,ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel]))
+            plt.plot( q2_for_fit,best_fit_line, color='blue', lw=2,ls='--')
+            ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering_fit.pdf'), transparent=True)
             
-            # best_fit_params = self.fit_results[channel]
-            # best_fit_line = []
-            # for q2 in q2_values: # need to change to make q2 automatic
-            #     ecm = np.sqrt( q2 + ma_ave**2) + np.sqrt( q2 + mb_ave**2 )
-            #     best_fit_line.append(parametrizations.ere_delta(ecm,ma_ave, mb_ave,*best_fit_params))
+            if self.alt_params['error_estimation']:
+                pass
+
+            if self.alt_params['chi2_energy_compare']:
+                # add plotting with error here
+                chi_in = [self.ecm_average_data,chi2_energy]
+                ph.PlottingHandler().chi2_energies_compare_plot(fig_params, channel, irreps, chi_in)
+                ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_chi2_energy_compare.pdf'), transparent=True)
+            else:
+                pass
+            
+            
+                # for now no error bars
 
             # vij = self.vnm_matrix[channel] # using best_fit
             # # vec for error estimation is derivative in each parameter of paramerization (ERE_Delta)

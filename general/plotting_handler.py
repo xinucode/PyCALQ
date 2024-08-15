@@ -384,6 +384,32 @@ class PlottingHandler:
     ##### Leuscher Plots ######
     ###########################
     #
+    # compare chi2 results to input energies
+    def chi2_energies_compare_plot(self, fig_params, channel, irreps, x_in):
+        figwidth, figheight = fig_params
+        # channel_1 = str(channel.split(',')[0])
+        # channel_2 = str(channel.split(',')[1])
+        plt.figure(figsize=(figwidth,figheight))
+        # x axis is the irrep
+        data_energies, chi2_energies = x_in
+        # y  is the data, one from data and one from fit
+        x_range= [0,1,2,3]
+        offset = 0.1
+        irrep_list = []
+        total_irrep = 0
+        for psq in irreps:
+                for irrep in irreps[psq][0]:     
+                    irrep_list.append(irrep)
+                    for level in irreps[psq][0][irrep]:
+                        level_title = f"ecm_{level}_ref"
+                        plt.plot(x_range[total_irrep]-offset,data_energies[channel][psq][irrep][level_title],marker='s',markersize=10,color='blue')
+                        plt.plot(x_range[total_irrep]+offset, chi2_energies[psq][irrep][level],marker='s',markersize=10,color='red')
+                        total_irrep += 1
+        # Set the x-ticks using the collected irreps
+        plt.xticks(x_range, irrep_list)
+        plt.ylabel("$E^{*} / m_{\pi}$",fontsize=16)
+
+
     # input can be data files generated, and fit
     # input is shapes_dict, label_dict, 
     # energies is the average energies,
@@ -427,13 +453,13 @@ class PlottingHandler:
         plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
         plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)       
 
-    def parametrization_fit_plot( self,fig_params, channel, irreps, x_in, y_in):
+    def parametrization_fit_plot( self,energies, fit_results, irreps, x_in, y_in):
         figwidth, figheight = fig_params
         channel_1 = str(channel.split(',')[0])
         channel_2 = str(channel.split(',')[1])
         plt.figure(figsize=(figwidth,figheight))
         # CONDITION FOR BOUND STATES 
-        q2_values = np.linspace(-1, 0.0001, 175)
+        q2_values = np.linspace(-1, 0.0001, 120)
         virtual_state = []
         bound_state = []
         for q2 in q2_values:
