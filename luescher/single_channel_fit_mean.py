@@ -114,6 +114,8 @@ class SingleChannelFitMean:
         with open( os.path.join(self.proj_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs}, log_file)
             yaml.dump({"tasks":task_params}, log_file)
+            yaml.dump({"Additional parameters":self.alt_params}, log_file)
+            
 
 
 
@@ -440,11 +442,13 @@ class SingleChannelFitMean:
             ref_ave = self.ref_mass[channel][0]
             psq_list = self.dr.load_psq()
             irreps = self.irreps[channel] 
+            # way to make q2 range, find min and max of e_vals
+            e_vals = []
+            # fit parametrization on top
             x = {}
             y = {}
             x_range = {}
-            y_range = {}
-            e_vals = []
+            y_range = {} 
             if self.alt_params['chi2_energy_compare']:
                 chi2_energy = {}
                 chi2_energy_error = {}
@@ -467,15 +471,16 @@ class SingleChannelFitMean:
                         chi2_energy_error[psq][irrep] = {}
                     for level in self.irreps[channel][psq][0][irrep]:
                         level_title = f"ecm_{level}_ref"
+                        e_vals.append(self.ecm_average_data[channel][psq][irrep][level_title])
                         std_deviation = np.std(self.ecm_bootstrap_data[channel][psq][irrep][level_title])
                         x[psq][irrep][level] = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
                         if self.alt_params['chi2_energy_compare']:
                             chi2_energy[psq][irrep][level] = QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma_ave,mb_ave,ref_ave,self.fit_parametrization[channel],self.fit_results[channel])
                             g = parametrizations.error_output(chi2_energy[psq][irrep][level],ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
                             sigma_f = np.sqrt(np.transpose(g)@self.vnm_matrix[channel]@g) 
+                            # error propagation through \partial E / \partial q
                             pEpq = kinematics.partialE_partialq(kinematics.q2(chi2_energy[psq][irrep][level], ma_ave,mb_ave),ma_ave,mb_ave)
                             chi2_energy_error[psq][irrep][level] = np.sqrt((pEpq * sigma_f)**2)
-                        e_vals.append(self.ecm_average_data[channel][psq][irrep][level_title])
                         y[psq][irrep][level]  = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)   
                         x_range[psq][irrep][level] = []
                         y_range[psq][irrep][level] = []
@@ -501,7 +506,7 @@ class SingleChannelFitMean:
             #     for irrep in self.ecm_average_data[channel][psq]
             #     for level in self.ecm_average_data[channel][psq][irrep]
             # )
-            ecm_fit_values = np.linspace(min(e_vals)-0.08,max(e_vals)+0.08, 100)            
+            ecm_fit_values = np.linspace(min(e_vals)-0.08,max(e_vals)+0.08, 100)
             # fit parametrization on top
             q2_for_fit = []
             best_fit_line = []
@@ -512,7 +517,17 @@ class SingleChannelFitMean:
             plt.plot( q2_for_fit,best_fit_line, color='blue', lw=2,ls='--')
             ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering_fit.pdf'), transparent=True)
             
+            
             if self.alt_params['error_estimation']:
+                # vec for error estimation is derivative in each parameter of paramerization
+                # also want to try numerical derivative
+                # g = parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
+                sigma_f = [np.sqrt(np.transpose(parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])@self.vnm_matrix[channel]@parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])) for q2 in q2_for_fit]
+                upper = np.array(best_fit_line) + np.array(sigma_f)
+                lower = np.array(best_fit_line) - np.array(sigma_f)
+                plt.fill_between(q2_for_fit,lower,upper,alpha = 0.66, color = 'lightblue')
+                ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering_fit_error.pdf'), transparent=True)         
+            else:
                 pass
 
             if self.alt_params['chi2_energy_compare']:
