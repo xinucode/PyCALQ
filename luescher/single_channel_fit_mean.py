@@ -476,6 +476,8 @@ class SingleChannelFitMean:
                         x[psq][irrep][level] = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
                         if self.alt_params['chi2_energy_compare']:
                             chi2_energy[psq][irrep][level] = QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma_ave,mb_ave,ref_ave,self.fit_parametrization[channel],self.fit_results[channel])
+                            with open( self.log_path[channel], 'w+') as log_file:
+                                log_file.write(f"Energies from quantization condition: {chi2_energy}\n")
                             g = parametrizations.error_output(chi2_energy[psq][irrep][level],ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
                             sigma_f = np.sqrt(np.transpose(g)@self.vnm_matrix[channel]@g) 
                             # error propagation through \partial E / \partial q
