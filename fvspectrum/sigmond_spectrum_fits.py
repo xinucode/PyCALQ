@@ -518,6 +518,8 @@ class SigmondSpectrumFits:
                     if single_hadron and hadrons>1:
                         logging.error(f"Interacting correlator '{intop}' in single_hadrons list.")
                     elif single_hadron:
+                        mom = channel.psq #instead of list index, use the channel mom^2
+                        # if mom==0:
                         logging.info(f"Fitting channel '{str(channel)}'...")
                         for i,op in enumerate(operators):
                             
@@ -530,11 +532,18 @@ class SigmondSpectrumFits:
                                 intop = op
                             else:
                                 intop = operator.Operator( channel.getRotatedOp(i) )
-                            logging.info(f"Fitting operator '{str(intop)}'...")
                             single_hadron, sh_list_index = self.get_single_hadron(str(intop))
-                            mom = channel.psq #instead of list index, use the channel mom^2
+                            hadron_string = f"{single_hadron}({mom})"
+
+                            if single_hadron in self.other_params['single_hadrons_ratio']:
+                                single_hadron_operators[sigmond_info.ScatteringParticle.create(hadron_string)] = operator.Operator(self.other_params['single_hadrons_ratio'][single_hadron][sh_list_index])
+                            else:
+                                single_hadron_operators[sigmond_info.ScatteringParticle.create(hadron_string)] = operator.Operator(self.other_params['single_hadrons'][single_hadron][sh_list_index])
                             self.single_hadron_info[f"{single_hadron}({mom})"] = {}
                             self.single_hadron_info[f"{single_hadron}({mom})"]["mom"] = mom
+
+                            # if mom==0:
+                            logging.info(f"\tFitting operator '{str(intop)}'...")
                             if self.default_noninteracting_corr_fit:
                                 this_fit_input = dict(self.default_noninteracting_corr_fit)
                             else:
@@ -546,28 +555,23 @@ class SigmondSpectrumFits:
                                     this_fit_input['model'] = fit_info.FitModel(this_fit_input['model'])
                                     
                             file = self.single_hadron_fit_params_file(repr(channel))
-                            hadron_string = f"{single_hadron}({mom})"
-
                             #do the fit, results stored in self.single_hadron_results and self.tmin_results
                             self.single_hadron_info[hadron_string]["energy_obs"], self.single_hadron_info[hadron_string]["amp_obs"] = self.do_fits( self.single_hadron_results, channel, intop, 
-                                                                                                                                                   this_fit_input, wmode, file, hadrons, self.tmin_results, 
-                                                                                                                                                   self.tmax_results)
+                                                                                                                                                this_fit_input, wmode, file, hadrons, self.tmin_results, 
+                                                                                                                                                self.tmax_results)
                             file_created = True
                             
                             #record important info
                             if self.single_hadron_results[channel][intop]["success"]:
                                 self.single_hadron_info[hadron_string]["ecm"] = self.single_hadron_results[channel][intop]["ecm"].getFullEstimate()
                                 self.single_hadron_info[hadron_string]["ecm_ref"] = self.single_hadron_results[channel][intop]["ecm"].getFullEstimate()
-                                if single_hadron in self.other_params['single_hadrons_ratio']:
-                                    single_hadron_operators[sigmond_info.ScatteringParticle.create(hadron_string)] = operator.Operator(self.other_params['single_hadrons_ratio'][single_hadron][sh_list_index])
-                                else:
-                                    single_hadron_operators[sigmond_info.ScatteringParticle.create(hadron_string)] = self.single_hadron_results[channel][intop]["info"].operator
 
                                 #if successful fit, add to hdf5
                                 samplings = self.mcobs_handler.getFullAndSamplingValues(self.single_hadron_info[hadron_string]["energy_obs"], 
                                                                                 self.project_handler.project_info.sampling_info.getSamplingMode())
                                 sh_levels.create_dataset(hadron_string,data=np.array(samplings.array()))
                                 sh_levels_written = True
+
         logging.info(f"Fit parameters written to {self.single_hadron_fit_params_file()}.")
         if sh_levels_written:
             logging.info(f"Single hadron masses written to {self.spectrum_levels_file()}.")
@@ -581,7 +585,7 @@ class SigmondSpectrumFits:
             logging.info(f"Fitting spectrum...")
             for channel in self.rchannels:
                 self.results[channel] = {}
-                operators = self.data_handler.getChannelOperators(channel)
+                operators = self.data_handler.getChannelOperators2(channel) #collects rotated operators first
                 #determine if its a good channel
                 if len(operators):
                     op = operators[0]
@@ -667,7 +671,7 @@ class SigmondSpectrumFits:
                     self.single_hadron_info[particle]["ecm_ref"] /= ref_ecm
                 
         #compute overlaps
-        if self.other_params['do_interacting_fits']:
+        if self.other_params['do_interacting_fits'] or not self.interacting_channels:
             self.zmags = {}
             if self.other_params["compute_overlaps"]:
                 logging.info(f"Computing overlaps...")
@@ -792,7 +796,7 @@ class SigmondSpectrumFits:
                         level_ordering.sort(key=energy_sort)
                         free_levels = [self.other_params['non_interacting_levels'][str(channel)][level["rotate_level"]] for level in level_ordering]
                         # free_levels = [[[particle.split('(')[0],particle.split('(')[1][:-1]] for particle in level] for level in free_levels]
-                        print(channel, free_levels)
+                        # print(channel, free_levels)
                         irrep_group.attrs['free_levels'] = free_levels
 
                     for i, level in enumerate(level_ordering):
@@ -833,7 +837,7 @@ class SigmondSpectrumFits:
         if os.path.exists(self.spectrum_levels_file()):
             logging.info(f"Final level samplings written to {self.spectrum_levels_file()}.")
 
-        if self.other_params['do_interacting_fits']:
+        if self.other_params['do_interacting_fits'] or not self.interacting_channels:
             #add rotation and ensemble info to all sampling output files
             with h5py.File(self.other_params["pivot_file"]) as pivotfile:
                 rotate_info = pivotfile['Info']['Header'][()]
@@ -848,7 +852,7 @@ class SigmondSpectrumFits:
                         levelsinfo = levelsfile.create_group('Info')
                         levelsinfo.create_dataset('Header', data = rotate_info)
 
-        #write estimates of both single hadrons and spectrum
+        #write estimates of both single hadrons and spectrum #separate into different files or specify sh or interacting, occasionally they have the same channel name. 
         if self.other_params["generate_estimates"]:
             logging.info("Writing estimates to file...")
             out_results = []
@@ -929,6 +933,7 @@ class SigmondSpectrumFits:
                                     "dof": self.tmin_results[channel][op]["fits"][model][tmin]["dof"],
                                 }
                                 if str(channel) in self.other_params['non_interacting_levels']:
+                                    print(channel)
                                     simple_result["dElab value"] = self.tmin_results[channel][op]["fits"][model][tmin]["dElab"].getFullEstimate()
                                     simple_result["dElab error"] = self.tmin_results[channel][op]["fits"][model][tmin]["dElab"].getSymmetricError()
                                     simple_result["non-interacting level"] = self.other_params['non_interacting_levels'][str(channel)][i]
@@ -984,12 +989,15 @@ class SigmondSpectrumFits:
 
         #fit plots
         plh.set_figsize(self.other_params['figwidth'], self.other_params['figheight'])
-        for channel in self.single_hadron_channels+self.interacting_channels:
+        all_channels = [('sh',channel) for channel in self.single_hadron_channels]
+        all_channels += [('int',channel) for channel in self.interacting_channels]
+        for ctype, channel in all_channels:
             results = {}
-            if channel in self.results:
-                results.update(self.results[channel])
-            if channel in self.single_hadron_results:
+            if ctype=='sh':
                 results.update(self.single_hadron_results[channel])
+            else:
+                results.update(self.results[channel])
+
             if results:
                 all_sim_fit_plots[channel] = {}
                 logging.info(f"\tGenerating plots for channel {str(channel)}...")
@@ -1244,14 +1252,14 @@ class SigmondSpectrumFits:
             plh.append_section(str("Single Hadrons"))
             
             entered_interacting_section = False
-            for channel in self.single_hadron_channels+self.interacting_channels:
+            for ctype, channel in all_channels:
                 results = {}
-                if channel in self.results:
-                    results.update(self.results[channel])
-                if channel in self.single_hadron_results:
+                if ctype=='sh':
                     results.update(self.single_hadron_results[channel])
+                else:
+                    results.update(self.results[channel])
                 if results:
-                    if not entered_interacting_section and channel in self.interacting_channels:
+                    if not entered_interacting_section and ctype=='int':
                         plh.append_section(str("Interacting Levels"))
                         entered_interacting_section = True
                     plh.append_subsection(str(channel))
@@ -1276,8 +1284,9 @@ class SigmondSpectrumFits:
                                     plh.include_additional_plots(self.proj_files_handler.corr_fit_series_plot_file( op_name, "elab", "pdf","tmax"),
                                                                 self.proj_files_handler.corr_fit_series_plot_file(op_name,"dElab","pdf","tmax"))
 
-                        if all_sim_fit_plots[channel][op]:
-                            plh.add_plot_series(all_sim_fit_plots[channel][op])
+                        if op in all_sim_fit_plots[channel]:
+                            if all_sim_fit_plots[channel][op]:
+                                plh.add_plot_series(all_sim_fit_plots[channel][op])
                             
                     if self.other_params["compute_overlaps"] and channel in self.interacting_channels:
                         if channel in self.zmags:
