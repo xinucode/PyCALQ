@@ -98,6 +98,16 @@ class PlottingHandler:
         print(f"\t message: {err}")
         latex = False
         matplotlib.rcParams['text.usetex'] = False
+
+    #Fernando's settings
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Computer Modern Roman']
+    plt.rcParams['legend.fancybox'] = False
+    plt.rcParams['legend.shadow'] = False
+    plt.rcParams['legend.framealpha'] = '0.8'
+    plt.rcParams['legend.facecolor'] = 'white'
+    plt.rcParams['legend.edgecolor'] = '0.5'
+    plt.rcParams['legend.fontsize'] = 15.0
  
     plt.clf()
 
@@ -131,9 +141,9 @@ class PlottingHandler:
             text will move around the data accordingly"""
         plt.legend([blank]*len(labels), labels, frameon=False, fancybox=False, framealpha=0.0, shadow=None)
 
-    def correlator_plot(self,df, ptype=0, op1=None, op2=None, color_index = 0):
+    def correlator_plot(self,df, ptype=0, op1=None, op2=None, color_index = 0, label=None):
         """Generate a correlator plot using Matplotlib."""
-        plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index] )
+        plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index] , label=label)
         if ptype==0:
             plt.ylabel(r"$C(t)$") #not all dollar signs require a latex compiler, for example this is okay.
         else:
@@ -156,16 +166,16 @@ class PlottingHandler:
         plt.tight_layout()
 
     def sigmond_corrfit_plot_and_save(self,df, fit_result_info, Nt, ptype=0, op1=None, save_pickle = "", save_pdf = "", 
-                                      sh_index = 0, color_index = 0, new_trange = None):
+                                      sh_index = 0, color_index = 0, new_trange = None, species = None):
         """runs sigmond_corrfit_plot and saves to pickle and/or pdf as desired, 
             if save_pdf or save_pickle are empty, then does not save"""
-        self.sigmond_corrfit_plot(df, fit_result_info, Nt, ptype, op1, sh_index, color_index, new_trange)
+        self.sigmond_corrfit_plot(df, fit_result_info, Nt, ptype, op1, sh_index, color_index, new_trange, species)
         if save_pickle:
             self.save_pickle(save_pickle)
         if save_pdf:
             self.save_pdf(save_pdf)
 
-    def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, sh_index = 0, color_index = 0, new_trange = None):
+    def sigmond_corrfit_plot(self,df, fit_result_info, Nt, ptype=0, op1=None, sh_index = 0, color_index = 0, new_trange = None, species = None):
         """Generate a correlator plot with fit using Matplotlib."""
         labels = []
         plt.errorbar(x=df["aTime"],y=df["FullEstimate"],yerr=df["SymmetricError"], linewidth=0.0, elinewidth=1.5, capsize=5, color=psettings.colors[color_index], marker=psettings.markers[color_index], zorder=1)
@@ -224,17 +234,29 @@ class PlottingHandler:
                 energy_result = fit_result_info["estimates"][energy_index].getFullEstimate()
                 energy_err = fit_result_info["estimates"][energy_index].getSymmetricError()
                 plt.hlines(energy_result, tmin, tmax, color="black", zorder=2)
-                plt.gca().add_patch(patches.Rectangle((tmin, energy_result-energy_err), tmax-tmin, 2.0*energy_err, zorder=0, color="gray"))
-            if self.latex:
-                if fit_result_info["info"].ratio:
-                    yscale = r"$a_t \delta E_{\textup{lab}}$" #the use of "\textup{}" command requires a latex compiler
-                else:
-                    yscale = r"$a_tE_{\textup{lab}}$" 
-            else: 
-                if fit_result_info["info"].ratio:
-                    yscale = r"$a_t \delta E_{lab}$" #unsure if \delta needs latex
-                else:
-                    yscale = r"$a_tE_{lab}$"
+                plt.gca().add_patch(patches.Rectangle((tmin, energy_result-energy_err), tmax-tmin, 2.0*energy_err, zorder=0, color="lightgray"))
+                
+            yscale = "$a_t "
+            if fit_result_info["info"].ratio:
+                yscale+=r"\delta "
+            if species is not None:
+                yscale+=f"m_{{{psettings.latex_format[species].replace('$','')}}}"
+            elif self.latex:
+                yscale+=r"E_{\textup{lab}}"
+            else:
+                yscale+=r"E_{lab}"
+            yscale+="$"
+
+            # if self.latex:
+            #     if fit_result_info["info"].ratio:
+            #         yscale = r"$a_t \delta E_{\textup{lab}}$" #the use of "\textup{}" command requires a latex compiler
+            #     else:
+            #         yscale = r"$a_tE_{\textup{lab}}$" 
+            # else: 
+            #     if fit_result_info["info"].ratio:
+            #         yscale = r"$a_t \delta E_{lab}$" #unsure if \delta needs latex
+            #     else:
+            #         yscale = r"$a_tE_{lab}$"
                     
             plt.ylabel(yscale)
             if fit_result_info["success"]:
@@ -272,27 +294,38 @@ class PlottingHandler:
     #add horizontal bar to plot corresponding to energy value of chosen fit
     def add_chosen_fit(self, energyval, energyerr, label="chosen"):
         """add chosen fit as a horizontal bar to a plot"""
-        plt.axhspan(energyval-energyerr, energyval+energyerr, color="gray")
+        plt.axhspan(energyval-energyerr, energyval+energyerr, color="lightgray")
         plt.axhline(energyval,color="black",ls="--", label=label)
 
     #tmin or tmax or t_whatever plots
-    def finalize_fit_series_plot(self, series_type="min", title=None, ratio=False):
+    def finalize_fit_series_plot(self, series_type="min", title=None, ratio=False, species = None):
         """finalize a tmin or tmax plot"""
-        if self.latex:
-            if ratio:
-                yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
-            else:
-                yscale = r"$a_tE_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
-        else: 
-            if ratio:
-                yscale = r"$a_t \delta E_{lab}$" #unsure if \delta needs latex
-            else:
-                yscale = r"$a_tE_{lab}$"
+        # if self.latex:
+        #     if ratio:
+        #         yscale = r"$a_t \delta E_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
+        #     else:
+        #         yscale = r"$a_tE_{\textup{lab}}$" #but the use of "\textup{}" command requires a latex compiler
+        # else: 
+        #     if ratio:
+        #         yscale = r"$a_t \delta E_{lab}$" #unsure if \delta needs latex
+        #     else:
+        #         yscale = r"$a_tE_{lab}$"
+
+        yscale = "$a "
+        if ratio:
+            yscale+=r"\Delta "
+        if species is not None:
+            yscale+=f"M_{{{psettings.latex_format[species].replace('$','')}}}"
+        elif self.latex:
+            yscale+=r"E_{\textup{lab}}"
+        else:
+            yscale+=r"E_{lab}"
+        yscale+="$"
 
         if self.latex:
-            plt.xlabel(rf"$t_{{\textup{{{series_type}}}}}/a_t$")
+            plt.xlabel(rf"$t_{{\textup{{{series_type}}}}}/a$")
         else:
-            plt.xlabel(rf"$t_{{{series_type}}}/a_t$")
+            plt.xlabel(rf"$t_{{{series_type}}}/a$")
         plt.ylabel(yscale)
         plt.legend(title=title)
         plt.tight_layout()
@@ -371,7 +404,7 @@ class PlottingHandler:
                     else:
                         plt.ylabel(r"$a_t E_{cm}$")
             if label:
-                plt.legend()
+                plt.legend(fontsize=15)
 
     def plot_operator_overlaps(self, values, errors, opname=""):
         """histogram of operator overlaps"""

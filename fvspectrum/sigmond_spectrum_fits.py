@@ -1,7 +1,6 @@
 import logging
 import os
 import yaml
-# import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
 import h5py
@@ -14,13 +13,11 @@ import time
 from multiprocessing import Process
 
 import sigmond
+import fvspectrum.spectrum_plotting_settings.settings as psettings
 import general.plotting_handler as ph
 import fvspectrum.sigmond_util as sigmond_util
 from sigmond_scripts import util as utils
 from sigmond_scripts import operator
-# from sigmond_scripts import data_handler
-# from sigmond_scripts.data_files import DataFiles
-# from sigmond_scripts.correlator_data import CorrelatorData
 from sigmond_scripts import fit_info, sigmond_info, sigmond_input
 
 doc = '''
@@ -1070,7 +1067,7 @@ class SigmondSpectrumFits:
                                 processes[ip].start()
                             ip = sigmond_util.update_process_index(ip,self.project_handler.nodes)
                         else:
-                            plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 1, this_op) #0 for regular corr plot
+                            plh.sigmond_corrfit_plot(df, results[op], self.ensemble_info.getLatticeTimeExtent(), 1) #, this_op) #0 for regular corr plot
 
                             if self.other_params['create_pickles']:
                                 plh.save_pickle(self.proj_files_handler.effen_plot_file( op_name, "pickle"))
@@ -1339,6 +1336,16 @@ class SigmondSpectrumFits:
         else:
             fit_series_results = self.tmax_results
 
+        mom = channel.psq
+        if op.operator_info.isBasicLapH():
+            hadrons = op.operator_info.getBasicLapH().getNumberOfHadrons()
+        else:
+            opname = op.operator_info.getGenIrrep().getIDName()
+            hadrons = count_hadrons(opname) 
+        species = None
+        if mom==0 and hadrons == 1:
+            species, _ = self.get_single_hadron(str(op))
+
         if energy_type in results[op]:
             plh.add_chosen_fit(results[op][energy_type].getFullEstimate(), results[op][energy_type].getSymmetricError())
             for i,model in enumerate(fit_series_results[channel][op]["fits"].keys()):
@@ -1386,7 +1393,14 @@ class SigmondSpectrumFits:
             else: 
                 series_type = "max"
             if not empty_plot:
-                plh.finalize_fit_series_plot(series_type,ratio=(energy_type=="dElab"))
+                label = None
+                if hadrons!=1:
+                    irrep = psettings.latex_format[channel.irrep]
+                    label = f"{irrep}({mom}) level {op.level} "
+                    for sh in self.other_params['non_interacting_levels'][str(channel)][op.level]:
+                        label+=sh.replace(sh.split('(')[0], psettings.latex_format[sh.split('(')[0]])
+
+                plh.finalize_fit_series_plot(series_type,label,ratio=(energy_type=="dElab"),species=species)
                 if self.other_params['create_pickles']:
                     plh.save_pickle(self.proj_files_handler.corr_fit_series_plot_file( op_name, energy_type, "pickle",'t'+series_type))
                 if self.other_params['create_pdfs'] or self.other_params['create_summary']:
