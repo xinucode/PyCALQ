@@ -490,9 +490,10 @@ class SingleChannelFitMean:
                             x_range[psq][irrep][level].append(kinematics.q2(en, ma_ave,mb_ave))
                             y_range[psq][irrep][level].append(kinematics.qcotd(en,self.L,psq,ma_ave,mb_ave,ref_ave))
                         #plt.plot(x, y, marker=shapes_dict[psq], color='blue', label=labels_dict[psq])
-                        # legend_handles.append(Line2D([0], [0], marker=shapes_dict[psq], color='w', markerfacecolor='blue', markersize=10, label=labels_dict[psq]))
+                        #legend_handles.append(Line2D([0], [0], marker=shapes_dict[psq], color='w', markerfacecolor='blue', markersize=10, label=labels_dict[psq]))
             x_in = [x,x_range]
             y_in = [y,y_range]
+            # plotting just the data
             ph.PlottingHandler().single_channel_plot( fig_params, channel, irreps, x_in, y_in)
             ph.PlottingHandler().save_pdf(os.path.join(self.proj_handler.log_dir(), f'{channel}_Scattering_Data.pdf'), transparent=True)
             # find min and max of data in energy
