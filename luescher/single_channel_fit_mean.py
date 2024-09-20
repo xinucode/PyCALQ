@@ -525,7 +525,7 @@ class SingleChannelFitMean:
                 # vec for error estimation is derivative in each parameter of paramerization
                 # also want to try numerical derivative
                 # g = parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
-                sigma_f = [np.sqrt(np.transpose(parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])@self.vnm_matrix[channel]@parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])) for q2 in q2_for_fit]
+                sigma_f = [np.sqrt(np.transpose(parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])@self.vnm_matrix[channel]@parametrizations.error_output(kinematics.q2toecm(q2,ma_ave, mb_ave),ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel]))) for q2 in q2_for_fit]
                 upper = np.array(best_fit_line) + np.array(sigma_f)
                 lower = np.array(best_fit_line) - np.array(sigma_f)
                 plt.fill_between(q2_for_fit,lower,upper,alpha = 0.66, color = 'lightblue')
