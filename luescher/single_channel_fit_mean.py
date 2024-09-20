@@ -439,7 +439,10 @@ class SingleChannelFitMean:
             ma, mb = self.m_ref_dict[channel]  
             ma_ave = ma[0]
             mb_ave = mb[0]
+            ma_bs = ma[1:]
+            mb_bs = mb[1:]
             ref_ave = self.ref_mass[channel][0]
+            ref_bs = self.ref_mass[channel][1:]
             psq_list = self.dr.load_psq()
             irreps = self.irreps[channel] 
             # way to make q2 range, find min and max of e_vals
@@ -476,21 +479,22 @@ class SingleChannelFitMean:
                         x[psq][irrep][level] = kinematics.q2(self.ecm_average_data[channel][psq][irrep][level_title], ma_ave,mb_ave)
                         if self.alt_params['chi2_energy_compare']:
                             chi2_energy[psq][irrep][level] = QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma_ave,mb_ave,ref_ave,self.fit_parametrization[channel],self.fit_results[channel])
-                            with open( self.log_path[channel], 'w+') as log_file:
-                                log_file.write(f"Energies from quantization condition: {chi2_energy}\n")
                             g = parametrizations.error_output(chi2_energy[psq][irrep][level],ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
                             sigma_f = np.sqrt(np.transpose(g)@self.vnm_matrix[channel]@g) 
                             # error propagation through \partial E / \partial q
                             pEpq = kinematics.partialE_partialq(kinematics.q2(chi2_energy[psq][irrep][level], ma_ave,mb_ave),ma_ave,mb_ave)
                             chi2_energy_error[psq][irrep][level] = np.sqrt((pEpq * sigma_f)**2)
+                            with open( self.log_path[channel], 'w+') as log_file:
+                                log_file.write(f"Energies from quantization condition: {psq},{irrep},{level}: {chi2_energy[psq][irrep][level] }( {chi2_energy_error[psq][irrep][level]})\n")
                         y[psq][irrep][level]  = kinematics.qcotd(self.ecm_average_data[channel][psq][irrep][level_title],self.L,psq,ma_ave,mb_ave,ref_ave)   
                         x_range[psq][irrep][level] = []
                         y_range[psq][irrep][level] = []
-                        for en in np.linspace(self.ecm_average_data[channel][psq][irrep][level_title]-std_deviation , self.ecm_average_data[channel][psq][irrep][level_title] +std_deviation , 100):
-                            x_range[psq][irrep][level].append(kinematics.q2(en, ma_ave,mb_ave))
-                            y_range[psq][irrep][level].append(kinematics.qcotd(en,self.L,psq,ma_ave,mb_ave,ref_ave))
-                        #plt.plot(x, y, marker=shapes_dict[psq], color='blue', label=labels_dict[psq])
-                        #legend_handles.append(Line2D([0], [0], marker=shapes_dict[psq], color='w', markerfacecolor='blue', markersize=10, label=labels_dict[psq]))
+                        # self.ecm_bootstrap_data[channel][psq][irrep][level_title]
+                        for j in  range(len(self.ecm_bootstrap_data[channel][psq][irrep][level_title])):
+                            en_j = self.ecm_bootstrap_data[channel][psq][irrep][level_title][j]
+                            x_range[psq][irrep][level].append(kinematics.q2(en_j, ma_bs[j],mb_bs[j]))
+                            y_range[psq][irrep][level].append(kinematics.qcotd(en_j,self.L,psq,ma_bs[j],mb_bs[j],ref_bs[j]))
+
             x_in = [x,x_range]
             y_in = [y,y_range]
             # plotting just the data
