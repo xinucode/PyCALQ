@@ -447,34 +447,8 @@ class PlottingHandler:
                             label = f"${irrep[0]}$"
                         color = colors[level_count]                   
                         level_count += 1
-                        # Arrays initialization and shifting
-                        q2_0 = np.array(x[psq][irrep][level])
-                        q2_bs = np.array(x_range[psq][irrep][level])
-                        qcotd_0 = np.array(y[psq][irrep][level])
-                        qcotd_bs = np.array(y_range[psq][irrep][level])
-
-                        # Shift bootstrap distribution to match mean of q2_0 and qcotd_0
-                        d_q2 = q2_bs - q2_bs.mean()
-                        q2_bs = d_q2 + q2_0
-                        d_qcotd = qcotd_bs - qcotd_bs.mean()
-                        qcotd_bs = d_qcotd + qcotd_0
-
-                        # Sort the arrays before slicing
-                        q_sort = np.argsort(q2_bs)  # Sort indices based on q2_bs
-                        q2_bs = q2_bs[q_sort]
-                        qcotd_bs = qcotd_bs[q_sort]
-
-                        # Compute the indices for 16th and 84th percentiles
-                        i_16 = int(len(q2_bs) * 0.16)  # index for 16th percentile
-                        i_84 = int(len(q2_bs) * 0.84)  # index for 84th percentile
-
-                        # Extract the middle 68% of the data
-                        q2_bs_middle = q2_bs[i_16:i_84]
-                        qcotd_bs_middle = qcotd_bs[i_16:i_84]
-                        #spline = interp1d(q2_bs[q_sort][i_16:i_84], qcotd_bs[q_sort][i_16:i_84], kind='linear')
-                        plt.plot(q2_bs_middle,qcotd_bs_middle, color=color, alpha=0.75)
-                        #plt.plot(x_range[psq][irrep][level], y_range[psq][irrep][level], color=color, alpha=0.75)
-                        plt.plot(q2_0, qcotd_0 , marker=marker, color=color, label=label)
+                        plt.plot(x_range[psq][irrep][level], y_range[psq][irrep][level], color=color, alpha=0.75)
+                        plt.plot(x[psq][irrep][level],y[psq][irrep][level] , marker=marker, color=color, label=label)
                         legend_handles.append(Line2D([0], [0], marker=marker,color=color, markerfacecolor=color, markersize=10,  label=label))
         plt.axhline(y=0,color='black')
         plt.axvline(x=0,color='black')
