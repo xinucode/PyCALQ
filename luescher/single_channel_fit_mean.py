@@ -79,9 +79,10 @@ class SingleChannelFitMean:
             'error_estimation': True,
             'chi2_energy_compare': True,
             'error_bars_number_of_sigma': 1,
+            'ERE_report': False #flag for varying ERE and providing report 
         }
-        self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
 
+        self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
         #hadron list
         self.single_hadron_list = np.array(self.dr.single_hadron_list())
         print(self.single_hadron_list)
@@ -390,9 +391,10 @@ class SingleChannelFitMean:
             if self.alt_params['error_estimation']:
                 self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
             current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open( self.log_path[channel], 'w+') as log_file:
+            with open( self.log_path[channel], 'a') as log_file:
                 log_file.write(f"Log date and time: {current_time}\n")
                 log_file.write(f"Ensemble: {self.ensemble_info}\n")
+                log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 log_file.write(f"Fit results for Scattering channel: {channel}\n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 log_file.write(f"Irreps analyzed: {self.irreps[channel]} \n")
@@ -402,8 +404,10 @@ class SingleChannelFitMean:
                 log_file.write(f"{average_fit_results }\n")
                 log_file.write(f"\n")
                 log_file.write(f"Covariance Matrix: {self.covariance_matrix[channel]} \n")
+                log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 if self.alt_params['error_estimation']:
                     log_file.write(f"V_nm (estimated uncertainty in parameters): {self.vnm_matrix[channel]} \n")
+                    log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
         #self.best_fit = average_fit()
         # self.vnm_matrix = vij(self.best_fit)
@@ -488,7 +492,7 @@ class SingleChannelFitMean:
                             # error propagation through \partial E / \partial q
                             pEpq = kinematics.partialE_partialq(kinematics.q2(chi2_energy[psq][irrep][level], ma_ave,mb_ave),ma_ave,mb_ave)
                             chi2_energy_error[psq][irrep][level] = np.sqrt((pEpq * sigma_f)**2)
-                            with open( self.log_path[channel], 'w+') as log_file:
+                            with open( self.log_path[channel], 'a') as log_file:
                                 log_file.write(f"Energies from quantization condition: {psq},{irrep},{level}: {chi2_energy[psq][irrep][level] }( {chi2_energy_error[psq][irrep][level]})\n")
                         
                         bs_data_q2 = []
