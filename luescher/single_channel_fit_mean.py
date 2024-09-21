@@ -470,9 +470,11 @@ class SingleChannelFitMean:
                     y[psq][irrep] = {}
                     x_range[psq][irrep] = {}
                     y_range[psq][irrep] = {}
+                    #########################################
                     if self.alt_params['chi2_energy_compare']:
                         chi2_energy[psq][irrep] = {} 
                         chi2_energy_error[psq][irrep] = {}
+                    #########################################
                     for level in self.irreps[channel][psq][0][irrep]:
                         level_title = f"ecm_{level}_ref"
                         e_vals.append(self.ecm_average_data[channel][psq][irrep][level_title])
@@ -489,57 +491,40 @@ class SingleChannelFitMean:
                             with open( self.log_path[channel], 'w+') as log_file:
                                 log_file.write(f"Energies from quantization condition: {psq},{irrep},{level}: {chi2_energy[psq][irrep][level] }( {chi2_energy_error[psq][irrep][level]})\n")
                         
-                        #x_range[psq][irrep][level] = []
-                        #y_range[psq][irrep][level] = []
-                        energy_1sigma = []
-                        energy_bs = self.ecm_bootstrap_data[channel][psq][irrep][level_title]
-                        nbs = len(energy_bs)
-                        d_ene = energy_bs - energ_bs.mean()
-                        energy_bs = d_ene + x[psq][irrep][level]
-                        ene_sort = np.argsort(energy_bs)
-                        energy_bs = energy_bs[ene_sort]
-                        i_16 = int(len(energy_bs) * 0.16)  # index for 16th percentile
-                        i_84 = int(len(energy_bs) * 0.84)  # index for 84th percentile
-                        energy_bs_middle = energy_bs[i_16:i_84]
-                        for ene in np.linspace(min(energy_bs_middle),max(energy_bs_middle),100):
-                            x_range[psq][irrep][level].append()
-                            y_range[psq][irrep][level].append()
-
-                        # bs_data_q2 = []
-                        # bs_data_pcotd = []
+                        bs_data_q2 = []
+                        bs_data_pcotd = []
                         
-                        # for j in range(len(self.ecm_bootstrap_data[channel][psq][irrep][level_title])): 
-                        #     # assuming using all bs samples, need to create option to do a subset
-                        #     en_j = self.ecm_bootstrap_data[channel][psq][irrep][level_title][j]
-                        #     bs_data_q2.append(kinematics.q2(en_j, ma_bs[j],mb_bs[j]))
-                        #     bs_data_pcotd.append(kinematics.qcotd(en_j,self.L,psq,ma_bs[j],mb_bs[j],ref_bs[j]))
-                        # q2_0 = np.array(x[psq][irrep][level])
-                        # q2_bs = np.array(bs_data_q2)
-                        # qcotd_0 = np.array(y[psq][irrep][level])
-                        # qcotd_bs = np.array(bs_data_pcotd)
-                        # # Shift bootstrap distribution to match mean of q2_0 and qcotd_0
-                        # d_q2 = q2_bs - q2_bs.mean()
-                        # q2_bs = d_q2 + q2_0
-                        # d_qcotd = qcotd_bs - qcotd_bs.mean()
-                        # qcotd_bs = d_qcotd + qcotd_0
-                        # # Sort the arrays before slicing
-                        # q_sort = np.argsort(q2_bs)  # Sort indices based on q2_bs
-                        # q2_bs = q2_bs[q_sort]
-                        # qcotd_bs = qcotd_bs[q_sort]
-                        # # Compute the indices for 16th and 84th percentiles
-                        # i_16 = int(len(q2_bs) * 0.16)  # index for 16th percentile
-                        # i_84 = int(len(q2_bs) * 0.84)  # index for 84th percentile
-                        # # Extract the middle 68% of the data
-                        # q2_bs_middle = q2_bs[i_16:i_84]
-                        # qcotd_bs_middle = qcotd_bs[i_16:i_84]
-                        # x_range[psq][irrep][level] = sorted(q2_bs_middle)
-                        # y_range[psq][irrep][level] = sorted(qcotd_bs_middle)
-                        for z in np.linspace(min(q2_bs_middle),max(q2_bs_middle),100): 
-                            x_range[psq][irrep][level].append(z)
-                            energy_com_z = np.sqrt( z + m)
-                            y_range[psq][irrep][level].append()
-                            #x_range[psq][irrep][level].append(kinematics.q2(en_j, ma_bs[j],mb_bs[j]))
-                            #y_range[psq][irrep][level].append(kinematics.qcotd(en_j,self.L,psq,ma_bs[j],mb_bs[j],ref_bs[j]))       
+                        for j in range(len(self.ecm_bootstrap_data[channel][psq][irrep][level_title])): 
+                            # assuming using all bs samples, need to create option to do a subset
+                            en_j = self.ecm_bootstrap_data[channel][psq][irrep][level_title][j]
+                            bs_data_q2.append(kinematics.q2(en_j, ma_bs[j],mb_bs[j]))
+                            bs_data_pcotd.append(kinematics.qcotd(en_j,self.L,psq,ma_bs[j],mb_bs[j],ref_bs[j]))
+                        q2_0 = np.array(x[psq][irrep][level])
+                        q2_bs = np.array(bs_data_q2)
+                        qcotd_0 = np.array(y[psq][irrep][level])
+                        qcotd_bs = np.array(bs_data_pcotd)
+                        # Shift bootstrap distribution to match mean of q2_0 and qcotd_0
+                        d_q2 = q2_bs - q2_bs.mean()
+                        q2_bs = d_q2 + q2_0
+                        d_qcotd = qcotd_bs - qcotd_bs.mean()
+                        qcotd_bs = d_qcotd + qcotd_0
+                        # Sort the arrays before slicing
+                        q_sort = np.argsort(q2_bs)  # Sort indices based on q2_bs
+                        q2_bs = q2_bs[q_sort]
+                        qcotd_bs = qcotd_bs[q_sort]
+                        # Compute the indices for 16th and 84th percentiles
+                        i_16 = int(len(q2_bs) * 0.16)  # index for 16th percentile
+                        i_84 = int(len(q2_bs) * 0.84)  # index for 84th percentile
+                        # Extract the middle 68% of the data
+                        q2_bs_middle = q2_bs[i_16:i_84]
+                        qcotd_bs_middle = qcotd_bs[i_16:i_84]
+                        # now add it to the plot for average data
+                        x_range[psq][irrep][level] = []
+                        y_range[psq][irrep][level] = []
+                        for q2_x in np.linspace(min(q2_bs_middle),max(q2_bs_middle),100):
+                            ene = kinematics.q2toecm(q2_x,ma_ave,mb_ave)
+                            x_range[psq][irrep][level].append( kinematics.q2(ene, ma_ave,mb_ave))
+                            y_range[psq][irrep][level].append(kinematics.qcotd(ene,self.L,psq,ma_ave,mb_ave,ref_ave))  
             x_in = [x,x_range]
             y_in = [y,y_range]
             # plotting just the data
