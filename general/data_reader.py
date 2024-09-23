@@ -60,6 +60,25 @@ class LQCD_DATA_READER:
         # else:
         #     pass
     # Continue with reading the file using h5py
+    # def load_data(self):
+    #     # Open the H5py file and load the data
+    #     self.data = h5.File(self.file_path,'r')
+    #     self.channel = "iso0.5_S0"
+    #     # #check the channel name, retrieve if one is available
+    #     # if self.channel==None:
+    #     #     available_channels = list(self.data.keys())
+    #     #     available_channels.remove('single_hadrons')
+    #     #     if len(available_channels)==1:
+    #     #         self.channel = available_channels[0]
+    #     #     elif len(available_channels)>1:
+    #     #         logging.critical(f"Too many channels in input file, please define a channel using 'isospin' and 'strangeness' parameters.")
+    #     #     else:
+    #     #         logging.critical(f"No channels available in input data file.")
+    #     # else:
+    #     #     if self.channel not in self.data.keys():
+    #     #         logging.critical(f"Channel {self.channel} not found in file {self.file_path}. Please correct name or data file.")
+
+    #     return self.data
 
     def load_data(self):
         # Open the H5py file and load the data
@@ -72,7 +91,12 @@ class LQCD_DATA_READER:
             if len(available_channels)==1:
                 self.channel = available_channels[0]
             elif len(available_channels)>1:
-                logging.critical(f"Too many channels in input file, please define a channel using 'isospin' and 'strangeness' parameters.")
+                for key in available_channels:
+                    if not key.startswith('iso'):
+                        available_channels.remove(key)
+                self.channel = available_channels[0]
+                #logging.critical(f"Too many channels in input file, please define a channel using 'isospin' and 'strangeness' parameters.")
+                # modify to catch the key if it exists
             else:
                 logging.critical(f"No channels available in input data file.")
         else:
