@@ -46,7 +46,7 @@ class SingleChannelFitMean:
     
 
     def __init__( self, task_name, proj_handler, general_configs, task_params ):
-        print("Task parameters:",task_params)
+        logging.info(f"Task parameters: {task_params}")
         self.proj_handler = proj_handler 
         self.task_name = task_name
         # if not task_configs:
@@ -61,14 +61,15 @@ class SingleChannelFitMean:
         # retrieve data
         self.dr = dr.LQCD_DATA_READER(file_path,self.L) # data reader is object dr
         self.data = self.dr.load_data()
-        logging.info("Data loaded")
-
 
         # check that data from Hf file is real
         if not self.data:
             logging.critical(f"Ensure data has been generated for '{task_name}' to continue single-channel analysis.")
+        else:
+            logging.info("Data loaded")
 
         self.alt_params = {
+            'verbose':True,
             'write_data': True,
             'create_pdfs': True,
             'plot': True,
@@ -77,15 +78,38 @@ class SingleChannelFitMean:
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
             'delta_E_covariance':True,
             'error_estimation': True,
-            'chi2_energy_compare': True,
+            'chi2_energy_compare':True,
             'error_bars_number_of_sigma': 1,
-            'ERE_report': False #flag for varying ERE and providing report 
+            'ERE_report': False, #flag for varying ERE and providing report 
+            'parametrization': 'ERE_npi_Eq12'
         }
+        if self.alt_params['verbose']:
+            logging.info(f"Alternate params: {self.alt_params}")
 
         self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
         #hadron list
         self.single_hadron_list = np.array(self.dr.single_hadron_list())
-        print(self.single_hadron_list)
+        if self.alt_params['verbose']:
+            logging.info(f'Single hadron list from hdf5: {self.single_hadron_list}')
+        if self.alt_params['verbose']:
+            logging.info("HDF5 Channel Structure")  
+            channels = []
+            for key in self.data.keys():
+                if key.startswith('iso'):
+                    channels.append(key)
+            for key in channels:
+                for sub in self.data[key].keys():
+                    logging.info('keys_level1')
+                    logging.info(sub)
+                    logging.info(self.data[key][sub])
+                    for subsub in self.data[key][sub]:
+                        logging.info('keys_level2')
+                        logging.info(subsub)
+                        logging.info(self.data[key][sub][subsub])
+                
+
+                
+
         # generate list of channels
         self.channel = []
         self.irreps = {}
@@ -93,14 +117,23 @@ class SingleChannelFitMean:
         for channel in self.channels_and_irreps:
             self.channel.append(channel)
             self.irreps[channel] = self.channels_and_irreps[channel]
-            if self.alt_params.get('parametrization') or task_params.get('parametrization'):
+            if self.alt_params.get('parametrization'):
+                self.fit_parametrization[channel] = self.alt_params['parametrization']
+            elif task_params.get('parametrization'):
                 self.fit_parametrization[channel] = task_params['parametrization']
             else:
                 # automatic param is delta ERE for now
-                self.fit_parametrization[channel] = 'ERE_delta'
-                logging.info('Parametrization not chosen. Default is Effective Range Expansion (ERE)')
-        print('channels',self.channel)
-        print("irreps",self.irreps)
+                if self.alt_params['delta_E_covariance']:
+                    self.fit_parametrization[channel] = 'ERE_delta'
+                    logging.info(f'Parametrization not specified. Default is {self.fit_parametrization[channel]}')
+                else:
+                    self.fit_parametrization[channel] = 'ERE'
+                    logging.info(f'Parametrization not specified. Default is {self.fit_parametrization[channel]}')
+        if self.alt_params['verbose']:
+            logging.info(f'channels from tasks: {self.channel}')
+            logging.info(f"irreps from tasks: {self.irreps}")
+   
+
         for channel in self.channel:
             #print(channel)
             channel_1 = str(channel.split(',')[0])
@@ -159,6 +192,16 @@ class SingleChannelFitMean:
             self.psq_list[channel] = self.dr.load_psq()
             self.log_path[channel] = os.path.join(self.proj_handler.log_dir(), f'luescher_{channel_1}_{channel_2}_log.txt')
 
+        # check if Psq is not needed in analysis
+        if self.channels_and_irreps:
+            for channel in self.channel:
+                psq_input_keys = list(self.channels_and_irreps[channel].keys())
+                for psq in self.psq_list[channel]:
+                    if not np.any(np.isin( psq_input_keys,psq)):
+                        self.psq_list[channel].remove(psq)
+                        if self.alt_params['verbose']:
+                            logging.info(f"Not using Psq {psq} data from fit by task params")   
+
         self.ecm_data = {} # save possible data
         self.ecm_average_data = {}
         self.ecm_bootstrap_data = {}
@@ -188,27 +231,12 @@ class SingleChannelFitMean:
                             level_title = f"ecm_{level}"
                             logging.critical("Need non-ref energies from data reader")
 
-        def energy_shift_data(channel):
-                
+        def energy_shift_data(channel):        
             ecm_data = self.ecm_bootstrap_data[channel]
-
             #Sarah
             mref = np.array(self.ref_mass[channel])[1:] #np.array(self.dr.single_hadron_data('ref'))[1:]
-            # m1_ref,m2_ref = self.m_ref_dict[channel]
-            # m1_ref = m1_ref[1:]
-            # m2_ref = m2_ref[1:]
-            # m1_ref = np.array(self.dr.single_hadron_data(self.channel_1))
-            # m2_ref = np.array(self.dr.single_hadron_data(self.channel_2))
             channel_1 = str(channel.split(',')[0])
             channel_2 = str(channel.split(',')[1])
-           # mapping for masses
-        #    mass_map = {}
-        #    for 
-        #     mass_map = {
-        #         get_particle_name(channel_1): m1_ref[1:],
-        #         get_particle_name(channel_2): m2_ref[1:],
-        #         #get_particle_name(channel_2): m2_ref[1:],
-        #     }
             def extract_values(input_str):
                 # Find the position of the opening and closing parentheses
                 open_paren = input_str.find('(')
@@ -234,7 +262,6 @@ class SingleChannelFitMean:
                     ecmfree = np.sqrt(elab**2 - psq*(2*math.pi/(l))**2) 
                     dE = ecm - ecmfree
                 return dE
-
             data_list = []
             for psq in self.psq_list[channel]:
                 for irrep in self.irreps[channel][psq][0]:
@@ -296,7 +323,7 @@ class SingleChannelFitMean:
             return value
 
         def average_fit(channel): #~~~ returning the mean bootstrap sample fit 
-            result = minimize(chi2,x0=[0.01,0.7],args=(channel),method='nelder-mead')
+            result = minimize(chi2,x0=[0.8],args=(channel),method='nelder-mead')
             #print(result)
             return result#[result.x[0],result.x[1]]
     
@@ -337,7 +364,7 @@ class SingleChannelFitMean:
                 
                 lmat.append(np.array(dl))
             lmat = np.array(lmat)
-    
+            print(lmat)
             Vnm = np.linalg.inv(lmat@np.linalg.inv(self.covariance_matrix[channel])@np.transpose(lmat))
             
             return Vnm
@@ -391,7 +418,7 @@ class SingleChannelFitMean:
             if self.alt_params['error_estimation']:
                 self.vnm_matrix[channel] = vij(channel,self.fit_results[channel])
             current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open( self.log_path[channel], 'a') as log_file:
+            with open( self.log_path[channel], 'w+') as log_file:
                 log_file.write(f"Log date and time: {current_time}\n")
                 log_file.write(f"Ensemble: {self.ensemble_info}\n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
@@ -401,12 +428,16 @@ class SingleChannelFitMean:
                 log_file.write(f"Average data: {self.ecm_average_data[channel]} \n")
                 log_file.write(f"Parametrization used: {self.fit_parametrization[channel]}\n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-                log_file.write(f"{average_fit_results }\n")
+                if self.alt_params['verbose']:
+                    logging.info(f"Fit results: {average_fit_results}")
+                log_file.write(f"Number of parameters: { len(self.fit_results[channel])}\n")
+                log_file.write(f"{ self.fit_results[channel]}\n")
                 log_file.write(f"\n")
                 log_file.write(f"Covariance Matrix: {self.covariance_matrix[channel]} \n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 if self.alt_params['error_estimation']:
                     log_file.write(f"V_nm (estimated uncertainty in parameters): {self.vnm_matrix[channel]} \n")
+                    log_file.write(f"Error in each parameter (sqrt of diagonal of V_nm): {np.sqrt( np.diag(self.vnm_matrix[channel]))}")
                     log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
         #self.best_fit = average_fit()
@@ -448,7 +479,7 @@ class SingleChannelFitMean:
             mb_bs = mb[1:]
             ref_ave = self.ref_mass[channel][0]
             ref_bs = self.ref_mass[channel][1:]
-            psq_list = self.dr.load_psq()
+            psq_list = self.psq_list[channel]
             irreps = self.irreps[channel] 
             # way to make q2 range, find min and max of e_vals
             e_vals = []
@@ -469,7 +500,7 @@ class SingleChannelFitMean:
                 if self.alt_params['chi2_energy_compare']:
                     chi2_energy[psq] = {} 
                     chi2_energy_error[psq] = {}
-                for irrep in self.irreps[channel][psq][0]:
+                for irrep in irreps[psq][0]:
                     x[psq][irrep] = {}
                     y[psq][irrep] = {}
                     x_range[psq][irrep] = {}
@@ -488,6 +519,7 @@ class SingleChannelFitMean:
                         if self.alt_params['chi2_energy_compare']:
                             chi2_energy[psq][irrep][level] = QC1(self.ecm_average_data[channel][psq][irrep][level_title],psq,ma_ave,mb_ave,ref_ave,self.fit_parametrization[channel],self.fit_results[channel])
                             g = parametrizations.error_output(chi2_energy[psq][irrep][level],ma_ave,mb_ave,self.fit_parametrization[channel],self.fit_results[channel])
+                            print("g",g)
                             sigma_f = np.sqrt(np.transpose(g)@self.vnm_matrix[channel]@g) 
                             # error propagation through \partial E / \partial q
                             pEpq = kinematics.partialE_partialq(kinematics.q2(chi2_energy[psq][irrep][level], ma_ave,mb_ave),ma_ave,mb_ave)
