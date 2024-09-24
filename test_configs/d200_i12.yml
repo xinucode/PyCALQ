@@ -1,0 +1,26 @@
+tasks:
+  # preview_corrs: 
+  #   raw_data_files: 
+  #     - /home/jomo/nucleon_S0.bin
+  # average_corrs:
+  #   raw_data_files: 
+  #     - /latticeQCD/raid3/ahanlon/data/cls21_c103/updated_stats/sigmond.fwd/cls21_c103/nucleon_S0.bin
+  - single_channel_fit:
+      data_file: /home/jomo/fit_spectrum_levels-Nbin10-SP-4tN-8t0-16tD_B-samplings (1).hdf5
+      #irreps : {['pi(0)_ref','S(0)_ref'] : {'PSQ0':[{'G1u':[0]}],'PSQ1':[{'G1':[1]}],'PSQ2':[{'G':[1]}],'PSQ3':[{'G':[1]}]}}
+      channels:
+        'N(0)_ref,pi(0)_ref':
+          PSQ0: 
+            - G1u: [0]
+          PSQ1: 
+            - G1: [1]
+          PSQ2: 
+            - G: [1]
+          PSQ3: 
+            - G: [1]
+      # channel: ['pi(0)_ref','S(0)_ref'] #'Sigma','Pi'
+      # irreps : [{'PSQ0':['G1u'],'PSQ1':['G1'],'PSQ2':['G'],'PSQ3':['G']}
+        #['G1u','G1','G','G']
+
+       
+
