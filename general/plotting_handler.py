@@ -434,10 +434,12 @@ class PlottingHandler:
         legend_handles = []
         x, x_range = x_in
         y, y_range = y_in
+        shape_count = 0
         for psq in irreps:
                 irrep_count = 0
                 for irrep in irreps[psq][0]:
-                    marker = shapes[irrep_count]
+                    marker = shapes[shape_count]
+                    shape_count += 1
                     irrep_count += 1
                     level_count = 0
                     for level in irreps[psq][0][irrep]:
