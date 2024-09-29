@@ -429,7 +429,15 @@ class PlottingHandler:
         for q2 in q2_values:
             virtual_state.append(cmath.sqrt(-q2))
             bound_state.append(cmath.sqrt(q2))
-        shapes = ['o','s','D','v']
+        markers = ['o', 's', '^', 'D', 'v', '*']
+        shapes = []
+        marker_to_shape = 0
+        for psq in irreps:
+            for irrep in irreps[psq][0]:
+                shapes.append(markers[marker_to_shape])
+                marker_to_shape += 1
+
+        #shapes = ['o','s','D','v',]
         colors = ['tab:blue','firebrick','green','purple']
         legend_handles = []
         x, x_range = x_in

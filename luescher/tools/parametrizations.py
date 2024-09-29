@@ -31,8 +31,17 @@ def delta_Sp(ecm,ma,mb):
 def ere_delta(ecm,ma,mb,a,b):
     return (ecm)*(a+b*delta_Sp(ecm,ma,mb))
 
+# parametrizations from N pi paper
+# s-wave parametrization (LO)
 def ere_npi12(ecm,A):
     return ecm/A
+# NLO
+# 2 BW parameters
+def ere_NLO_npi11(ecm,q2,m_delta,g_delta):
+    # assumed to be in mpi units
+    prefactor = (1/q2)*(6 * math.pi * ecm) / (g_delta**2)
+    return prefactor * ( m_delta**2 - ecm**2 )
+
 
 # # fit ere expansion
 # def ere(ecm,ma,mb,a,b):

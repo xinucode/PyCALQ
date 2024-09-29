@@ -1,5 +1,5 @@
 general:
-    project_dir: /home/jomo/Pytest/d200
+    project_dir: /home/jomo/Pytest/d200_i32
     ensemble_id: cls21_s64_t128_D200
 
       

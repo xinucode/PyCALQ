@@ -78,25 +78,26 @@ class SingleChannelFitMean:
             'ref_energies' : True, #trigger for using reference energies in analysis, currently default and support is TRUE
             'delta_E_covariance':True,
             'error_estimation': True,
-            'chi2_energy_compare':True,
+            'chi2_energy_compare':False,
             'error_bars_number_of_sigma': 1,
             'ERE_report': False, #flag for varying ERE and providing report 
             'parametrization': 'ERE_npi_Eq12'
         }
         if self.alt_params['verbose']:
             logging.info(f"Alternate params: {self.alt_params}")
-
-        self.channels_and_irreps = task_params['channels']#self.alt_params['irreps']
+        self.isospin_strangeness = task_params['channel']
+        self.channels_and_irreps = task_params['scattering']#self.alt_params['irreps']
         #hadron list
         self.single_hadron_list = np.array(self.dr.single_hadron_list())
         if self.alt_params['verbose']:
             logging.info(f'Single hadron list from hdf5: {self.single_hadron_list}')
         if self.alt_params['verbose']:
-            logging.info("HDF5 Channel Structure")  
+            logging.info("HDF5 Channel Structure") 
             channels = []
             for key in self.data.keys():
                 if key.startswith('iso'):
                     channels.append(key)
+                    logging.info(f"Channel available:{key}")
             for key in channels:
                 for sub in self.data[key].keys():
                     logging.info('keys_level1')
@@ -323,7 +324,7 @@ class SingleChannelFitMean:
             return value
 
         def average_fit(channel): #~~~ returning the mean bootstrap sample fit 
-            result = minimize(chi2,x0=[0.8],args=(channel),method='nelder-mead')
+            result = minimize(chi2,x0=[4],args=(channel),method='nelder-mead')
             #print(result)
             return result#[result.x[0],result.x[1]]
     
@@ -364,7 +365,6 @@ class SingleChannelFitMean:
                 
                 lmat.append(np.array(dl))
             lmat = np.array(lmat)
-            print(lmat)
             Vnm = np.linalg.inv(lmat@np.linalg.inv(self.covariance_matrix[channel])@np.transpose(lmat))
             
             return Vnm
@@ -422,15 +422,16 @@ class SingleChannelFitMean:
                 log_file.write(f"Log date and time: {current_time}\n")
                 log_file.write(f"Ensemble: {self.ensemble_info}\n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-                log_file.write(f"Fit results for Scattering channel: {channel}\n")
-                log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 log_file.write(f"Irreps analyzed: {self.irreps[channel]} \n")
                 log_file.write(f"Average data: {self.ecm_average_data[channel]} \n")
                 log_file.write(f"Parametrization used: {self.fit_parametrization[channel]}\n")
                 log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 if self.alt_params['verbose']:
                     logging.info(f"Fit results: {average_fit_results}")
+                log_file.write(f"Fit results for Scattering channel: {channel}\n")
+                log_file.write(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 log_file.write(f"Number of parameters: { len(self.fit_results[channel])}\n")
+                log_file.write(f"Chi2: {average_fit_results.fun}\n")
                 log_file.write(f"{ self.fit_results[channel]}\n")
                 log_file.write(f"\n")
                 log_file.write(f"Covariance Matrix: {self.covariance_matrix[channel]} \n")
