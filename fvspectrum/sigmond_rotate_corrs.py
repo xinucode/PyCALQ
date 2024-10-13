@@ -5,6 +5,7 @@ import yaml
 import pandas as pd
 import tqdm
 from multiprocessing import Process
+import h5py
 
 import sigmond
 import fvspectrum.sigmond_util as sigmond_util
@@ -60,7 +61,10 @@ class SigmondRotateCorrs:
         return doc
         
     #data file for rotated data, samplings or bins
-    def rotated_corrs_file( self, binned, channel = None ): #add rotation info, and then average info  
+    def rotated_corrs_file( self, binned, channel = None, index = None ): #add rotation info, and then average info  
+        run_tag = self.other_params['run_tag']
+        if index is not None:
+            run_tag += f"-{index}"
         if self.project_handler.project_info.sampling_info.isJackknifeMode():
             sampling_mode = 'J'
         else:
@@ -70,11 +74,13 @@ class SigmondRotateCorrs:
             rotate_type = 'RP'
         return self.proj_file_handler.samplings_file(binned, channel, None, 
                                                      self.project_handler.project_info.bins_info.getRebinFactor(),
-                                                     sampling_mode, rotate_type, self.tN, self.t0, self.tD)
+                                                     sampling_mode, rotate_type, self.tN, self.t0, self.tD, run_tag)
         
     #data file for saving pivot information
-    def pivot_file(self, channel=None):      
+    def pivot_file(self, channel=None, index = None):      
         run_tag = self.other_params['run_tag']
+        if index is not None:
+            run_tag += f"-{index}"
         if self.project_handler.project_info.sampling_info.isJackknifeMode():
             sampling_mode = 'J'
         else:
@@ -119,7 +125,7 @@ class SigmondRotateCorrs:
             'rotate_by_samplings': True,
             'pivot_type': 0, #0 - single; 1 - rolling
             'precompute': True,
-            'max_condition_number': 50,
+            'max_condition_number': 150,
             'used_averaged_bins': True, #otherwise samplings
             'omit_operators': [],
             'run_tag' : ""
@@ -178,6 +184,7 @@ class SigmondRotateCorrs:
         with open( os.path.join(proj_file_handler.log_dir(), 'full_input.yml'), 'w+') as log_file:
             yaml.dump({"general":general_configs, task_name: task_configs}, log_file)
 
+
     def run( self ):
         if self.other_params['pivot_type']==0:
             pivot_string = 'single_pivot'
@@ -192,13 +199,14 @@ class SigmondRotateCorrs:
         if nodes==1:
             chunked_channels = [[self.channels]]
         else:
-            chunk_size = math.ceil(len(final_channels)/nodes)
-            chunk_size = chunk_size if chunk_size<=len(final_channels) else len(final_channels)
-            chunked_channels = [final_channels[i:i + chunk_size] for i in range(0, len(final_channels), chunk_size)]
+            chunked_channels = []
+            if len(final_channels)>0:
+                chunk_size = math.ceil(len(final_channels)/nodes)
+                chunk_size = chunk_size if chunk_size<=len(final_channels) else len(final_channels)
+                chunked_channels = [final_channels[i:i + chunk_size] for i in range(0, len(final_channels), chunk_size)]
             chunked_channels.insert(0,[initial_channel])
 
         task_inputs = []
-        file_created = False
         self.nlevels = {}
         skip_channels = []
 
@@ -217,9 +225,9 @@ class SigmondRotateCorrs:
                 self.other_params['precompute'],
                 None,
             )
-            il+=1
             
             #loop through channels, set up sigmond input
+            file_created = False
             for channel in channels:
                 if self.other_params['tmax']==None and self.other_params['tmin']==None:
                     self.other_params['tmin'], self.other_params['tmax'] = self.data_handler.getChannelsLargestTRange(channel)
@@ -260,13 +268,14 @@ class SigmondRotateCorrs:
                     operator.Operator( channel.getRotatedOp() ),
                     self.other_params['tmin'],
                     self.other_params['tmax'],
-                    rotated_corrs_filename=self.rotated_corrs_file(not self.other_params['rotate_by_samplings'],repr(channel)),
+                    rotated_corrs_filename=self.rotated_corrs_file(not self.other_params['rotate_by_samplings'],repr(channel),il),
                     file_mode=wmode,
-                    pivot_filename=self.pivot_file(repr(channel)),
+                    pivot_filename=self.pivot_file(repr(channel),il),
                     pivot_overwrite=overwrite,
                 )
                 file_created = True
             task_inputs.append(task_input)
+            il+=1
 
         #remove channels with less than two operators
         for channel in skip_channels:
@@ -305,6 +314,28 @@ class SigmondRotateCorrs:
 
         del taskhandlers
 
+        #combine datafiles
+        with h5py.File(self.rotated_corrs_file(not self.other_params['rotate_by_samplings']),'w') as datafile:
+            with h5py.File(self.pivot_file(),'w') as pivotfile:
+                for i in range(il):
+                    if os.path.exists(self.rotated_corrs_file(not self.other_params['rotate_by_samplings'],None,i)):
+                        with h5py.File(self.rotated_corrs_file(not self.other_params['rotate_by_samplings'],None,i),'r') as datafilei:
+                            # datafilei.flush()
+                            if i==0:
+                                datafilei.copy(datafilei["Info"], datafile["/"], "Info")
+                            for channel in self.channels:
+                                if repr(channel) in datafilei.keys():
+                                    datafilei.copy(datafilei[repr(channel)], datafile["/"], repr(channel))
+                        os.remove(self.rotated_corrs_file(not self.other_params['rotate_by_samplings'],None,i))
+                    if os.path.exists(self.pivot_file(None,i)):
+                        with h5py.File(self.pivot_file(None,i),'r') as pivotfilei:
+                            if i==0:
+                                pivotfilei.copy(pivotfilei["Info"], pivotfile["/"], "Info")
+                            for channel in self.channels:
+                                if repr(channel) in pivotfilei.keys():
+                                    pivotfilei.copy(pivotfilei[repr(channel)], pivotfile["/"], repr(channel))
+                        os.remove(self.pivot_file(None,i))
+
         #check that output files were generated
         logging.info(f"Sigmond input file written to {os.path.join(self.proj_file_handler.log_dir(),'sigmond_rotation_input.xml')}")
         if os.path.isfile(self.pivot_file()):
@@ -315,8 +346,18 @@ class SigmondRotateCorrs:
             self.other_params['plot'] = False
         logging.info(f"Log file(s) written to {self.sigmond_rotation_log('*')}")
 
-        #generate estimates for writing to file and/or plotting
         if os.path.isfile(self.rotated_corrs_file(not self.other_params['rotate_by_samplings'])):
+            #combine and add info to both pivot and data files
+            with h5py.File(self.rotated_corrs_file(not self.other_params['rotate_by_samplings']),'r+') as datafile:
+                with h5py.File(self.pivot_file(),'r+') as pivotfile:
+                    dataheader = datafile[repr(self.channels[0])]['Header'][()]
+                    pivotheader = pivotfile[repr(self.channels[0])]['Header'][()]
+                    datainfo = datafile['Info']
+                    pivotinfo = pivotfile['Info']
+                    datainfo.create_dataset('Header',data=dataheader+pivotheader)
+                    pivotinfo.create_dataset('Header',data=dataheader+pivotheader)
+
+            #generate estimates for writing to file and/or plotting
             if self.other_params['plot'] or self.other_params['generate_estimates']:
                 self.project_handler.add_rotated_data([self.rotated_corrs_file(not self.other_params['rotate_by_samplings'])])
                 mcobs_handler, mcobs_get_handler = sigmond_util.get_mcobs_handlers(self.data_handler,self.project_handler.project_info)
@@ -428,7 +469,7 @@ class SigmondRotateCorrs:
                         
             #compile summary file
             plh.compile_pdf(self.proj_file_handler.summary_file()) 
-            logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.")
+            logging.info(f"Summary file saved to {self.proj_file_handler.summary_file()}.pdf.")
         
     #generates matplotlib plots for a set of channels
     def generate_channel_plots(self,channels,plh):
@@ -444,6 +485,16 @@ class SigmondRotateCorrs:
                 rop2 = operator.Operator( channel.getRotatedOp(j) )
                 corr = sigmond.CorrelatorInfo(rop1.operator_info,rop2.operator_info)
                 corr_name = repr(corr).replace(" ","-")
+
+                plot_files = [
+                    self.proj_file_handler.corr_plot_file( corr_name, "pickle"),
+                    self.proj_file_handler.corr_plot_file( corr_name, "pdf"),
+                    self.proj_file_handler.effen_plot_file( corr_name, "pickle"),
+                    self.proj_file_handler.effen_plot_file(corr_name, "pdf")
+                ]
+                for file in plot_files:
+                    if os.path.exists(file):
+                        os.remove(file)
 
                 if not self.other_params['generate_estimates']:
                     df = self.rotated_estimates[str(channel)][corr]["corr"]

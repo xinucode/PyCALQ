@@ -176,6 +176,7 @@ Short descriptions of unique task inputs:
 - erase_original_matrix_from_memory - (bool) if true, saves memory in the sigmond calculation by erasing
                                         the original matrices from memory once added to the sum for averaging
 - ignore_missing_correlators - (bool) if true, alert and end program if correlators are missing from a given correlator matrix
+- run_tag - (str) user defined tag to add to resulting data file names
 - separate_mom - (bool) if true, separates final data and summaries by momentum
 
 See universal and common task input description for info regarding all other inputs. 
@@ -227,7 +228,6 @@ Unique task input descriptions:
 - omit_operators - (list) list of operators to omit from their channel's pivot
 - precompute - (bool) Specifies whether the bootstrap samples should be precomputed (within sigmond)
 - rotate_by_samplings - (bool) if true, generates samples and the rotates by samples. If false, rotates by bins
-- run_tag - (str) user defined tag to add to resulting data file names
 - used_averaged_bins - (bool) if true, if the program must search the project directory for averaged data, then
                         will look for bins files. If false looks for averaged sampling files
 
@@ -310,7 +310,8 @@ Task Input:
     plot: true                            #not required #default true
     precompute: true                      #not required #default true
     rotated_input_correlators_dir:        #not required #automatically taken from project if not given
-    run_tag: ""                           #not required #default "" #should correspond to rotate run_tag
+    run_tag: ""                           #not required #default "" 
+    rotate_run_tag: ""                    #not required #default "" #should correspond to rotate run_tag
     thresholds:                           #not required #default [] #replace "sh1" and "sh2" with user given names
     - [sh1, sh2]
     ...
@@ -343,6 +344,13 @@ Unique task input descriptions:
 - compute_overlaps - (bool) if true, computes the operator overlaps will be computed and possibly plotted. If false, no calculations are made.
 - correlated - (bool) if true, uses correlated fits. If false, does uncorrelated fits. 
 - do_interacting_fits - (bool) if true, does interacting correlator fits. If false, skips those fits
+- rotate_run_tag - (str) user-defined unique tag associated with input rotated data files. Not combined to spectrum run_tag
+- minimizer_info - (dict) determines the minimizer to use and various minimization settings
+  - chisquare_rel_tol - (float) determines the precicion to which the chi square is calculated        
+  - max_iterations - (int) determines the max number of iterations the minimizer performs
+  - minimizer - (str) determines which minimizer to use, available options are 'lmder' (sigmond) or 'scipy' (python)
+  - parameter_rel_tol - (float) determines the precision that the parameters are computed to
+  - verbosity - (str) determines how much output the fitter will produce in log file (broken?)
 
 ### Compare Spectrums
 Using the fit results of the fit_spectrum task, plots
@@ -462,3 +470,13 @@ class Task(Enum): #encode tasks into enum
 ```
 
 Then, open `pycalq.py` and add the task to `DEFAULT_TASKS`, `TASK_MAP`, and `TASK_DOC` in the same manner as the current tasks. If the task uses sigmond mcobshandler to manage data and memory, add the task to `SIGMOND_TASKS` and update the `dependencies` and `raw_data_dependence` variables at the top of `fvspectrum/sigmond_project_handler.py` accordingly.
+
+
+## To Do
+
+Items that need to be fixed:
+ - Spectrum task: the estimates for interacting and noninteracting need to be separated because they occasionally have the same channel name. 
+ - spectrum task: the fits to nonzero momentum single hadrons do not need to be calculated unless calculating the operator overlaps. if operator overlaps are turned off, then do not calculate these fits. 
+
+Desired updates:
+ - internal setup for slurm or other scheduler systems

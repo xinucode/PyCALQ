@@ -396,6 +396,297 @@ def sigmond_fit( task_input, fitop, minimizer_configs, fit_configs,
 
     return this_fit_info, best_fit_results, chisqr, qual, dof
 
+def betterchisqrdof(better_one, worst_one):
+    if worst_one>2.0:
+        if better_one<worst_one:
+            return True
+        else:
+            return False
+
+    if better_one<1.0:
+        better_one = 1.0/better_one
+    if worst_one<1.0:
+        worst_one = 1.0/worst_one
+
+    if better_one<worst_one:
+        return True
+    else:
+        return False
+
+#use the minimizer lmder in sigmond for fitting; very fast
+def sigmond_multi_exp_fit( task_input, fitop, minimizer_configs, fit_configs, 
+                mcobs_handler, sampling_info, subvev, logfile, delete_samplings = False):
+
+    #minimizer info
+    this_minimizer_info = sigmond_info.getMinimizerInfo(minimizer_configs)
+    fit_options = {
+        'minimizer_info': this_minimizer_info,
+        'sampling_mode': sampling_info,
+    }
+
+    nlevels = 3
+    max_chisqr = 1.5
+    buffer_time = 3; conflate_factor = 2.0
+
+    tot_best_chisqrdof = [1000000]*nlevels
+    tot_best_tmin = [-1]*nlevels
+    tot_best_estimates = [[]]*nlevels
+    tot_level = 0
+
+    for tmax in range(fit_configs['tmax'], fit_configs['tmax']-10, -1):
+        best_chisqrdof = [max_chisqr]*nlevels
+        best_tmin = [-1]*nlevels
+        best_estimates = [[]]*nlevels
+        tmin_max = tmax-buffer_time
+        stability_region = [False]*nlevels
+
+        for level in range(nlevels):
+            old_fit_result = None
+            these_priors = {}
+            initial_params = []
+            if best_tmin[level]>=0 and best_chisqrdof[level]<=max_chisqr:
+                initial_params = [est.getFullEstimate() for est in best_estimates[level]]
+            # if level>=1:
+            #     these_priors['FirstEnergy'] = {
+            #         'Mean': best_estimates[level-1][0].getFullEstimate(),
+            #         'Error': conflate_factor*best_estimates[level-1][0].getSymmetricError(),
+            #     }
+            #     these_priors['FirstAmplitude'] = {
+            #         'Mean': best_estimates[level-1][0].getFullEstimate(),
+            #         'Error': conflate_factor*best_estimates[level-1][1].getSymmetricError(),
+            #     }
+            if level>=2:
+                these_priors['SqrtGapToSecondEnergy'] = {
+                    'Mean': best_estimates[level-1][2].getFullEstimate(),
+                    'Error': conflate_factor*best_estimates[level-1][2].getSymmetricError(),
+                }
+                # initial_params = [est.getFullEstimate() for est in best_estimates[level-1]]
+                # initial_params += [2.0*best_estimates[level-1][2].getFullEstimate(), 1.0]
+            if level >= 3:
+                these_priors['SqrtGapToThirdEnergy'] = {
+                    'Mean': best_estimates[level-1][4].getFullEstimate(),
+                    'Error': conflate_factor*best_estimates[level-1][4].getSymmetricError(),
+                }
+
+            # min_chisqr = 1000000
+            # min_chisqr_fit = None
+            # min_chisqr_tmin = 30
+            stable_min_chisqr = 1000000
+            stable_min_chisqr_fit = None
+            stable_min_chisqr_tmin = 30
+            for tmin in range(fit_configs['tmin'], tmin_max):
+                delete_samplings = True
+                this_fit_info = fit_info.FitInfo( 
+                    fitop,
+                    fit_info.FitModel(f'{level+1}-exp'),
+                    tmin,
+                    fit_configs['tmax'],
+                    subvev,
+                    False,
+                    fit_configs['exclude_times'],
+                    fit_configs['noise_cutoff'],
+                    fit_configs['non_interacting_operators'],
+                    -1,
+                    -1,
+                    sim_fit = False,
+                    priors = these_priors,
+                )
+                fittype = "TemporalCorrelatorFit"
+
+                task_input.clearTasks()
+                task_input.doTemporalCorrelatorFit(this_fit_info,**fit_options) #add input for ni level priors
+
+                task_xml = task_input.sigmondXML
+                if delete_samplings:
+                    dummy_map = {}
+                    for i,(name,index) in enumerate(zip(task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/Name'),task_xml.findall(f'TaskSequence/Task/{fittype}/Model/*/IDIndex'))):
+                        if (name.text,index.text) not in dummy_map:
+                            dummy_map[(name.text,index.text)] = ("dummy", str(i))
+                            name.text = "dummy"
+                            index.text = str(i)
+                        else:
+                            name.text,  index.text = dummy_map[(name.text,index.text)]
+                        param = sigmond.MCObsInfo(name.text,int(index.text))
+                        mcobs_handler.eraseSamplings(param)
+                    if fit_configs['sim_fit']:
+                        task_xml.find(f'TaskSequence/Task/FinalEnergy/Name').text = "dummy"
+                        task_xml.find(f'TaskSequence/Task/FinalEnergy/IDIndex').text = "0"
+                        task_xml.find(f'TaskSequence/Task/FinalAmplitude/Name').text = "dummy"
+                        task_xml.find(f'TaskSequence/Task/FinalAmplitude/IDIndex').text = "1"
+            
+                setuptaskhandler = sigmond.XMLHandler()
+                setuptaskhandler.set_from_string(task_input.to_str())
+                fit_xml_tag = "TemporalCorrelatorFit"
+                fitxml = sigmond.XMLHandler(setuptaskhandler,fit_xml_tag)
+                RTC = sigmond.RealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+                chisqr = 0.0
+                qual = 0.0
+                log_xml = sigmond.XMLHandler("FitLogFile")
+                if initial_params:
+                    RTC.getModel().set_initial_parameters(initial_params)
+
+                try:
+                    best_fit_results = sigmond.doChiSquareFitting(RTC, this_minimizer_info, chisqr, qual, log_xml)
+                    btmin = tmin
+                    log_xml.seek_unique("ChiSquarePerDof")
+                    bchisqr = float(log_xml.get_text_content())
+                except Exception as err:
+                    continue
+
+                new_fit_result = best_fit_results[this_fit_info.energy_index]
+                if old_fit_result is not None and not stability_region[level]:
+                    diff = abs(old_fit_result.getFullEstimate() - new_fit_result.getFullEstimate())
+                    averr = max(old_fit_result.getSymmetricError(), new_fit_result.getSymmetricError())
+                    if diff<averr:
+                        stability_region[level] = True
+                
+                log_xml.seek_unique("DegreesOfFreedom")
+                dof = int(log_xml.get_text_content())
+                log_xml.seek_unique("ChiSquarePerDof")
+                chisqr = float(log_xml.get_text_content())
+                log_xml.seek_unique("FitQuality")
+                qual = float(log_xml.get_text_content())
+
+                # if betterchisqrdof(chisqr, best_chisqrdof[level]) and (stability_region[level] or tmin==fit_configs['tmin']):
+
+                if betterchisqrdof(chisqr, best_chisqrdof[level]) and (stability_region[level] or tmin==fit_configs['tmin']):
+                    best_chisqrdof[level] = chisqr
+                    best_tmin[level] = tmin
+                    best_estimates[level] = best_fit_results[:]
+
+                if (stability_region[level] or tmin==fit_configs['tmin']) and (betterchisqrdof(chisqr, stable_min_chisqr)):
+                    stable_min_chisqr = chisqr
+                    stable_min_chisqr_tmin = tmin
+                    stable_min_chisqr_fit = best_fit_results[:]
+                # elif betterchisqrdof(chisqr, min_chisqr):
+                #     min_chisqr = chisqr
+                #     min_chisqr_tmin = tmin
+                #     min_chisqr_fit = best_fit_results
+
+                print(level, stability_region[level], tmin, tmax, chisqr, best_tmin[level], best_chisqrdof[level], 
+                        best_fit_results[0].getFullEstimate(),best_fit_results[0].getSymmetricError())
+                old_fit_result = best_fit_results[this_fit_info.energy_index]
+
+            if not stability_region[level]:
+                best_chisqrdof[level] = bchisqr
+                best_tmin[level] = btmin
+                best_estimates[level] = best_fit_results[:]
+            elif best_tmin[level]<0:
+                best_chisqrdof[level] = stable_min_chisqr
+                best_tmin[level] = stable_min_chisqr_tmin
+                best_estimates[level] = stable_min_chisqr_fit[:]
+
+            if best_tmin[level]>=0:
+                print(level, [est.getFullEstimate() for est in best_estimates[level]])
+
+            tmin_max = best_tmin[level]-buffer_time
+            if tmin_max<fit_configs['tmin']:
+                tmin_max = fit_configs['tmin']
+            if best_tmin[level]==fit_configs['tmin']:
+                print("tmin = 2 break", best_tmin[level],fit_configs['tmin'])
+                break
+                # break
+            
+
+        #pick out successful level
+        # for level in range(nlevels-1,-1,-1):
+        # if not stability_region[nlevels-1]:
+        #     best_chisqrdof[nlevels-1] = bchisqr
+        #     best_tmin[nlevels-1] = btmin
+        #     best_estimates[nlevels-1] = best_fit_results[:]
+        # elif best_tmin[nlevels-1]<0:
+        #     best_chisqrdof[nlevels-1] = stable_min_chisqr
+        #     best_tmin[nlevels-1] = stable_min_chisqr_tmin
+        #     best_estimates[nlevels-1] = stable_min_chisqr_fit[:]
+            # raise RuntimeError(f"No {nlevels}-exp fit could be found.")
+
+        if betterchisqrdof(best_chisqrdof[nlevels-1], max_chisqr):
+            tot_best_chisqrdof = best_chisqrdof[:]
+            tot_best_estimates = best_estimates[:]
+            tot_best_tmin = best_tmin[:]
+            tot_level = level
+            break
+
+        if not betterchisqrdof(best_chisqrdof[nlevels-1], tot_best_chisqrdof[nlevels-1]):
+            tmax += 1
+            break
+        else:
+            tot_best_chisqrdof = best_chisqrdof[:]
+            tot_best_estimates = best_estimates[:]
+            tot_best_tmin = best_tmin[:]
+            tot_level = level
+
+
+    these_priors = {}
+    # if level>=1:
+    #     these_priors['FirstEnergy'] = {
+    #         'Mean': tot_best_estimates[level-1][0].getFullEstimate(),
+    #         'Error': conflate_factor*tot_best_estimates[level-1][0].getSymmetricError(),
+    #     }
+    #     these_priors['FirstAmplitude'] = {
+    #         'Mean': tot_best_estimates[level-1][0].getFullEstimate(),
+    #         'Error': conflate_factor*tot_best_estimates[level-1][1].getSymmetricError(),
+    #     }
+    if tot_level>=2:
+        these_priors['SqrtGapToSecondEnergy'] = {
+            'Mean': tot_best_estimates[level-1][2].getFullEstimate(),
+            'Error': conflate_factor*tot_best_estimates[level-1][2].getSymmetricError(),
+        }
+    if tot_level >= 3:
+        these_priors['SqrtGapToThirdEnergy'] = {
+            'Mean': tot_best_estimates[level-1][4].getFullEstimate(),
+            'Error': conflate_factor*tot_best_estimates[level-1][4].getSymmetricError(),
+        }
+    # print(tot_best_tmin[level],tmax)
+    this_fit_info = fit_info.FitInfo( 
+        fitop,
+        fit_info.FitModel(f'{tot_level+1}-exp'),
+        tot_best_tmin[tot_level],
+        tmax,
+        subvev,
+        False,
+        fit_configs['exclude_times'],
+        fit_configs['noise_cutoff'],
+        fit_configs['non_interacting_operators'],
+        -1,
+        -1,
+        sim_fit = False,
+        priors = these_priors,
+    )
+    fittype = "TemporalCorrelatorFit"
+
+    task_input.clearTasks()
+    task_input.doTemporalCorrelatorFit(this_fit_info,**fit_options) #add input for ni level priors
+
+    task_xml = task_input.sigmondXML
+
+    setuptaskhandler = sigmond.XMLHandler()
+    setuptaskhandler.set_from_string(task_input.to_str())
+    fit_xml_tag = "TemporalCorrelatorFit"
+    fitxml = sigmond.XMLHandler(setuptaskhandler,fit_xml_tag)
+    RTC = sigmond.RealTemporalCorrelatorFit(fitxml,mcobs_handler,0)
+    chisqr = 0.0
+    qual = 0.0
+    log_xml = sigmond.XMLHandler("FitLogFile")
+
+    try:
+        best_fit_results = sigmond.doChiSquareFitting(RTC, this_minimizer_info, chisqr, qual, log_xml)
+    except Exception as err:
+        f = open(logfile,"w+")
+        f.write(log_xml.output(1))
+        f.close()
+        logging.info(f"Fit Log written to '{logfile}'.")
+        raise RuntimeError(err)
+    
+    log_xml.seek_unique("DegreesOfFreedom")
+    dof = int(log_xml.get_text_content())
+    log_xml.seek_unique("ChiSquarePerDof")
+    chisqr = float(log_xml.get_text_content())
+    log_xml.seek_unique("FitQuality")
+    qual = float(log_xml.get_text_content())
+
+    return this_fit_info, best_fit_results, chisqr, qual, dof
+
 #use python minimizers to fit; very slow, set up for parallel
 def scipy_fit(fitop, minimizer_configs, fit_configs, 
                 mcobs_handler, subvev, herm, Nt, 
@@ -928,3 +1219,4 @@ def bootstrap_error_by_array( array ):
     sigmaB = np.sqrt(sigmaB/(len(samples)-1))
     return sigmaB
 
+# def generate_ideal_correlators( file, mcobs, n, )

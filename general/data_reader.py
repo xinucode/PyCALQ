@@ -88,6 +88,7 @@ class LQCD_DATA_READER:
         if self.channel==None:
             available_channels = list(self.data.keys())
             available_channels.remove('single_hadrons')
+            available_channels.remove('Info')
             if len(available_channels)==1:
                 self.channel = available_channels[0]
             elif len(available_channels)>1:
@@ -154,6 +155,7 @@ class LQCD_DATA_READER:
         # particle_mom = self.data[self.channel][mom][irr].attrs['free_levels'][level] #pi(0)
         # particle, mom = particle_mom.split('(') #pi, 0)
         # mom = mom[:-1] #0
+        # level = f"ecm_{level}_ref"
         return self.data[self.channel][mom][irr].attrs['free_levels'][level]
     
     # def energy_data_bootstrap_samples(self,PSQ,Irrep,level): 
