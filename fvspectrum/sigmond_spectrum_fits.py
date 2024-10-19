@@ -350,64 +350,66 @@ class SigmondSpectrumFits:
         #add datafiles to data handler object
         self.project_handler.add_averaged_data(averaged_data_files)
 
-        #set up filetag for single pivot vs rolling pivot
-        rotate_type = self.other_params['pivot_type']
-        if self.other_params['pivot_type']!="*":
+        if self.other_params['do_interacting_fits']:
+            #set up filetag for single pivot vs rolling pivot
+            rotate_type = self.other_params['pivot_type']
+            if self.other_params['pivot_type']!="*":
+                rotate_type = 'SP'
+                if self.other_params['pivot_type']:
+                    rotate_type = 'RP'
+                
+            #use datafiles that were input, otherwise search this project
+            rotated_data_files = []
+            if 'rotated_input_correlators_dir' in task_configs:
+                if type(task_configs['rotated_input_correlators_dir'])==list:
+                    rotated_data_files=task_configs['rotated_input_correlators_dir']
+                else:
+                    rotated_data_files.append(task_configs['rotated_input_correlators_dir'])
+                    
+            else:
+                #if not given, use the given gevp info to find the most recent file that matches the given info in the project
+                rotated_data_files = self.proj_files_handler.get_rotated_data(not self.other_params['use_rotated_samplings'],
+                                                                            self.project_handler.project_info.bins_info.getRebinFactor(), #sigmond_util.get_selected_mom(task_configs),
+                                                                            rotate_type, self.tN, self.t0, self.tD, sampling_mode, self.other_params['rotate_run_tag'])
+                rotated_data_files.sort(key=os.path.getmtime)
+                rotated_data_files = [rotated_data_files[-1]]
+
+                pattern= self.proj_files_handler.all_tasks[tm.Task.rotate_corrs.name].samplings_file(not self.other_params['use_rotated_samplings'], 
+                                                        None, None, self.project_handler.project_info.bins_info.getRebinFactor(),sampling_mode, 
+                                                        "(?<pivot>\S+)", "(?<tN>[0-9]+)", "(?<t0>[0-9]+)", "(?<tD>[0-9]+)", self.other_params['rotate_run_tag'])
+                match = regex.search(pattern, rotated_data_files[0])
+                if match:
+                    match = match.groupdict()
+                    self.tN = match['tN']
+                    self.t0 = match['t0']
+                    self.tD = match['tD']
+                    if match['pivot']=='SP':
+                        self.other_params['pivot_type']=0
+                    elif match['pivot']=='RP':
+                        self.other_params['pivot_type']=1
+                    task_configs['tN'] = self.tN
+                    task_configs['t0'] = self.t0
+                    task_configs['tD'] = self.tD
+                    task_configs['pivot_type'] = self.other_params['pivot_type']
+
+            if self.other_params['pivot_type']=='*' or self.tN=='*' or self.t0=='*' or self.tD=='*':
+                        logging.critical(f"Could not find the appropriate rotate file '{rotated_data_files[0]}'.")
+
+            #set up filetag for single pivot vs rolling pivot
             rotate_type = 'SP'
             if self.other_params['pivot_type']:
                 rotate_type = 'RP'
             
-        #use datafiles that were input, otherwise search this project
-        rotated_data_files = []
-        if 'rotated_input_correlators_dir' in task_configs:
-            if type(task_configs['rotated_input_correlators_dir'])==list:
-                rotated_data_files=task_configs['rotated_input_correlators_dir']
-            else:
-                rotated_data_files.append(task_configs['rotated_input_correlators_dir'])
-        else:
-            #if not given, use the given gevp info to find the most recent file that matches the given info in the project
-            rotated_data_files = self.proj_files_handler.get_rotated_data(not self.other_params['use_rotated_samplings'],
-                                                                           self.project_handler.project_info.bins_info.getRebinFactor(), #sigmond_util.get_selected_mom(task_configs),
-                                                                           rotate_type, self.tN, self.t0, self.tD, sampling_mode, self.other_params['rotate_run_tag'])
-            rotated_data_files.sort(key=os.path.getmtime)
-            rotated_data_files = [rotated_data_files[-1]]
+            #add datafiles to data handler object
+            self.project_handler.add_rotated_data(rotated_data_files)
 
-            pattern= self.proj_files_handler.all_tasks[tm.Task.rotate_corrs.name].samplings_file(not self.other_params['use_rotated_samplings'], 
-                                                    None, None, self.project_handler.project_info.bins_info.getRebinFactor(),sampling_mode, 
-                                                    "(?<pivot>\S+)", "(?<tN>[0-9]+)", "(?<t0>[0-9]+)", "(?<tD>[0-9]+)", self.other_params['rotate_run_tag'])
-            match = regex.search(pattern, rotated_data_files[0])
-            if match:
-                match = match.groupdict()
-                self.tN = match['tN']
-                self.t0 = match['t0']
-                self.tD = match['tD']
-                if match['pivot']=='SP':
-                    self.other_params['pivot_type']=0
-                elif match['pivot']=='RP':
-                    self.other_params['pivot_type']=1
-                task_configs['tN'] = self.tN
-                task_configs['t0'] = self.t0
-                task_configs['tD'] = self.tD
-                task_configs['pivot_type'] = self.other_params['pivot_type']
-
-        if self.other_params['pivot_type']=='*' or self.tN=='*' or self.t0=='*' or self.tD=='*':
-            logging.critical(f"Could not find the appropriate rotate file '{rotated_data_files[0]}'.")
-
-        #set up filetag for single pivot vs rolling pivot
-        rotate_type = 'SP'
-        if self.other_params['pivot_type']:
-            rotate_type = 'RP'
-        
-        #add datafiles to data handler object
-        self.project_handler.add_rotated_data(rotated_data_files)
-
-        #get pivot file if one if not given -> need to fix for multiple rotations
-        if self.other_params["pivot_file"]==None: #
-            self.other_params["pivot_file"] = self.proj_files_handler.pivot_file(rotate_type, self.tN, self.t0, self.tD, self.other_params['rotate_run_tag'],
-                                                                                 self.project_handler.project_info.bins_info.getRebinFactor(),
-                                                                                 sampling_mode)
-            task_configs["pivot_file"] = self.other_params["pivot_file"]
-
+            #get pivot file if one if not given -> need to fix for multiple rotations
+            if self.other_params["pivot_file"]==None: #
+                self.other_params["pivot_file"] = self.proj_files_handler.pivot_file(rotate_type, self.tN, self.t0, self.tD, self.other_params['rotate_run_tag'],
+                                                                                    self.project_handler.project_info.bins_info.getRebinFactor(),
+                                                                                    sampling_mode)
+                task_configs["pivot_file"] = self.other_params["pivot_file"]
+                
         #get single hadron channels in a list
         self.single_hadron_channels = []
         for sh in self.other_params['single_hadrons']:
@@ -671,7 +673,7 @@ class SigmondSpectrumFits:
                     self.single_hadron_info[particle]["ecm_ref"] /= ref_ecm
                 
         #compute overlaps
-        if self.other_params['do_interacting_fits'] or not self.interacting_channels:
+        if self.other_params['do_interacting_fits'] or self.interacting_channels:
             self.zmags = {}
             if self.other_params["compute_overlaps"]:
                 logging.info(f"Computing overlaps...")
@@ -837,7 +839,7 @@ class SigmondSpectrumFits:
         if os.path.exists(self.spectrum_levels_file()):
             logging.info(f"Final level samplings written to {self.spectrum_levels_file()}.")
 
-        if self.other_params['do_interacting_fits'] or not self.interacting_channels:
+        if self.other_params['do_interacting_fits'] or self.interacting_channels:
             #add rotation and ensemble info to all sampling output files
             with h5py.File(self.other_params["pivot_file"]) as pivotfile:
                 rotate_info = pivotfile['Info']['Header'][()]
