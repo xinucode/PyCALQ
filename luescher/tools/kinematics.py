@@ -1,6 +1,7 @@
 import numpy as np
 
 import math
+import cmath
 from luescher.tools.zeta import Z
 
 #~~~~~~~~~~~~~~~~~~~~~~~`
@@ -36,6 +37,12 @@ def q2(ecm,ma,mb): #assume all ref inputs
     q2 = ecm**2 / 4 - (ma**2 + mb**2) / 2 + ((ma**2 - mb**2)**2) / (4*ecm**2)
     return q2
 
+def q2toecm(q2,ma,mb):
+    return np.sqrt(q2 + ma**2) + np.sqrt(q2 + mb**2)
+    
+def partialE_partialq(q2,ma,mb):
+    return np.sqrt(-q2)*(-q2 + ma**2 )**(-1/2) + np.sqrt(-q2)*(-q2 +mb)**(-1/2)
+
 # msplit required for Luscher: 
 # measures the shift of the rvector of unequal relativistic masses
 def msplit(ecm,ma,mb): #if ma,mb are degenerate its 1
@@ -60,13 +67,15 @@ def gamma(ecm,d,L,ref):
 # Leuscher Zeta Function
 # using numerical approach including numerical integrals
 def qcotd(ecm,L,psq,ma,mb,ref):
-        L_ref = L*ref
-        d_vec = momentum_state(psq) #0,1,2,3
-        c = 2 / (gamma(ecm,psq,L,ref)*L_ref*math.sqrt(math.pi))
-        #print("c=",c)
-        # print('ecm=', ecm)
-        # print("gamma = ",self.gamma(ecm,psq,ref))
-        #print( psq )
-        #print( ma )
-        return c*Z(self.q2(ecm,ma,mb)*((L_ref/(2*math.pi))**2),gamma=self.gamma(ecm,psq,ref),l=0,m=0,d=d_vec,m_split=self.msplit(ecm,ma,mb),precision=1e-11).real
+    if ecm < 0:
+        return np.inf
+    L_ref = L*ref
+    d_vec = momentum_state(psq) #0,1,2,3
+    c = 2 / (gamma(ecm,psq,L,ref)*L_ref*math.sqrt(math.pi))
+    #print("c=",c)
+    if gamma(ecm,psq,L,ref) < 1: #because energy guess is negative
+        return np.abs(gamma)
+    #print( psq )
+    #print( ma )
+    return c*Z(q2(ecm,ma,mb)*((L_ref/(2*math.pi))**2),gamma=gamma(ecm,psq,L,ref),l=0,m=0,d=d_vec,m_split=msplit(ecm,ma,mb),precision=1e-11).real
     

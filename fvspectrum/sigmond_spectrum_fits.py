@@ -935,7 +935,7 @@ class SigmondSpectrumFits:
                                     "dof": self.tmin_results[channel][op]["fits"][model][tmin]["dof"],
                                 }
                                 if str(channel) in self.other_params['non_interacting_levels']:
-                                    print(channel)
+                                    # print(channel)
                                     simple_result["dElab value"] = self.tmin_results[channel][op]["fits"][model][tmin]["dElab"].getFullEstimate()
                                     simple_result["dElab error"] = self.tmin_results[channel][op]["fits"][model][tmin]["dElab"].getSymmetricError()
                                     simple_result["non-interacting level"] = self.other_params['non_interacting_levels'][str(channel)][i]

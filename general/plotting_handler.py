@@ -1,4 +1,5 @@
 
+import argparse
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib
@@ -10,12 +11,16 @@ import numpy as np
 import copy
 import cmath
 
+
 # import sigmond
 import fvspectrum.sigmond_util as sigmond_util
 import fvspectrum.spectrum_plotting_settings.settings as psettings
+from matplotlib.lines import Line2D  # Import Line2D for custom legend handle
+from scipy.interpolate import interp1d
 from sigmond_scripts import util as utils
 from sigmond_scripts import fit_info
 import luescher.tools.kinematics 
+
 
 #where source and sink labels go on plot
 ctext_x = 0.3
@@ -234,7 +239,6 @@ class PlottingHandler:
                 energy_result = fit_result_info["estimates"][energy_index].getFullEstimate()
                 energy_err = fit_result_info["estimates"][energy_index].getSymmetricError()
                 plt.hlines(energy_result, tmin, tmax, color="black", zorder=2)
-                plt.gca().add_patch(patches.Rectangle((tmin, energy_result-energy_err), tmax-tmin, 2.0*energy_err, zorder=0, color="lightgray"))
                 
             yscale = "$a_t "
             if fit_result_info["info"].ratio:
@@ -247,17 +251,6 @@ class PlottingHandler:
                 yscale+=r"E_{lab}"
             yscale+="$"
 
-            # if self.latex:
-            #     if fit_result_info["info"].ratio:
-            #         yscale = r"$a_t \delta E_{\textup{lab}}$" #the use of "\textup{}" command requires a latex compiler
-            #     else:
-            #         yscale = r"$a_tE_{\textup{lab}}$" 
-            # else: 
-            #     if fit_result_info["info"].ratio:
-            #         yscale = r"$a_t \delta E_{lab}$" #unsure if \delta needs latex
-            #     else:
-            #         yscale = r"$a_tE_{lab}$"
-                    
             plt.ylabel(yscale)
             if fit_result_info["success"]:
                 nice_value = utils.nice_value(energy_result,energy_err)
@@ -430,52 +423,131 @@ class PlottingHandler:
     ###########################
     ##### Leuscher Plots ######
     ###########################
-    #input can be data files generated, and fit
-    def single_channel_plot( self, energies, fit_output, fit_param,fit_masses,lattice_size):
-        # energies is the average energies,
-        average_energies = energies
-        # next is array of [ fit_param1,fit_param2,chi2 ]
-        # fit_type is ERE param
-        # masses = [ma,mb]
-        ma,mb = fit_masses
-        # L
-        x = []
-        x_range = []
-        y = []
-        y_range = []
-        ma,mb = masses
-        for i in range(len(average_energies)):
-            x.append(luescher.tools.kinematics.q2(i,ma,mb))
-            y.append(qcotd(i,L,psq,ma,mb,ref))
-            xp = []
-            yp = []
-            for en in np.linspace(average_energies[i] - 0.01, average_energies[i] + 0.01, 100):
-                xp.append(luescher.tools.kinematics.q2(en,ma,mb))
-                yp.append(qcotd(en,L,psq,ma,mb,ref))
-            x_range.append(xp)
-            y_range.append(yp)
-        
-        ecm_values = np.linspace(min(average_energies) - 0.5, min(average_energies) + 0.05, 500)
-        q2_values = np.linspace(min(luescher.tools.kinematics.q2(average_energies,ma,mb))-0.1, max(luescher.tools.kinematics.q2(average_energies,ma,mb))+0.1, 300)
+    #
+    # compare chi2 results to input energies
+    def chi2_energies_compare_plot(self, fig_params, channel, irreps, x_in,err_in):
+        figwidth, figheight = fig_params
+        # channel_1 = str(channel.split(',')[0])
+        # channel_2 = str(channel.split(',')[1])
+        plt.figure(figsize=(figwidth,figheight))
+        # x axis is the irrep
+        data_energies, chi2_energies = x_in
+        ecm_bootstrap, chi2_energies_error = err_in 
+        # y  is the data, one from data and one from fit
+        x_range= [0,1,2,3]
+        offset = 0.1
+        irrep_list = []
+        total_irrep = 0
+        for psq in irreps:
+                for irrep in irreps[psq][0]:     
+                    irrep_list.append(irrep)
+                    for level in irreps[psq][0][irrep]:
+                        level_title = f"ecm_{level}_ref"
+                        err = np.std(ecm_bootstrap[psq][irrep][level_title])
+                        plt.errorbar(x_range[total_irrep]-offset,data_energies[psq][irrep][level_title], yerr=err,linewidth=0.0, elinewidth=1.5, capsize=5, marker='s',markersize=10, color="blue")
+                        #plt.plot(x_range[total_irrep]-offset,data_energies[psq][irrep][level_title],marker='s',markersize=10,color='blue')
+                        #plt.plot(x_range[total_irrep]+offset, chi2_energies[psq][irrep][level],marker='s',markersize=10,color='red')
+                        plt.errorbar(x_range[total_irrep]+offset,chi2_energies[psq][irrep][level], yerr=chi2_energies_error[psq][irrep][level],linewidth=0.0, elinewidth=1.5, capsize=5, marker='s',markersize=10, color="red")
+                        total_irrep += 1
+        # Set the x-ticks using the collected irreps
+        plt.xticks(x_range, irrep_list)
+        plt.ylabel("$E^{*} / m_{\pi}$",fontsize=16)
+
+
+    # input can be data files generated, and fit
+    # input is shapes_dict, label_dict, 
+    # energies is the average energies,
+    def single_channel_plot( self,fig_params, channel, irreps, x_in, y_in):
+        figwidth, figheight = fig_params
+        channel_1 = str(channel.split(',')[0])
+        channel_2 = str(channel.split(',')[1])
+        plt.figure(figsize=(figwidth,figheight))
+        # CONDITION FOR BOUND STATES 
+        q2_values = np.linspace(-1, 0.0001, 175)
         virtual_state = []
-        for q2 in np.linspace(min(luescher.tools.kinematics.q2(average_energies,ma,mb))-0.75,-0.0001,300):
+        bound_state = []
+        for q2 in q2_values:
             virtual_state.append(cmath.sqrt(-q2))
-        line = []
-        # need fit params (fit_output)
-        # fit params come as number of params + chi2
-        number_of_fit_params = len(fit_output)
-        fit_params = fit_output[:number_of_fit_params]
-        #fit = [-(1/3.30),2*1.582] #with ecm factor
-        for energy_COM in ecm_values:
-            line.append(luescher.tools.parametrizations.output(energy_COM,ma,mb,fit_param,fit_params))
-        
-        
-        # last value of fit
-        
+            bound_state.append(cmath.sqrt(q2))
+        markers = ['o', 's', '^', 'D', 'v', '*']
+        shapes = []
+        marker_to_shape = 0
+        for psq in irreps:
+            for irrep in irreps[psq][0]:
+                shapes.append(markers[marker_to_shape])
+                marker_to_shape += 1
+
+        #shapes = ['o','s','D','v',]
+        colors = ['tab:blue','firebrick','green','purple']
+        legend_handles = []
+        x, x_range = x_in
+        y, y_range = y_in
+        shape_count = 0
+        for psq in irreps:
+                irrep_count = 0
+                for irrep in irreps[psq][0]:
+                    marker = shapes[shape_count]
+                    shape_count += 1
+                    irrep_count += 1
+                    level_count = 0
+                    for level in irreps[psq][0][irrep]:
+                        if len(irrep) > 1:
+                            label = f"${irrep[0]}_{irrep[1:]}$"
+                        else:
+                            label = f"${irrep[0]}$"
+                        color = colors[level_count]                   
+                        level_count += 1
+                        plt.plot(x_range[psq][irrep][level], y_range[psq][irrep][level], color=color, alpha=0.75)
+                        plt.plot(x[psq][irrep][level],y[psq][irrep][level] , marker=marker, color=color, label=label)
+                        legend_handles.append(Line2D([0], [0], marker=marker,color=color, markerfacecolor=color, markersize=10,  label=label))
+        plt.axhline(y=0,color='black')
+        plt.axvline(x=0,color='black')
+        legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 10})
+        plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
+        plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
+        plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)       
+
+    def parametrization_fit_plot( self,energies, fit_results, irreps, x_in, y_in):
+        figwidth, figheight = fig_params
+        channel_1 = str(channel.split(',')[0])
+        channel_2 = str(channel.split(',')[1])
+        plt.figure(figsize=(figwidth,figheight))
+        # CONDITION FOR BOUND STATES 
+        q2_values = np.linspace(-1, 0.0001, 120)
+        virtual_state = []
+        bound_state = []
+        for q2 in q2_values:
+            virtual_state.append(cmath.sqrt(-q2))
+            bound_state.append(cmath.sqrt(q2))
+        shapes = ['o','s','D','v']
+        colors = ['tab:blue','firebrick','green','purple']
+        legend_handles = []
+        x, x_range = x_in
+        y, y_range = y_in
+        for psq in irreps:
+                irrep_count = 0
+                for irrep in irreps[psq][0]:
+                    marker = shapes[irrep_count]
+                    irrep_count += 1
+                    level_count = 0
+                    for level in irreps[psq][0][irrep]:
+                        if len(irrep) > 1:
+                            label = f"${irrep[0]}_{irrep[1:]}$"
+                        else:
+                            label = f"${irrep[0]}$"
+                        color = colors[level_count]                   
+                        level_count += 1
+                        plt.plot(x_range[psq][irrep][level], y_range[psq][irrep][level], color=color, alpha=0.75)
+                        plt.plot(x[psq][irrep][level], y[psq][irrep][level], marker=marker, color=color, label=label)
+                        legend_handles.append(Line2D([0], [0], marker=marker,color=color, markerfacecolor=color, markersize=10,  label=label))
+        plt.axhline(y=0,color='black')
+        plt.axvline(x=0,color='black')
+        legend = plt.legend(handles=legend_handles, loc='upper left', title='Legend', prop={'size': 10})
+        plt.xlabel("$q^{*2} / m_{\pi}^2$",fontsize=16)
+        plt.ylabel("$q^{*} / m_{\pi} \cot \delta $",fontsize=16)
+        plt.title(f'{channel_1},{channel_2}  Scattering ',fontsize=16)         
 
 
-        
-        return 
 
     ###########################
     ##### pylatex actions #####

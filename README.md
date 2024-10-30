@@ -1,7 +1,7 @@
 # PyCALQ
 Correlator Analysis and Luscher Quantization Condition.
 
-Full analysis chain of the finite volume spectrum from two-point correlators to phase-shifts and other infinite-volume observables using the Lüscher formalism
+Full analysis chain of the finite volume spectrum from two-point correlators to phase-shifts and other infinite-volume observables using the Lüscher formalism for two-particle scattering channels below the nearest inelastic scattering threshold.
 
 ## Prerequisites
 
@@ -418,7 +418,14 @@ Unique task input descriptions:
 - plot_deltaE - include additional plots that compare shifts from non-interacting levels. Only possible if provided in data
 
 ### Single Channel Fit
-info
+Using the fit results of the fit_spectrum task, or a linked energy fit result (hdf5 format as default).
+Uses the spectrum in format (PSQ, Channel, Energy/ref energy) as input to fit K-matrix for Lüscher QC.
+
+Current Mandatory Task Input:
+- data_file: Location of hdf5 data file 
+- channel: Single Channel with two hadrons available in the data file
+- irreps : Irreps used in the fit, with default as the lowest energy level in each irrep 
+
 
 
 ## Setting up a New Task
