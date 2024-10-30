@@ -1,8 +1,0 @@
-Generic Tasks:
-- Read Data
-- Plot Data
-- Summarize Data
-- Average Data
-- Rotate Data
-- Fit Data
-- Compute Zmags
